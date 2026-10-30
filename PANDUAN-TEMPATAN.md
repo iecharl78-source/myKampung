@@ -195,3 +195,29 @@ Alamat syarikat/majikan kini menggunakan **Alamat majikan 1, Alamat majikan 2, D
 Selepas daerah, negeri dan negara majikan diisi, cadangan poskod daripada alamat kediaman/majikan dalam rekod setempat boleh dipilih jika ada padanan. Semak alamat sebenar sebelum memilih; daerah/negeri sahaja tidak menentukan satu poskod. Boleh kosongkan poskod dan lengkapkan kemudian.
 
 Pangkalan data dinaik taraf secara automatik ketika pelayan dimulakan. Keseluruhan alamat majikan lama disalin ke **Alamat majikan 1**, tanpa meneka poskod atau negeri. Asingkan komponennya apabila mengemas kini rekod. Sandaran JSON versi lama masih boleh dipulihkan dan menggunakan kaedah yang sama. Sandarkan folder `data` sebelum mengemas kini aplikasi dan kekalkan folder itu ketika menggantikan fail program.
+
+## Rekod bantuan diterima
+
+Menu **Rekod bantuan** tersedia kepada Pentadbir dan Petugas. Versi ini merekodkan bantuan yang **sudah diterima**, bukan permohonan, kelayakan atau kelulusan bantuan. Jadual bantuan ditambah secara automatik ketika pelayan dimulakan selepas kemas kini; semua maklumat asas sedia ada dikekalkan.
+
+1. Tekan **Rekod bantuan**, kemudian **＋ Rekod bantuan**.
+2. Pilih ahli/isi rumah aktif. Jenis penerima boleh berupa **Ahli utama**, **Isi rumah** atau **Ahli keluarga**. Untuk keluarga, pilih orang dalam senarai keluarga isi rumah tersebut.
+3. Isi nama bantuan, kategori, pemberi/agensi dan tarikh bantuan diterima. Tarikh masa hadapan tidak diterima.
+4. Isi nilai dalam **RM**, atau kuantiti berserta unit seperti bakul/pek/kg. Sekurang-kurangnya satu daripada nilai atau kuantiti mesti diisi. Nilai RM menggunakan maksimum dua perpuluhan; kuantiti maksimum tiga perpuluhan. Jika kedua-duanya diisi, nilai RM dianggap nilai bantuan itu dan bukan nilai setiap unit.
+5. Tambah catatan jika perlu dan tekan **Simpan bantuan**. Borang dikunci sehingga penyimpanan selesai.
+
+Jika penerima, nama bantuan, pemberi dan tarikh sepadan dengan rekod sedia ada, sistem memberikan amaran. Semak terlebih dahulu; gunakan **Simpan sebagai agihan berasingan** hanya jika ia benar-benar pemberian berasingan. Amaran bukan bukti seseorang menerima bantuan secara tidak sah.
+
+Carian merangkumi nama bantuan, kategori, pemberi, penerima dan isi rumah. Penapis isi rumah serta tarikh Dari/Hingga mengehadkan rekod yang dipaparkan. Ringkasan menunjukkan bilangan rekod sepadan, jumlah nilai RM yang diisi dan bilangan isi rumah berbeza. Kuantiti berlainan unit tidak dijumlahkan. Bantuan tanpa nilai RM tidak ditafsirkan sebagai tiada nilai, cuma nilainya belum direkodkan.
+
+Nama dan tarikh lahir penerima disimpan sebagai gambaran semasa bantuan direkodkan. Menukar nama profil atau membuang baris keluarga tidak memadam atau menamakan semula sejarah penerima. Rekod lama masih boleh disunting walaupun ahli telah dinyahaktifkan atau penerima keluarga tidak lagi dalam senarai; pilihan penerima asal ditandakan **rekod asal**. Ahli tidak aktif tidak ditawarkan untuk bantuan baharu. Semak identiti apabila ahli keluarga mempunyai nama dan tarikh lahir yang sama kerana mereka belum mempunyai ID individu berasingan.
+
+Pentadbir dan Petugas boleh merekod serta menyunting bantuan. Hanya Pentadbir boleh **Padam** bantuan dengan menaip **PADAM**. Sandaran keselamatan keseluruhan data disimpan dalam `data/backups/sebelum-padam-bantuan-….json` sebelum pemadaman. Sejarah tindakan mencatat penciptaan, suntingan dan pemadaman bantuan. Ahli yang mempunyai rekod bantuan tidak boleh dipadam terus; gunakan **Nyahaktif** supaya sejarah bantuan kekal.
+
+## Sandaran dan pemulihan selepas modul bantuan
+
+Butang **Sandaran** kini menghasilkan format versi 2 yang mengandungi ahli, keluarga dan semua bantuan, termasuk penerima asal. Hadnya 10 MB, 20,000 ahli dan 50,000 rekod bantuan. Akaun dan sejarah tindakan masih tidak dimasukkan; gunakan salinan keseluruhan folder `data` ketika pelayan dihentikan untuk sandaran sistem penuh.
+
+Pratonton pemulihan memaparkan bilangan bantuan. Pemulihan versi 2 menggantikan ahli/keluarga **dan bantuan** bersama-sama dalam satu transaksi; jika penulisan gagal, kedua-duanya dikekalkan pada keadaan sebelumnya. Sandaran keselamatan sebelum pemulihan juga mengandungi bantuan. Jika ahli atau bantuan berubah selepas pratonton, pilih fail semula sebelum mengesahkan.
+
+Fail versi 1 daripada versi aplikasi lama masih boleh dipulihkan jika sistem semasa belum mempunyai bantuan. Jika bantuan sudah direkodkan, pemulihan versi 1 disekat supaya rekod bantuan tidak hilang atau dipautkan kepada ahli yang salah. Gunakan fail versi 2 yang sesuai. Akaun pengguna dan sejarah tindakan tidak digantikan oleh pemulihan rekod komuniti.

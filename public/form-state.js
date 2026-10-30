@@ -7,7 +7,7 @@ export function installFormState(root=document) {
     'login-form':'Sedang log masuk…', 'member-form':'Sedang menyimpan rekod…',
     'restore-form':'Sedang memulihkan data…', 'action-form':'Sedang memproses tindakan…',
     'new-user-form':'Sedang menyimpan pengguna baharu…', 'user-action-form':'Sedang menyimpan perubahan akaun…',
-    'password-form':'Sedang menyimpan kata laluan…',
+    'password-form':'Sedang menyimpan kata laluan…', 'aid-form':'Sedang menyimpan bantuan…', 'aid-delete-form':'Sedang memadam bantuan…',
   };
   for(const form of root.querySelectorAll('form')) {
     const handler=form.onsubmit;

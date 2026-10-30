@@ -9,6 +9,7 @@ import { formatAddress } from './public/address.js';
 import { normalizeEducation } from './public/education.js';
 import { normalizeMemberDetails, memberDetailFields } from './public/member-details.js';
 import { memberColumns, digest, duplicateMatches, createBackup, readBackup } from './data-tools.js';
+import { initializeAid,aidRoutes,aidColumns,readAidBackup } from './aid.js';
 import { initializeAccounts, publicUser, verifyPassword, audit, withAudit, accountRoutes } from './accounts.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -22,12 +23,15 @@ migrateMemberDetails(db);
 migrateMemberStatus(db);
 migrateEmployerAddress(db);
 initializeAccounts(db,process.env.ADMIN_PASSWORD);
+initializeAid(db);
 const sessions = new Map(), attempts = new Map(), restorePreviews = new Map();
 const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)}));
+const allAid=()=>db.prepare('SELECT * FROM aid_records ORDER BY id').all();
+const communityState=()=>({members:allMembers(),aid:allAid()});
 function safetySnapshot(prefix) {
   const backupDir=join(data,'backups'); mkdirSync(backupDir,{recursive:true,mode:0o700});
   const filename=`${prefix}-${Date.now()}-${randomBytes(4).toString('hex')}.json`;
-  writeFileSync(join(backupDir,filename),JSON.stringify(createBackup(allMembers())),{mode:0o600,flag:'wx'});
+  writeFileSync(join(backupDir,filename),JSON.stringify(createBackup(allMembers(),allAid())),{mode:0o600,flag:'wx'});
   return filename;
 }
 function revokeSessions(userId) {
@@ -76,7 +80,7 @@ function validate(input) {
   const inactivityReason=isActive===0 ? text(input.inactivityReason ?? '',500) : '';
   return {name, phone, address, ...addressParts, ...normalizeMemberDetails(input), birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -114,21 +118,23 @@ const server = http.createServer(async (req,res) => {
     if(await accountRoutes({req,res,path,user,db,json,body,revokeSessions})) return;
     const adminOnly=path==='/api/backup' || path.startsWith('/api/restore/') || req.method==='DELETE';
     if(adminOnly && user.role!=='admin') return json(res,403,{error:'Akses ini terhad kepada pentadbir.'});
+    if(await aidRoutes({req,res,path,user,db,json,body,safetySnapshot})) return;
     if (path === '/api/logout' && req.method === 'POST') { audit(db,user,'Log keluar','akaun',user.id); sessions.delete(token); restorePreviews.delete(token); res.setHeader('Set-Cookie','session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); return json(res,200,{ok:true}); }
     if (path === '/api/members' && req.method === 'GET') return json(res,200,allMembers());
     if (path === '/api/backup' && req.method === 'GET') {
       res.setHeader('Content-Disposition',`attachment; filename="myKampung-sandaran-${new Date().toISOString().replace(/[:.]/g,'-')}.json"`);
-      const backup=createBackup(allMembers());audit(db,user,'Muat turun sandaran','sistem','');
+      const backup=createBackup(allMembers(),allAid());audit(db,user,'Muat turun sandaran','sistem','');
       return json(res,200,backup);
     }
     if (path === '/api/restore/preview' && req.method === 'POST') {
       restorePreviews.delete(token);
       for (const [key,value] of restorePreviews) if(value.expires<Date.now() || !sessions.has(key)) restorePreviews.delete(key);
       if (restorePreviews.size>=20) return json(res,429,{error:'Terlalu banyak pratonton pemulihan. Cuba lagi kemudian.'});
-      const input=await body(req,10*1024*1024), records=readBackup(input,validate), current=allMembers();
+      const input=await body(req,10*1024*1024), records=readBackup(input,validate), aid=readAidBackup(input,records), current=allMembers();
+      if(input.version===1 && allAid().length) return json(res,409,{error:'Sandaran lama tidak mengandungi bantuan. Gunakan sandaran versi baharu supaya rekod bantuan tidak hilang.'});
       const previewToken=randomBytes(24).toString('hex');
-      restorePreviews.set(token,{previewToken,records,current:digest(current),expires:Date.now()+10*60000});
-      return json(res,200,{previewToken,createdAt:input.createdAt,records:records.length,family:records.reduce((n,m)=>n+m.household.length,0),currentRecords:current.length});
+      restorePreviews.set(token,{previewToken,records,aid,current:digest(communityState()),expires:Date.now()+10*60000});
+      return json(res,200,{previewToken,createdAt:input.createdAt,records:records.length,aid:aid.length,family:records.reduce((n,m)=>n+m.household.length,0),currentRecords:current.length});
     }
     if (path === '/api/restore/confirm' && req.method === 'POST') {
       const input=await body(req), preview=restorePreviews.get(token);
@@ -138,13 +144,16 @@ const server = http.createServer(async (req,res) => {
         return json(res,400,{error:'Kata laluan tidak tepat. Pilih fail semula untuk mencuba.'});
       }
       if (input.confirmation!=='PULIHKAN') return json(res,400,{error:'Sila taip PULIHKAN untuk mengesahkan penggantian data.'});
-      if (digest(allMembers())!==preview.current) { restorePreviews.delete(token); return json(res,409,{error:'Data telah berubah sejak pratonton. Pilih fail semula untuk menyemak keadaan terkini.'}); }
+      if (digest(communityState())!==preview.current) { restorePreviews.delete(token); return json(res,409,{error:'Data telah berubah sejak pratonton. Pilih fail semula untuk menyemak keadaan terkini.'}); }
       const safetyBackup=safetySnapshot('sebelum-pemulihan');
       db.exec('BEGIN IMMEDIATE');
       try {
+        db.exec('DELETE FROM aid_records');
         db.exec('DELETE FROM members');
         const insert=db.prepare(`INSERT INTO members (${memberColumns.join(',')}) VALUES (${memberColumns.map(()=>'?').join(',')})`);
         for(const member of preview.records) insert.run(...memberColumns.map(key=>key==='household'?JSON.stringify(member.household):member[key]));
+        const insertAid=db.prepare(`INSERT INTO aid_records (${aidColumns.join(',')}) VALUES (${aidColumns.map(()=>'?').join(',')})`);
+        for(const record of preview.aid) insertAid.run(...aidColumns.map(key=>record[key]));
         audit(db,user,'Pulihkan sandaran','sistem','',`${preview.records.length} rekod ahli`);
         db.exec('COMMIT');
       } catch(error) { db.exec('ROLLBACK'); throw error; }
@@ -177,6 +186,7 @@ const server = http.createServer(async (req,res) => {
       if(input.expectedUpdatedAt!==row.updatedAt || input.expectedName!==row.name) return json(res,409,{error:'Rekod telah berubah. Muat semula direktori dan semak semula sebelum memadam.'});
       if(input.confirmation!=='PADAM') return json(res,400,{error:'Sila taip PADAM untuk mengesahkan pemadaman ahli dan keluarga.'});
       if(!verifyPassword(user,input.password)) return json(res,400,{error:'Kata laluan pentadbir tidak tepat.'});
+      if(db.prepare('SELECT id FROM aid_records WHERE memberId=? LIMIT 1').get(row.id)) return json(res,409,{error:'Ahli mempunyai rekod bantuan. Gunakan Nyahaktif untuk mengekalkan sejarah bantuan.'});
       const safetyBackup=safetySnapshot('sebelum-padam');
       withAudit(db,user,'Padam ahli','ahli',row.id,()=>db.prepare('DELETE FROM members WHERE id=?').run(row.id));
       return json(res,200,{ok:true,safetyBackup});

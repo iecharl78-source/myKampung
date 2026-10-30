@@ -44,15 +44,15 @@ export function duplicateMatches(member, records, excludedId) {
   }
   return matches;
 }
-export function createBackup(members) {
-  const contents={format:'myKampung-members',version:1,createdAt:new Date().toISOString(),members};
+export function createBackup(members,aid) {
+  const contents={format:'myKampung-members',version:aid===undefined?1:2,createdAt:new Date().toISOString(),members,...(aid===undefined?{}:{aid})};
   const backup={...contents,checksum:digest(contents)};
-  if(members.length>20000 || Buffer.byteLength(JSON.stringify(backup))>10*1024*1024) throw Error('Data melebihi had sandaran 10 MB / 20,000 rekod. Sila gunakan sandaran folder data selepas menghentikan pelayan.');
+  if(members.length>20000 || (aid && aid.length>50000) || Buffer.byteLength(JSON.stringify(backup))>10*1024*1024) throw Error('Data melebihi had sandaran 10 MB / 20,000 ahli / 50,000 bantuan. Sila gunakan sandaran folder data selepas menghentikan pelayan.');
   return backup;
 }
 export function readBackup(input, validate) {
-  if (!input || input.format!=='myKampung-members' || input.version!==1 || !Array.isArray(input.members) || input.members.length>20000) throw Error('Format sandaran tidak disokong atau melebihi 20,000 rekod.');
-  const contents={format:input.format,version:input.version,createdAt:input.createdAt,members:input.members};
+  if (!input || input.format!=='myKampung-members' || ![1,2].includes(input.version) || (input.version===2 && (!Array.isArray(input.aid) || input.aid.length>50000)) || !Array.isArray(input.members) || input.members.length>20000) throw Error('Format sandaran tidak disokong atau melebihi had 20,000 ahli / 50,000 bantuan.');
+  const contents={format:input.format,version:input.version,createdAt:input.createdAt,members:input.members,...(input.version===2?{aid:input.aid}:{})};
   if (input.checksum!==digest(contents)) throw Error('Semakan integriti sandaran gagal. Fail mungkin rosak atau diubah.');
   const validTime=value=>typeof value==='string' && Number.isFinite(Date.parse(value));
   if (!validTime(input.createdAt)) throw Error('Tarikh sandaran tidak sah.');

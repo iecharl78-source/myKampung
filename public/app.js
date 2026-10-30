@@ -3,6 +3,7 @@ import { addressFields, malaysiaStates, postcodeSuggestions } from './address.js
 import { employmentStatuses, educationLevels, studyLevels } from './education.js';
 import { memberDetailFields, memberEducationLevels } from './member-details.js';
 import { enhancePasswords } from './password-tools.js';
+import { setupAidUI } from './aid-ui.js';
 import { installFormState } from './form-state.js';
 const $ = selector => document.querySelector(selector);
 let members = [], editing = null, duplicateConfirmation = '', restorePreviewToken = '', fileSelection = 0, memberAction = null;
@@ -24,19 +25,19 @@ function hidePassword() {
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
 function showLogin() {
-  hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
+  aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
   $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[]; currentUser=null;
   for(const id of ['users-list','audit-list','current-user']) $('#'+id).replaceChildren();
   $('#login').hidden=false;
-  for(const id of ['dashboard','accounts-panel','audit-panel','logout','current-user','open-password','nav-members','nav-accounts','nav-audit']) $('#'+id).hidden=true;
+  for(const id of ['dashboard','accounts-panel','audit-panel','aid-panel','logout','current-user','open-password','nav-members','nav-aid','nav-accounts','nav-audit']) $('#'+id).hidden=true;
 }
 async function load() {
   currentUser=(await api('/api/session')).user;
   members=await api('/api/members'); $('#login').hidden=true; $('#dashboard').hidden=false; $('#logout').hidden=false;
   const admin=currentUser.role==='admin';
   for(const id of ['backup','open-restore','nav-accounts','nav-audit']) $('#'+id).hidden=!admin;
-  for(const id of ['current-user','open-password','nav-members']) $('#'+id).hidden=false;
+  for(const id of ['current-user','open-password','nav-members','nav-aid']) $('#'+id).hidden=false;
   $('#current-user').textContent=`${currentUser.fullName} · ${admin?'Pentadbir':'Petugas'}`;
   showPanel('dashboard');
   const active=members.filter(m=>m.isActive===1);
@@ -198,7 +199,7 @@ $('#restore-file').onchange=async event=>{
     const preview=await api('/api/restore/preview','POST',backup);
     if(selection!==fileSelection || !$('#restore-dialog').open) return;
     restorePreviewToken=preview.previewToken;
-    $('#restore-summary').textContent=`Sandaran: ${new Date(preview.createdAt).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur'})}. Mengandungi ${preview.records} ahli dan ${preview.family} ahli keluarga. ${preview.currentRecords} rekod ahli semasa akan digantikan.`;
+    $('#restore-summary').textContent=`Sandaran: ${new Date(preview.createdAt).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur'})}. Mengandungi ${preview.records} ahli dan ${preview.family} ahli keluarga. ${preview.currentRecords} rekod ahli semasa akan digantikan. ${preview.aid || 0} rekod bantuan dalam sandaran turut dipulihkan.`;
     $('#restore-preview').hidden=false; $('#restore-form').elements.password.required=true; $('#restore-form').elements.confirmation.required=true;
   } catch(error) { if(selection===fileSelection) $('#restore-error').textContent=error instanceof SyntaxError ? 'Fail JSON tidak sah. Pilih fail sandaran myKampung.' : error.message; }
 };
@@ -240,8 +241,8 @@ $('#action-form').onsubmit=async event=>{
 };
 
 function showPanel(id) {
-  for(const panel of ['dashboard','accounts-panel','audit-panel']) $('#'+panel).hidden=panel!==id;
-  for(const [nav,panel] of [['nav-members','dashboard'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+  for(const panel of ['dashboard','accounts-panel','audit-panel','aid-panel']) $('#'+panel).hidden=panel!==id;
+  for(const [nav,panel] of [['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
 }
 $('#nav-members').onclick=()=>showPanel('dashboard');
 async function loadUsers() {
@@ -295,6 +296,7 @@ async function loadAudit() {
 $('#nav-audit').onclick=async()=>{ auditPage=1;try { await loadAudit();showPanel('audit-panel'); } catch(error) { notice(error.message); } };
 for(const [id,step] of [['audit-prev',-1],['audit-next',1],['audit-refresh',0]]) $('#'+id).onclick=async()=>{ auditPage=Math.max(1,auditPage+step);try { await loadAudit(); } catch(error) { notice(error.message); } };
 
+const aidUI=setupAidUI({api,showPanel,getUser:()=>currentUser,notice});
 const refreshPasswords=enhancePasswords();
 document.addEventListener('submit',refreshPasswords,true);
 document.addEventListener('form-idle',refreshPasswords,true);
