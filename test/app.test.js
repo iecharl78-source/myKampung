@@ -124,7 +124,10 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     rows=await (await request('/api/members')).json();current=rows.find(row=>row.id===id);
     assert.equal(current.isActive,0);assert.equal(current.inactivityReason,statusInput.reason);assert.ok(current.deactivatedAt);assert.deepEqual(current.household,before.find(row=>row.id===id).household);
     // Mengedit maklumat biasa tidak mengaktifkan semula ahli secara tidak sengaja.
-    assert.equal((await request(`/api/members/${id}`,'PUT',{...current,name:'Ahli Berpindah',phone:'0188888888',isActive:1})).status,200);
+    const inactiveEdit={...current,name:'Ahli Berpindah',phone:'0188888888',isActive:1};
+    const familyWarning=await request(`/api/members/${id}`,'PUT',inactiveEdit);assert.equal(familyWarning.status,409);
+    const familyCheck=await familyWarning.json();assert.ok(familyCheck.matches.some(match=>match.kind==='family'));
+    assert.equal((await request(`/api/members/${id}`,'PUT',{...inactiveEdit,duplicateConfirmation:familyCheck.confirmation})).status,200);
     current=(await (await request('/api/members')).json()).find(row=>row.id===id);assert.equal(current.isActive,0);
     const inactiveBackup=await (await request('/api/backup')).json();
     assert.equal(inactiveBackup.members.find(row=>row.id===id).isActive,0);

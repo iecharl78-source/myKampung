@@ -41,7 +41,7 @@ function duplicateWarning(res, member, input, excludedId) {
   const matches=duplicateMatches(member,allMembers(),excludedId);
   const confirmation=digest({member,matches});
   if (matches.length && input.duplicateConfirmation!==confirmation) {
-    json(res,409,{error:'Rekod yang serupa ditemui. Semak sebelum menyimpan sebagai rekod berasingan.',code:'DUPLICATE',matches,confirmation});
+    json(res,409,{error:'Rekod ahli atau keluarga yang serupa ditemui. Semak sebelum menyimpan sebagai rekod berasingan.',code:'DUPLICATE',matches,confirmation});
     return true;
   }
   return false;

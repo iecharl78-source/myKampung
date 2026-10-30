@@ -10,12 +10,39 @@ const phoneKey = value => {
   return digits;
 };
 export function duplicateMatches(member, records, excludedId) {
-  return records.filter(row=>row.id!==excludedId).flatMap(row=>{
+  const others=records.filter(row=>row.id!==excludedId);
+  const matches=others.flatMap(row=>{
     const reasons=[];
     if (nameKey(row.name)===nameKey(member.name)) reasons.push('Nama sama');
     if (phoneKey(row.phone)===phoneKey(member.phone)) reasons.push('Nombor telefon sama');
     return reasons.length ? [{id:row.id,name:row.name,phone:row.phone,updatedAt:row.updatedAt,isActive:row.isActive ?? 1,reasons}] : [];
   });
+  const people=record=>[{...record,role:'Ahli utama',index:-1},...(record.household || []).map((person,index)=>({...person,role:`Ahli keluarga ${index+1}`,index}))];
+  const candidates=people(member), index=new Map();
+  for(const row of others) for(const person of people(row)) {
+    const key=nameKey(person.name);
+    if(!index.has(key)) index.set(key,[]);
+    index.get(key).push({row,person});
+  }
+  function familyMatch(candidate, person, row) {
+    const reasons=['Nama sama'];
+    if(candidate.birthDate && person.birthDate) reasons.push(candidate.birthDate===person.birthDate ? 'Tarikh lahir sama' : 'Tarikh lahir berbeza — semak identiti');
+    else reasons.push('Tarikh lahir belum lengkap — semak identiti');
+    const location=row ? `isi rumah ${row.name} (#${row.id})` : 'borang ini';
+    return {kind:'family',id:row?.id ?? null,name:person.name,isActive:row?.isActive ?? 1,updatedAt:row?.updatedAt ?? '',candidateIndex:candidate.index,matchedIndex:person.index,reasons,
+      context:`${candidate.role}: ${candidate.name} sepadan dengan ${person.role}: ${person.name} dalam ${location}.`};
+  }
+  for(const candidate of candidates) {
+    for(const {row,person} of index.get(nameKey(candidate.name)) || []) {
+      // Padanan ahli utama dengan ahli utama telah disemak melalui nama/telefon di atas.
+      if(candidate.index===-1 && person.index===-1) continue;
+      matches.push(familyMatch(candidate,person,row));
+    }
+  }
+  for(let i=0;i<candidates.length;i++) for(let j=i+1;j<candidates.length;j++) {
+    if(nameKey(candidates[i].name)===nameKey(candidates[j].name)) matches.push(familyMatch(candidates[i],candidates[j]));
+  }
+  return matches;
 }
 export function createBackup(members) {
   const contents={format:'myKampung-members',version:1,createdAt:new Date().toISOString(),members};

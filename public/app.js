@@ -60,7 +60,13 @@ function familyField(person={}) {
   const age=document.createElement('span'); age.className='age-display'; age.setAttribute('aria-live','polite');
   const updateAge=()=>{ age.textContent=ageLabel(birthDate.value); };
   birthDate.after(age); birthDate.addEventListener('input',updateAge); updateAge();
-  row.querySelector('button').onclick=()=>row.remove(); $('#family-fields').append(row);
+  const remove=row.querySelector('.remove-family');
+  remove.textContent='Padam'; remove.setAttribute('aria-label',`Padam ahli keluarga${person.name ? ': '+person.name : ''}`);
+  remove.onclick=()=>{
+    const name=row.querySelector('[data-field="name"]').value.trim() || 'ahli keluarga ini';
+    if(window.confirm(`Padam ${name} daripada senarai keluarga? Perubahan hanya berkuat kuasa selepas menekan Simpan maklumat.`)) { row.remove(); clearDuplicates(); }
+  };
+  $('#family-fields').append(row);
 }
 function openEditor(member) {
   editing=member?.id ?? null; $('#member-form').reset(); $('#family-fields').replaceChildren(); $('#form-error').textContent='';
@@ -129,7 +135,7 @@ $('#member-form').onsubmit=async event=>{
     $('#form-error').textContent=e.message;
     if(e.details?.code==='DUPLICATE') {
       duplicateConfirmation=e.details.confirmation;
-      $('#duplicate-list').innerHTML=e.details.matches.map(m=>`<li><b>${esc(m.name)}</b> · #${m.id} · ${esc(m.phone)} · ${m.isActive===0?'Tidak aktif':'Aktif'} — ${esc(m.reasons.join(', '))}</li>`).join('');
+      $('#duplicate-list').innerHTML=e.details.matches.map(m=>m.kind==='family' ? `<li><b>${esc(m.context)}</b>${m.id===null ? '' : ` · ${m.isActive===0?'Isi rumah tidak aktif':'Isi rumah aktif'}`} — ${esc(m.reasons.join(', '))}</li>` : `<li><b>${esc(m.name)}</b> · #${m.id} · ${esc(m.phone)} · ${m.isActive===0?'Tidak aktif':'Aktif'} — ${esc(m.reasons.join(', '))}</li>`).join('');
       $('#duplicate-warning').hidden=false;
     }
   } finally { $('#save-member').disabled=false; $('#confirm-duplicate').disabled=false; }

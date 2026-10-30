@@ -93,7 +93,7 @@ Pelayan menambah medan baharu ke pangkalan data secara automatik ketika dimulaka
 
 ## Semakan rekod berganda
 
-Semasa mendaftar atau mengemas kini ahli, sistem menyemak padanan nama atau telefon dengan ahli utama lain. Nama dibandingkan tanpa perbezaan huruf besar/kecil, ruang atau tanda baca. Telefon Malaysia dalam format `012…`, `+6012…` atau `006012…` dibandingkan sebagai nombor yang sama. Ini bukan pengesahan identiti dan tidak mengesan semua variasi ejaan nama atau pendua dalam senarai tanggungan keluarga.
+Semasa mendaftar atau mengemas kini ahli, sistem menyemak padanan nama atau telefon dengan ahli utama lain. Nama dibandingkan tanpa perbezaan huruf besar/kecil, ruang atau tanda baca. Telefon Malaysia dalam format `012…`, `+6012…` atau `006012…` dibandingkan sebagai nombor yang sama. Ini bukan pengesahan identiti dan tidak mengesan semua variasi ejaan nama. Ahli keluarga juga disemak seperti penerangan di bawah.
 
 Jika padanan ditemui, borang memaparkan nama, ID dan telefon rekod berkaitan. Semak dahulu. Jika ia benar-benar individu berbeza, tekan **Simpan sebagai rekod berasingan**; nombor telefon boleh dikongsi oleh keluarga. Rekod tidak digabungkan atau dipadam secara automatik. Pengesahan hanya terpakai pada kandungan yang disemak; perubahan borang memerlukan semakan semula.
 
@@ -130,3 +130,11 @@ Direktori memaparkan ahli **Aktif** secara lalai. Gunakan penapis **Tidak aktif*
 Sebelum memadam, sistem menyimpan sandaran keseluruhan rekod semasa dalam `data/backups/sebelum-padam-….json`. Jika sandaran gagal disimpan, pemadaman tidak diteruskan. Fail sandaran itu masih mengandungi rekod yang dipadam dan perlu dilindungi seperti sandaran lain. Jika perlu memulihkannya melalui **Pulihkan data**, ingat bahawa pemulihan menggantikan keseluruhan direktori, termasuk perubahan lain yang berlaku selepas sandaran; semak dan sandarkan data terkini dahulu.
 
 Rekod lama ditandakan aktif secara automatik ketika menaik taraf. Status tidak aktif, sebab dan tarikh disertakan dalam sandaran versi semasa. Jika sandaran daripada versi lama yang belum mempunyai status dipulihkan, ahli di dalamnya dianggap aktif. Semakan pendua turut melibatkan ahli tidak aktif supaya ahli yang kembali boleh diaktifkan semula tanpa perlu mendaftar semula.
+
+## Semakan pendua dan Padam ahli keluarga
+
+Semakan ketika menyimpan kini meliputi nama ahli keluarga yang sama dalam borang sendiri, dalam isi rumah lain, atau dengan rekod ahli utama. Ahli utama baharu juga dibandingkan dengan ahli keluarga sedia ada. Rekod aktif dan tidak aktif disertakan; isi rumah yang sedang diedit tidak dibandingkan dengan salinan lamanya sendiri.
+
+Amaran memaparkan kedudukan baris ahli keluarga dan isi rumah yang berkaitan. Jika kedua-dua tarikh lahir tersedia, sistem menyatakan sama ada tarikhnya sama atau berbeza. Nama sama dengan tarikh lahir berbeza atau kosong masih diberi amaran untuk semakan, bukan diputuskan sebagai orang yang sama. Nama dibandingkan tanpa perbezaan huruf besar/kecil, ruang atau tanda baca. Jika benar-benar individu berbeza, gunakan **Simpan sebagai rekod berasingan** selepas menyemak. Menukar maklumat borang atau memadam baris keluarga membatalkan pengesahan amaran lama.
+
+Setiap baris keluarga mempunyai butang **Padam**. Tekan butang itu dan sahkan nama yang ingin dibuang. Tekan **Simpan maklumat** pada borang ahli untuk menyimpan pemadaman. Menekan Batal pada pengesahan mengekalkan baris; menutup atau membatalkan borang sebelum menyimpan tidak memadam rekod dalam pangkalan data. Ini hanya membuang tanggungan tersebut daripada isi rumah yang sedang diedit, bukan memadam ahli utama atau rekod dalam isi rumah lain. Bilangan keluarga dikemas kini selepas simpan. Buat sandaran melalui butang Sandaran sebelum perubahan penting jika perlu dipulihkan kemudian.
