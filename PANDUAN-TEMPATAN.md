@@ -90,3 +90,29 @@ Borang ahli utama mempunyai **Status pekerjaan**, **Pekerjaan / jawatan**, **Tah
 Maklumat majikan terdiri daripada **Nama syarikat / majikan**, **Alamat syarikat / majikan** dan **No. telefon syarikat / majikan**. Semua medan ini pilihan dan boleh dikosongkan jika tiada maklumat. Maklumat yang telah diisi tidak dipadam apabila status pekerjaan ditukar; kemas kini atau kosongkan sendiri jika tidak lagi berkenaan.
 
 Pelayan menambah medan baharu ke pangkalan data secara automatik ketika dimulakan selepas kemas kini. Teks pekerjaan lama, data keluarga dan rekod lain dikekalkan. Status pekerjaan, pendidikan dan butiran majikan bagi rekod lama dibiarkan kosong untuk dilengkapkan, bukan diteka daripada pekerjaan lama. Sandarkan folder `data` sebelum mengemas kini.
+
+## Semakan rekod berganda
+
+Semasa mendaftar atau mengemas kini ahli, sistem menyemak padanan nama atau telefon dengan ahli utama lain. Nama dibandingkan tanpa perbezaan huruf besar/kecil, ruang atau tanda baca. Telefon Malaysia dalam format `012…`, `+6012…` atau `006012…` dibandingkan sebagai nombor yang sama. Ini bukan pengesahan identiti dan tidak mengesan semua variasi ejaan nama atau pendua dalam senarai tanggungan keluarga.
+
+Jika padanan ditemui, borang memaparkan nama, ID dan telefon rekod berkaitan. Semak dahulu. Jika ia benar-benar individu berbeza, tekan **Simpan sebagai rekod berasingan**; nombor telefon boleh dikongsi oleh keluarga. Rekod tidak digabungkan atau dipadam secara automatik. Pengesahan hanya terpakai pada kandungan yang disemak; perubahan borang memerlukan semakan semula.
+
+## Sandaran melalui aplikasi
+
+Selepas log masuk, tekan **Sandaran**. Pelayar akan menyediakan fail `myKampung-sandaran-….json` untuk dimuat turun. Pastikan fail benar-benar tersimpan dalam folder muat turun anda. Fail ini mengandungi semua rekod ahli, keluarga, pekerjaan, pendidikan dan majikan. Ia tidak mengandungi akaun, hash kata laluan atau sesi pentadbir.
+
+Fail sandaran **tidak disulitkan** dan mengandungi maklumat peribadi. Simpan di tempat selamat dan jangan muat naik ke GitHub atau kongsi secara terbuka. Salin sandaran ke pemacu lain supaya kerosakan external hard drive tidak memusnahkan data dan sandaran serentak. Had sandaran aplikasi ialah 10 MB / 20,000 rekod ahli. Untuk data melebihi had itu, hentikan pelayan dan sandarkan keseluruhan folder `data`.
+
+## Pemulihan melalui aplikasi
+
+1. Log masuk dan tekan **Pulihkan data**.
+2. Pilih fail JSON yang dimuat turun melalui fungsi Sandaran. Fail ZIP aplikasi atau fail SQLite tidak diterima oleh borang ini.
+3. Semak tarikh sandaran, bilangan ahli/keluarga dalam fail, dan bilangan rekod semasa yang akan digantikan. Pratonton tidak mengubah data dan tamat selepas 10 minit.
+4. Masukkan kata laluan pentadbir semasa dan taip **PULIHKAN**.
+5. Tekan **Gantikan data dan pulihkan**. Pemulihan menggantikan semua rekod ahli/keluarga; ia bukan penggabungan. Sandaran yang mempunyai sifar rekod akan mengosongkan direktori ahli.
+
+Sistem memeriksa format, versi, checksum, ID unik dan kesahan maklumat sebelum menerima fail. Checksum membantu mengesan kerosakan tetapi bukan tandatangan digital; gunakan fail daripada sumber yang dipercayai. Jika data semasa berubah selepas pratonton, fail mesti dipilih dan disemak semula.
+
+Sebelum menggantikan data, sistem menyimpan sandaran keadaan semasa dalam `data/backups/sebelum-pemulihan-….json`. Jika fail keselamatan tidak dapat ditulis, pemulihan tidak diteruskan. Penggantian data menggunakan satu transaksi supaya kegagalan penulisan tidak meninggalkan separuh rekod. Untuk membatalkan pemulihan yang telah berjaya, gunakan fungsi **Pulihkan data** dengan fail sebelum-pemulihan yang berkaitan.
+
+Kata laluan pentadbir semasa kekal selepas pemulihan. Sesi pentadbir lain ditamatkan supaya mereka log masuk semula. Sandaran JSON hanya memulihkan rekod komuniti; untuk memindahkan keseluruhan sistem termasuk akaun pentadbir, hentikan pelayan dan salin keseluruhan folder `data` seperti panduan terdahulu. Sandaran berjadual belum disediakan.

@@ -3,14 +3,14 @@ import { addressFields, malaysiaStates, postcodeSuggestions } from './address.js
 import { employmentStatuses, educationLevels, studyLevels } from './education.js';
 import { memberDetailFields, memberEducationLevels } from './member-details.js';
 const $ = selector => document.querySelector(selector);
-let members = [], editing = null;
+let members = [], editing = null, duplicateConfirmation = '', restorePreviewToken = '', fileSelection = 0;
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path, method='GET', data) {
   const response = await fetch(path,{method,headers:data ? {'Content-Type':'application/json'} : {},body:data ? JSON.stringify(data) : undefined});
   const result = await response.json();
   if (!response.ok) {
     if (response.status === 401 && path !== '/api/login') { members=[]; $('#results').replaceChildren(); $('#editor').close(); showLogin(); }
-    throw Error(result.error || 'Permintaan gagal.');
+    const error=Error(result.error || 'Permintaan gagal.'); error.details=result; throw error;
   }
   return result;
 }
@@ -20,7 +20,7 @@ function hidePassword() {
   $('#toggle-password').textContent='Tunjuk kata laluan';
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
-function showLogin() { hidePassword(); $('#login').hidden=false; $('#dashboard').hidden=true; $('#logout').hidden=true; }
+function showLogin() { hidePassword(); $('#restore-dialog').close(); resetRestore(); $('#login').hidden=false; $('#dashboard').hidden=true; $('#logout').hidden=true; }
 async function load() {
   members=await api('/api/members'); $('#login').hidden=true; $('#dashboard').hidden=false; $('#logout').hidden=false;
   $('#member-count').textContent=members.length; $('#family-count').textContent=members.reduce((n,m)=>n+m.household.length,0); render();
@@ -59,6 +59,7 @@ function familyField(person={}) {
 }
 function openEditor(member) {
   editing=member?.id ?? null; $('#member-form').reset(); $('#family-fields').replaceChildren(); $('#form-error').textContent='';
+  clearDuplicates();
   $('#editor-title').textContent=member ? 'Maklumat ahli & keluarga' : 'Daftar ahli baharu';
   if (member) { for (const key of ['name','phone','birthDate','gender','occupation',...addressFields,...memberDetailFields]) $('#member-form').elements[key].value=member[key] ?? ''; member.household.forEach(familyField); }
   updateMemberEducation();
@@ -108,10 +109,63 @@ $('#logout').onclick=async()=>{ try { await api('/api/logout','POST'); members=[
 $('#search').oninput=render; $('#add-member').onclick=()=>openEditor();
 $('#add-family').onclick=()=>{ if ($('#family-fields').children.length>=30) { $('#form-error').textContent='Maksimum 30 ahli keluarga.'; return; } familyField(); };
 $('#close-editor').onclick=$('#cancel-editor').onclick=()=>$('#editor').close();
+function clearDuplicates() { duplicateConfirmation=''; $('#duplicate-warning').hidden=true; $('#duplicate-list').replaceChildren(); }
+$('#member-form').addEventListener('input',clearDuplicates);
 $('#member-form').onsubmit=async event=>{
-  event.preventDefault(); $('#save-member').disabled=true; $('#form-error').textContent='';
+  event.preventDefault(); $('#save-member').disabled=true; $('#confirm-duplicate').disabled=true; $('#form-error').textContent='';
   const data=Object.fromEntries(new FormData(event.target));
   data.household=[...document.querySelectorAll('.family-row')].map(row=>Object.fromEntries([...row.querySelectorAll('[data-field]')].map(input=>[input.dataset.field,input.value])));
-  try { await api(editing ? `/api/members/${editing}` : '/api/members',editing ? 'PUT' : 'POST',data); $('#editor').close(); await load(); notice('Maklumat berjaya disimpan.'); } catch(e) { $('#form-error').textContent=e.message; } finally { $('#save-member').disabled=false; }
+  // Pengesahan hanya dihantar melalui butang khas, bukan butang Simpan biasa.
+  if(event.submitter?.id==='confirm-duplicate') data.duplicateConfirmation=duplicateConfirmation;
+  try { await api(editing ? `/api/members/${editing}` : '/api/members',editing ? 'PUT' : 'POST',data); $('#editor').close(); await load(); notice('Maklumat berjaya disimpan.'); } catch(e) {
+    $('#form-error').textContent=e.message;
+    if(e.details?.code==='DUPLICATE') {
+      duplicateConfirmation=e.details.confirmation;
+      $('#duplicate-list').innerHTML=e.details.matches.map(m=>`<li><b>${esc(m.name)}</b> · #${m.id} · ${esc(m.phone)} — ${esc(m.reasons.join(', '))}</li>`).join('');
+      $('#duplicate-warning').hidden=false;
+    }
+  } finally { $('#save-member').disabled=false; $('#confirm-duplicate').disabled=false; }
+};
+$('#backup').onclick=async()=>{
+  $('#backup').disabled=true;
+  try {
+    const backup=await api('/api/backup'), url=URL.createObjectURL(new Blob([JSON.stringify(backup)],{type:'application/json'}));
+    const link=document.createElement('a'); link.href=url; link.download=`myKampung-sandaran-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+    document.body.append(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000);
+    notice('Fail sandaran disediakan untuk dimuat turun. Simpan di lokasi selamat; fail mengandungi maklumat peribadi.');
+  } catch(error) { notice(error.message); } finally { $('#backup').disabled=false; }
+};
+function resetRestore() {
+  fileSelection++; restorePreviewToken=''; $('#restore-form').reset(); $('#restore-preview').hidden=true; $('#restore-summary').replaceChildren(); $('#restore-error').textContent='';
+  $('#restore-form').elements.password.required=false; $('#restore-form').elements.confirmation.required=false;
+}
+$('#open-restore').onclick=()=>{ resetRestore(); $('#restore-dialog').showModal(); };
+$('#close-restore').onclick=()=>{ $('#restore-dialog').close(); resetRestore(); };
+$('#restore-dialog').addEventListener('cancel',resetRestore);
+$('#restore-file').onchange=async event=>{
+  const selection=++fileSelection;
+  restorePreviewToken=''; $('#restore-preview').hidden=true; $('#restore-error').textContent='';
+  $('#restore-form').elements.password.value=''; $('#restore-form').elements.confirmation.value='';
+  const file=event.target.files[0]; if(!file) return;
+  try {
+    if(file.size>10*1024*1024) throw Error('Had saiz fail sandaran ialah 10 MB.');
+    const backup=JSON.parse(await file.text());
+    // Elakkan keputusan fail lama menggantikan pilihan fail baharu.
+    if(selection!==fileSelection) return;
+    const preview=await api('/api/restore/preview','POST',backup);
+    if(selection!==fileSelection || !$('#restore-dialog').open) return;
+    restorePreviewToken=preview.previewToken;
+    $('#restore-summary').textContent=`Sandaran: ${new Date(preview.createdAt).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur'})}. Mengandungi ${preview.records} ahli dan ${preview.family} ahli keluarga. ${preview.currentRecords} rekod ahli semasa akan digantikan.`;
+    $('#restore-preview').hidden=false; $('#restore-form').elements.password.required=true; $('#restore-form').elements.confirmation.required=true;
+  } catch(error) { if(selection===fileSelection) $('#restore-error').textContent=error instanceof SyntaxError ? 'Fail JSON tidak sah. Pilih fail sandaran myKampung.' : error.message; }
+};
+$('#restore-form').onsubmit=async event=>{
+  event.preventDefault(); if(!restorePreviewToken) return;
+  $('#restore-submit').disabled=true; $('#restore-error').textContent='';
+  const password=event.target.elements.password.value; event.target.elements.password.value='';
+  try {
+    const result=await api('/api/restore/confirm','POST',{previewToken:restorePreviewToken,password,confirmation:event.target.elements.confirmation.value});
+    $('#restore-dialog').close(); resetRestore(); await load(); notice(`${result.records} rekod ahli dipulihkan. Sandaran sebelum pemulihan disimpan dalam data/backups/${result.safetyBackup}.`);
+  } catch(error) { $('#restore-error').textContent=error.message; } finally { $('#restore-submit').disabled=false; }
 };
 try { await api('/api/session'); await load(); } catch(e) { showLogin(); if(e.message !== 'Sila log masuk.') notice(e.message); }
