@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-export const memberColumns = ['id','name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country','employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone','isActive','deactivatedAt','inactivityReason'];
+export const memberColumns = ['id','name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country','employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone','employerAddress1','employerAddress2','employerDistrict','employerPostcode','employerState','employerCountry','isActive','deactivatedAt','inactivityReason'];
 export const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const nameKey = value => value.normalize('NFKC').toLocaleLowerCase('ms').replace(/[^\p{L}\p{N}]/gu,'');
 const phoneKey = value => {

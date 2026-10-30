@@ -6,7 +6,7 @@ export function installFormState(root=document) {
   const messages={
     'login-form':'Sedang log masuk…', 'member-form':'Sedang menyimpan rekod…',
     'restore-form':'Sedang memulihkan data…', 'action-form':'Sedang memproses tindakan…',
-    'new-user-form':'Sedang mencipta akaun…', 'user-action-form':'Sedang menyimpan perubahan akaun…',
+    'new-user-form':'Sedang menyimpan pengguna baharu…', 'user-action-form':'Sedang menyimpan perubahan akaun…',
     'password-form':'Sedang menyimpan kata laluan…',
   };
   for(const form of root.querySelectorAll('form')) {
@@ -25,7 +25,7 @@ export function installFormState(root=document) {
         const pending=handler.call(form,event);
         for(const [control] of controls) control.disabled=true;
         if(button) button.textContent=status.textContent;
-        form.append(status);
+        form.prepend(status);
         await pending;
       } finally {
         for(const [control,disabled] of controls) control.disabled=disabled;

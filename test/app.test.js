@@ -51,6 +51,9 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     assert.equal(rows[0].employmentStatus,'');assert.equal(rows[0].employerName,'');
     assert.equal((await request(`/api/members/${id}`,'PUT',{...member,occupation:'Pesara'})).status,200);
     const structured={...member,occupation:'Pesara',address1:'No. 1, Jalan Ujian',address2:'Kampung Ujian',postcode:'05000',district:'Kota Setar',state:'Kedah',country:'Malaysia',employmentStatus:'Pesara',educationLevel:'Universiti',studyLevel:'Sarjana Muda',employerName:'Majikan Ujian',employerAddress:'Alamat majikan ujian',employerPhone:'0312345678'};
+    Object.assign(structured,{employerAddress1:'No. 2, Jalan Majikan',employerAddress2:'Taman Ujian',employerDistrict:'Kota Setar',employerPostcode:'05000',employerState:'Kedah',employerCountry:'Malaysia'});
+    structured.employerAddress='No. 2, Jalan Majikan\nTaman Ujian\n05000 Kota Setar\nKedah\nMalaysia';
+    assert.equal((await request(`/api/members/${id}`,'PUT',{...structured,employerPostcode:'5000'})).status,400);
     assert.equal((await request(`/api/members/${id}`,'PUT',{...structured,employmentStatus:'Pelajar',educationLevel:'',studyLevel:''})).status,400);
     assert.equal((await request(`/api/members/${id}`,'PUT',{...structured,employerPhone:'abc'})).status,400);
     structured.household=[{...member.household[0],employmentStatus:'Pelajar',educationLevel:'Universiti',studyLevel:'Diploma'}];
@@ -64,7 +67,7 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     result=await request('/api/login','POST',{password});cookie=result.headers.get('set-cookie').split(';')[0];
     rows=await (await request('/api/members')).json();assert.equal(rows[0].occupation,'Pesara');assert.deepEqual(rows[0].household,structured.household);
     for (const field of ['address1','address2','postcode','district','state','country']) assert.equal(rows[0][field],structured[field]);
-    for (const field of ['employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone']) assert.equal(rows[0][field],structured[field]);
+    for (const field of ['employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone','employerAddress1','employerAddress2','employerDistrict','employerPostcode','employerState','employerCountry']) assert.equal(rows[0][field],structured[field]);
     assert.match(rows[0].address,/05000 Kota Setar/);
     const working={...structured,household:[{...structured.household[0],employmentStatus:'Bekerja'}]};
     assert.equal((await request(`/api/members/${id}`,'PUT',working)).status,200);

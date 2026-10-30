@@ -33,3 +33,15 @@ export function migrateMemberStatus(db) {
     db.exec('COMMIT');
   } catch(error) { db.exec('ROLLBACK'); throw error; }
 }
+
+export function migrateEmployerAddress(db) {
+  const existing=new Set(db.prepare('PRAGMA table_info(members)').all().map(c=>c.name));
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    for(const column of ['employerAddress1','employerAddress2','employerDistrict','employerPostcode','employerState','employerCountry']) {
+      if(!existing.has(column)) db.exec(`ALTER TABLE members ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
+    }
+    if(!existing.has('employerAddress1')) db.exec('UPDATE members SET employerAddress1=employerAddress');
+    db.exec('COMMIT');
+  } catch(error) { db.exec('ROLLBACK');throw error; }
+}

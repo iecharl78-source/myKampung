@@ -185,3 +185,13 @@ Penunjuk kekuatan ialah anggaran berdasarkan panjang, kepelbagaian aksara dan be
 Semasa log masuk, menyimpan ahli/keluarga, mencipta akaun, mengubah kata laluan, mengurus status/pemadaman atau memulihkan data, butang tindakan memaparkan status seperti **Sedang menyimpan rekod…** dengan penunjuk proses. Medan, pilihan dan butang borang dikunci. Navigasi serta tindakan lain juga disekat sementara, termasuk Batal dan kekunci Escape untuk menutup dialog.
 
 Penghantaran berulang semasa permintaan yang sama diproses diabaikan. Apabila permintaan selesai atau gagal, borang dibuka semula; medan yang memang tidak berkenaan seperti tahap universiti tersembunyi kekal dilumpuhkan. Jika pelayan memberikan ralat, baca mesej dan betulkan maklumat sebelum mencuba lagi. Jangan tutup pelayar atau cabut pemacu semasa proses berjalan.
+
+Penunjuk proses kini berada di bahagian atas borang dan melekat ketika menatal borang panjang. Penguncian meliputi ketujuh-tujuh borang: **Log masuk, Maklumat ahli/keluarga, Tambah pengguna, Tukar kata laluan, Pengurusan akaun, Status/pemadaman ahli dan Pemulihan data**. Pada Tambah pengguna, butang memaparkan **Sedang menyimpan pengguna baharu…**; pada maklumat ahli, **Sedang menyimpan rekod…**. Permintaan yang selesai dengan cepat mungkin memaparkan penunjuk hanya seketika; sistem tidak melambatkan simpan secara sengaja.
+
+## Alamat majikan berasingan
+
+Alamat syarikat/majikan kini menggunakan **Alamat majikan 1, Alamat majikan 2, Daerah majikan, Poskod majikan, Negeri majikan dan Negara majikan**, sama seperti susunan alamat kediaman. Semua maklumat majikan kekal pilihan. Poskod Malaysia yang diisi mestilah 5 digit, termasuk sifar awal.
+
+Selepas daerah, negeri dan negara majikan diisi, cadangan poskod daripada alamat kediaman/majikan dalam rekod setempat boleh dipilih jika ada padanan. Semak alamat sebenar sebelum memilih; daerah/negeri sahaja tidak menentukan satu poskod. Boleh kosongkan poskod dan lengkapkan kemudian.
+
+Pangkalan data dinaik taraf secara automatik ketika pelayan dimulakan. Keseluruhan alamat majikan lama disalin ke **Alamat majikan 1**, tanpa meneka poskod atau negeri. Asingkan komponennya apabila mengemas kini rekod. Sandaran JSON versi lama masih boleh dipulihkan dan menggunakan kaedah yang sama. Sandarkan folder `data` sebelum mengemas kini aplikasi dan kekalkan folder itu ketika menggantikan fail program.

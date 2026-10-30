@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { migrateAddress, migrateMemberDetails, migrateMemberStatus } from './migrations.js';
+import { migrateAddress, migrateMemberDetails, migrateMemberStatus, migrateEmployerAddress } from './migrations.js';
 import { formatAddress } from './public/address.js';
 import { normalizeEducation } from './public/education.js';
 import { normalizeMemberDetails, memberDetailFields } from './public/member-details.js';
@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, 
 migrateAddress(db);
 migrateMemberDetails(db);
 migrateMemberStatus(db);
+migrateEmployerAddress(db);
 initializeAccounts(db,process.env.ADMIN_PASSWORD);
 const sessions = new Map(), attempts = new Map(), restorePreviews = new Map();
 const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)}));

@@ -90,9 +90,10 @@ function openEditor(member) {
   $('#editor-title').textContent=member ? 'Maklumat ahli & keluarga' : 'Daftar ahli baharu';
   $('#member-status-note').textContent=member?.isActive===0 ? `Ahli tidak aktif${member.deactivatedAt ? ' sejak '+new Date(member.deactivatedAt).toLocaleDateString('ms-MY',{timeZone:'Asia/Kuala_Lumpur'}) : ''}. ${member.inactivityReason || ''}` : '';
   $('#member-status-note').hidden=member?.isActive!==0;
-  if (member) { for (const key of ['name','phone','birthDate','gender','occupation',...addressFields,...memberDetailFields]) $('#member-form').elements[key].value=member[key] ?? ''; member.household.forEach(familyField); }
+  if (member) { for (const key of ['name','phone','birthDate','gender','occupation',...addressFields,...memberDetailFields.filter(field=>field!=='employerAddress')]) $('#member-form').elements[key].value=member[key] ?? ''; member.household.forEach(familyField); }
   updateMemberEducation();
   updatePostcodes();
+  updateEmployerPostcodes();
   $('#member-form').elements.birthDate.max=todayInMalaysia(); updateMemberAge(); $('#editor').showModal();
 }
 function updateMemberAge() { $('#member-age').textContent=ageLabel($('#member-form').elements.birthDate.value); }
@@ -122,6 +123,18 @@ function updatePostcodes() {
 $('#state-options').innerHTML=malaysiaStates.map(state=>`<option value="${esc(state)}"></option>`).join('');
 for (const key of ['district','state','country']) $('#member-form').elements[key].addEventListener('input',updatePostcodes);
 $('#postcode-options').onchange=event=>{ if(event.target.value) $('#member-form').elements.postcode.value=event.target.value; };
+function updateEmployerPostcodes() {
+  const fields=$('#member-form').elements;
+  const address={district:fields.employerDistrict.value,state:fields.employerState.value,country:fields.employerCountry.value};
+  const sources=[...members,...members.map(member=>({district:member.employerDistrict,state:member.employerState,country:member.employerCountry,postcode:member.employerPostcode}))];
+  const suggestions=postcodeSuggestions(sources,address),malaysia=address.country.trim().toLowerCase()==='malaysia';
+  $('#employer-postcode-options').innerHTML='<option value="">Pilih poskod untuk diisi…</option>'+suggestions.map(code=>`<option value="${code}">${code}</option>`).join('');
+  $('#employer-postcode-suggestions').hidden=!suggestions.length;
+  $('#employer-postcode-help').textContent=suggestions.length ? 'Cadangan berdasarkan rekod setempat bagi daerah dan negeri yang sama. Semak alamat majikan sebelum memilih.' : 'Poskod majikan boleh dikosongkan. Daerah/negeri sahaja tidak menentukan satu poskod; lengkapkan kemudian jika belum diketahui.';
+  fields.employerPostcode.pattern=malaysia?'[0-9]{5}':'.*';
+}
+for(const field of ['employerDistrict','employerState','employerCountry']) $('#member-form').elements[field].addEventListener('input',updateEmployerPostcodes);
+$('#employer-postcode-options').onchange=event=>{ if(event.target.value) $('#member-form').elements.employerPostcode.value=event.target.value; };
 $('#member-form').elements.birthDate.addEventListener('input',updateMemberAge);
 $('#toggle-password').onclick=()=>{
   const visible=$('#login-password').type==='password';
