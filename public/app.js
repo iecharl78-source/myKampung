@@ -1,4 +1,5 @@
 import { ageLabel, todayInMalaysia } from './age.js';
+import { addressFields, malaysiaStates, postcodeSuggestions } from './address.js';
 const $ = selector => document.querySelector(selector);
 let members = [], editing = null;
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -42,10 +43,22 @@ function familyField(person={}) {
 function openEditor(member) {
   editing=member?.id ?? null; $('#member-form').reset(); $('#family-fields').replaceChildren(); $('#form-error').textContent='';
   $('#editor-title').textContent=member ? 'Maklumat ahli & keluarga' : 'Daftar ahli baharu';
-  if (member) { for (const key of ['name','phone','birthDate','gender','occupation','address']) $('#member-form').elements[key].value=member[key]; member.household.forEach(familyField); }
+  if (member) { for (const key of ['name','phone','birthDate','gender','occupation',...addressFields]) $('#member-form').elements[key].value=member[key] ?? ''; member.household.forEach(familyField); }
+  updatePostcodes();
   $('#member-form').elements.birthDate.max=todayInMalaysia(); updateMemberAge(); $('#editor').showModal();
 }
 function updateMemberAge() { $('#member-age').textContent=ageLabel($('#member-form').elements.birthDate.value); }
+function updatePostcodes() {
+  const form=$('#member-form'), country=form.elements.country.value.trim().toLowerCase();
+  const suggestions=postcodeSuggestions(members,Object.fromEntries(addressFields.map(key=>[key,form.elements[key].value])));
+  $('#postcode-options').innerHTML='<option value="">Pilih poskod untuk diisi…</option>'+suggestions.map(code=>`<option value="${code}">${code}</option>`).join('');
+  $('#postcode-suggestions').hidden=!suggestions.length;
+  $('#postcode-help').textContent=country !== 'malaysia' ? 'Isi kod pos mengikut negara, atau kosongkan jika belum diketahui.' : suggestions.length ? 'Poskod di bawah pernah direkodkan untuk daerah dan negeri ini. Pilih hanya selepas menyemak alamat sebenar; ia mungkin berbeza mengikut kawasan.' : 'Belum ada cadangan setempat. Satu daerah atau negeri mempunyai banyak poskod. Boleh kosongkan dan lengkapkan kemudian.';
+  form.elements.postcode.pattern=country==='malaysia' ? '[0-9]{5}' : '.*';
+}
+$('#state-options').innerHTML=malaysiaStates.map(state=>`<option value="${esc(state)}"></option>`).join('');
+for (const key of ['district','state','country']) $('#member-form').elements[key].addEventListener('input',updatePostcodes);
+$('#postcode-options').onchange=event=>{ if(event.target.value) $('#member-form').elements.postcode.value=event.target.value; };
 $('#member-form').elements.birthDate.addEventListener('input',updateMemberAge);
 $('#toggle-password').onclick=()=>{
   const visible=$('#login-password').type==='password';

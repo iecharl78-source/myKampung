@@ -26,6 +26,7 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     const request=(path, method='GET', data, headers={})=>fetch(base+path,{method,headers:{'Content-Type':'application/json',Cookie:cookie,...headers},body:data===undefined?undefined:JSON.stringify(data)});
     const page=await request('/');assert.equal(page.status,200);assert.match(await page.text(),/lang="ms"/);
     const ageScript=await request('/age.js');assert.equal(ageScript.status,200);assert.match(ageScript.headers.get('content-type'),/javascript/);
+    assert.equal((await request('/address.js')).status,200);
     assert.equal((await request('/api/members')).status,401);
     assert.equal((await request('/api/login','POST',{password:'wrong'})).status,401);
     let result=await request('/api/login','POST',{password});assert.equal(result.status,200);cookie=result.headers.get('set-cookie').split(';')[0];
@@ -36,12 +37,19 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     assert.equal((await request('/api/members','POST',{...member,birthDate:'2025-02-30'})).status,400);
     result=await request('/api/members','POST',member);assert.equal(result.status,201);const {id}=await result.json();
     let rows=await (await request('/api/members')).json();assert.equal(rows.length,1);assert.deepEqual(rows[0].household,member.household);
+    assert.equal(rows[0].address1,member.address);
     assert.equal((await request(`/api/members/${id}`,'PUT',{...member,occupation:'Pesara'})).status,200);
+    const structured={...member,occupation:'Pesara',address1:'No. 1, Jalan Ujian',address2:'Kampung Ujian',postcode:'05000',district:'Kota Setar',state:'Kedah',country:'Malaysia'};
+    assert.equal((await request(`/api/members/${id}`,'PUT',{...structured,postcode:'5000'})).status,400);
+    assert.equal((await request(`/api/members/${id}`,'PUT',{...structured,postcode:''})).status,200);
+    assert.equal((await request(`/api/members/${id}`,'PUT',structured)).status,200);
     assert.equal((await request('/api/members/999','PUT',member)).status,404);
     await stop();base=await start();
     assert.equal((await request('/api/members')).status,401);
     result=await request('/api/login','POST',{password});cookie=result.headers.get('set-cookie').split(';')[0];
     rows=await (await request('/api/members')).json();assert.equal(rows[0].occupation,'Pesara');assert.deepEqual(rows[0].household,member.household);
+    for (const field of ['address1','address2','postcode','district','state','country']) assert.equal(rows[0][field],structured[field]);
+    assert.match(rows[0].address,/05000 Kota Setar/);
     assert.equal((await request('/api/logout','POST')).status,200);
     assert.equal((await request('/api/members')).status,401);
   } finally { if(child && child.exitCode===null) await stop();await rm(dir,{recursive:true,force:true}); }

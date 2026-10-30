@@ -4,6 +4,8 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { migrateAddress } from './migrations.js';
+import { formatAddress } from './public/address.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const data = process.env.DATA_DIR || join(root, 'data');
@@ -12,6 +14,7 @@ const db = new DatabaseSync(join(data, 'kampung.sqlite'));
 db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS admin (id INTEGER PRIMARY KEY CHECK(id=1), salt TEXT NOT NULL, hash TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, phone TEXT NOT NULL, birthDate TEXT NOT NULL DEFAULT '', gender TEXT NOT NULL DEFAULT '', occupation TEXT NOT NULL DEFAULT '', address TEXT NOT NULL, household TEXT NOT NULL, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL);`);
+migrateAddress(db);
 if (!db.prepare('SELECT id FROM admin').get() && process.env.ADMIN_PASSWORD) {
   if (process.env.ADMIN_PASSWORD.length < 12) throw Error('ADMIN_PASSWORD perlu sekurang-kurangnya 12 aksara.');
   const salt = randomBytes(16).toString('hex');
@@ -26,8 +29,15 @@ async function body(req) {
 }
 function validate(input) {
   const text = (v, max = 200) => { if (typeof v !== 'string' || v.length > max) throw Error('Maklumat tidak sah atau terlalu panjang.'); return v.trim(); };
-  const name = text(input.name), phone = text(input.phone, 30), address = text(input.address, 1000);
-  if (!name || !address || !/^[+\d\s()-]{7,30}$/.test(phone)) throw Error('Sila isi nama, alamat dan nombor telefon yang sah.');
+  const name = text(input.name), phone = text(input.phone, 30);
+  const addressParts = {
+    address1: text(input.address1 ?? input.address ?? '', 1000),
+    address2: text(input.address2 ?? '', 500), district: text(input.district ?? '', 100),
+    postcode: text(input.postcode ?? '', 20), state: text(input.state ?? '', 100), country: text(input.country ?? '', 100),
+  };
+  if (addressParts.postcode && addressParts.country.toLowerCase() === 'malaysia' && !/^\d{5}$/.test(addressParts.postcode)) throw Error('Sila masukkan poskod Malaysia 5 digit atau kosongkan jika belum diketahui.');
+  const address = formatAddress(addressParts);
+  if (!name || !addressParts.address1 || !/^[+\d\s()-]{7,30}$/.test(phone)) throw Error('Sila isi nama, alamat dan nombor telefon yang sah.');
   const date = value => { const s = text(value || '', 10); if (s && (!/^\d{4}-\d{2}-\d{2}$/.test(s) || !Number.isFinite(Date.parse(s)) || new Date(s).toISOString().slice(0,10) !== s || s > new Date().toISOString().slice(0,10))) throw Error('Tarikh lahir tidak sah.'); return s; };
   const gender = text(input.gender || '', 20);
   if (!['','Lelaki','Perempuan'].includes(gender)) throw Error('Jantina tidak sah.');
@@ -37,9 +47,9 @@ function validate(input) {
     if (!name || !['Pasangan','Anak','Ibu','Bapa','Penjaga','Lain-lain'].includes(relationship)) throw Error('Lengkapkan nama dan hubungan ahli keluarga.');
     return {name, relationship, birthDate: date(person.birthDate)};
   });
-  return {name, phone, address, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household};
+  return {name, phone, address, ...addressParts, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household};
 }
-const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -73,13 +83,13 @@ const server = http.createServer(async (req,res) => {
     if (path === '/api/members' && req.method === 'GET') return json(res,200,db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)})));
     if (path === '/api/members' && req.method === 'POST') {
       const m = validate(await body(req)), now = new Date().toISOString();
-      const result = db.prepare('INSERT INTO members (name,phone,birthDate,gender,occupation,address,household,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?)').run(m.name,m.phone,m.birthDate,m.gender,m.occupation,m.address,JSON.stringify(m.household),now,now);
+      const result = db.prepare('INSERT INTO members (name,phone,birthDate,gender,occupation,address,household,createdAt,updatedAt,address1,address2,district,postcode,state,country) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(m.name,m.phone,m.birthDate,m.gender,m.occupation,m.address,JSON.stringify(m.household),now,now,m.address1,m.address2,m.district,m.postcode,m.state,m.country);
       return json(res,201,{id:Number(result.lastInsertRowid)});
     }
     const match = path.match(/^\/api\/members\/(\d+)$/);
     if (match && req.method === 'PUT') {
       const m = validate(await body(req));
-      const result = db.prepare('UPDATE members SET name=?,phone=?,birthDate=?,gender=?,occupation=?,address=?,household=?,updatedAt=? WHERE id=?').run(m.name,m.phone,m.birthDate,m.gender,m.occupation,m.address,JSON.stringify(m.household),new Date().toISOString(),Number(match[1]));
+      const result = db.prepare('UPDATE members SET name=?,phone=?,birthDate=?,gender=?,occupation=?,address=?,household=?,updatedAt=?,address1=?,address2=?,district=?,postcode=?,state=?,country=? WHERE id=?').run(m.name,m.phone,m.birthDate,m.gender,m.occupation,m.address,JSON.stringify(m.household),new Date().toISOString(),m.address1,m.address2,m.district,m.postcode,m.state,m.country,Number(match[1]));
       return json(res,result.changes ? 200 : 404,result.changes ? {ok:true} : {error:'Rekod tidak ditemui.'});
     }
     return json(res,404,{error:'Halaman tidak ditemui.'});
