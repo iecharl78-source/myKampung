@@ -1,5 +1,6 @@
 import { ageLabel, todayInMalaysia } from './age.js';
 import { addressFields, malaysiaStates, postcodeSuggestions } from './address.js';
+import { employmentStatuses, educationLevels, studyLevels } from './education.js';
 const $ = selector => document.querySelector(selector);
 let members = [], editing = null;
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -33,6 +34,21 @@ function render() {
 function familyField(person={}) {
   const row=document.createElement('div'); row.className='family-row';
   row.innerHTML=`<label>Nama ahli keluarga<input data-field="name" maxlength="200" required value="${esc(person.name)}"></label><label>Hubungan<select data-field="relationship">${['Pasangan','Anak','Ibu','Bapa','Penjaga','Lain-lain'].map(v=>`<option ${v===person.relationship?'selected':''}>${v}</option>`).join('')}</select></label><label>Tarikh lahir<input type="date" data-field="birthDate" value="${esc(person.birthDate)}" max="${new Date().toISOString().slice(0,10)}"></label><button type="button" class="quiet remove-family" aria-label="Buang ahli keluarga">✕</button>`;
+  const options=(values,current)=>'<option value="">Sila pilih</option>'+values.map(value=>`<option ${value===current?'selected':''}>${esc(value)}</option>`).join('');
+  const details=document.createElement('div'); details.className='family-education';
+  details.innerHTML=`<label>Status pekerjaan *<select data-field="employmentStatus" required>${options(employmentStatuses,person.employmentStatus)}</select></label><label data-section="education" hidden>Tahap pendidikan *<select data-field="educationLevel">${options(educationLevels,person.educationLevel)}</select></label><label data-section="study" hidden>Tahap pengajian *<select data-field="studyLevel">${options(studyLevels,person.studyLevel)}</select></label>`;
+  row.append(details);
+  const status=details.querySelector('[data-field="employmentStatus"]'), education=details.querySelector('[data-field="educationLevel"]'), study=details.querySelector('[data-field="studyLevel"]');
+  const updateEducation=()=>{
+    const student=status.value==='Pelajar', university=student && education.value==='Universiti';
+    details.querySelector('[data-section="education"]').hidden=!student;
+    details.querySelector('[data-section="study"]').hidden=!university;
+    education.required=student; education.disabled=!student;
+    study.required=university; study.disabled=!university;
+    if (!student) education.value='';
+    if (!university) study.value='';
+  };
+  status.addEventListener('change',updateEducation); education.addEventListener('change',updateEducation); updateEducation();
   const birthDate=row.querySelector('[data-field="birthDate"]');
   birthDate.max=todayInMalaysia();
   const age=document.createElement('span'); age.className='age-display'; age.setAttribute('aria-live','polite');

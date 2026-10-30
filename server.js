@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { migrateAddress } from './migrations.js';
 import { formatAddress } from './public/address.js';
+import { normalizeEducation } from './public/education.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const data = process.env.DATA_DIR || join(root, 'data');
@@ -45,11 +46,11 @@ function validate(input) {
   const household = input.household.map(person => {
     const name = text(person.name), relationship = text(person.relationship, 30);
     if (!name || !['Pasangan','Anak','Ibu','Bapa','Penjaga','Lain-lain'].includes(relationship)) throw Error('Lengkapkan nama dan hubungan ahli keluarga.');
-    return {name, relationship, birthDate: date(person.birthDate)};
+    return {name, relationship, birthDate: date(person.birthDate), ...normalizeEducation(person)};
   });
   return {name, phone, address, ...addressParts, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household};
 }
-const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");

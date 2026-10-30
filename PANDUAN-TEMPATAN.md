@@ -74,3 +74,11 @@ Umur ahli dan keluarga dikira daripada tarikh lahir mengikut tarikh Malaysia dan
 Alamat kini diasingkan kepada **Alamat 1, Alamat 2, Daerah, Poskod, Negeri dan Negara**. Semasa pelayan versi baharu dimulakan, struktur pangkalan data dinaik taraf secara automatik. Keseluruhan alamat lama disalin ke Alamat 1 tanpa meneka poskod, daerah atau negeri. Buka rekod lama dan asingkan maklumat itu mengikut medan yang sesuai apabila diperlukan. Sandarkan folder `data` sebelum menaik taraf seperti arahan di atas.
 
 Poskod ialah pilihan; poskod Malaysia yang diisi mestilah 5 digit, termasuk sifar awal. Selepas daerah, negeri dan negara Malaysia diisi, sistem menunjukkan pilihan poskod yang pernah disimpan dalam rekod komuniti bagi padanan daerah/negeri itu. Pengguna mesti memilih dan menyemak sendiri; poskod tidak diisi hanya kerana negeri atau daerah dipilih, dan poskod sedia ada tidak ditukar apabila daerah/negeri ditukar. Cadangan ini bukan senarai rasmi atau lengkap seluruh Malaysia. Jika belum ada rekod setempat, kosongkan dahulu dan semak dengan penerima atau laman rasmi Pos Malaysia. Cadangan ini tersedia tanpa Internet, manakala pautan Pos Malaysia memerlukan Internet.
+
+## Status pekerjaan dan pendidikan ahli keluarga
+
+Setiap baris ahli keluarga kini mempunyai pilihan **Status pekerjaan**: Bekerja, Bekerja sendiri, Tidak bekerja, Suri rumah, Pesara, Pelajar atau Belum bersekolah. Rekod lama kekal dan statusnya belum dinyatakan; lengkapkannya semasa mengemas kini melalui borang.
+
+Jika **Pelajar** dipilih, **Tahap pendidikan** wajib dipilih: Universiti, Sekolah menengah, Sekolah rendah atau Taska/Tadika. Jika **Universiti** dipilih, pilih juga **Tahap pengajian**: Diploma, Sarjana Muda, Sarjana, Doktor Falsafah (PhD) atau Asasi. Ini merujuk kepada pengajian semasa, bukan kelayakan tertinggi yang pernah diperoleh.
+
+Apabila status ditukar daripada Pelajar, butiran pendidikan dibersihkan. Apabila tahap pendidikan ditukar daripada Universiti, tahap pengajian universiti dibersihkan. Tiada perubahan pada tarikh lahir, hubungan atau maklumat ahli keluarga lain.
