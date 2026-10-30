@@ -171,3 +171,17 @@ Menu **Sejarah tindakan** memaparkan masa Malaysia, nama pengguna, tindakan dan 
 Sejarah bermula apabila fungsi ini diaktifkan; tindakan versi lama tidak dicipta semula. Kandungan penuh profil, alamat, telefon, kata laluan dan hash kata laluan tidak disalin ke sejarah. Rekod ini ialah ringkasan tindakan, bukan perbandingan setiap medan sebelum/selepas atau log yang kebal daripada perubahan terus kepada fail pangkalan data.
 
 Sandaran JSON ahli tidak mengandungi akaun atau sejarah tindakan. Memulihkan fail JSON tidak menggantikan akaun atau memadam sejarah; pemulihan itu sendiri direkodkan. Untuk memindahkan keseluruhan sistem termasuk pengguna dan sejarah, hentikan pelayan dan salin keseluruhan folder `data` dengan selamat. Akses melalui telefon/komputer berlainan masih memerlukan persediaan rangkaian dan HTTPS seperti diterangkan sebelum ini.
+
+## Tunjuk kata laluan, cadangan dan tahap kekuatan
+
+Medan kata laluan pada borang tukar kata laluan sendiri, cipta akaun, tetapkan semula kata laluan, padam ahli dan pulihkan sandaran mempunyai butang **Tunjuk kata laluan / Sembunyi kata laluan**. Setiap medan boleh ditunjukkan secara berasingan, termasuk kata laluan semasa dan pengesahan. Kata laluan disembunyikan semula selepas borang dihantar atau ditetapkan semula.
+
+Medan kata laluan baharu mempunyai butang **Cadangkan kata laluan** dan penunjuk **Weak / Medium / Strong / Strongest**. Cadangan menggunakan penjana rawak kriptografi pelayar pada peranti sendiri, mengandungi 20 aksara dengan huruf besar/kecil, nombor dan simbol, dan tidak dihantar ke perkhidmatan luar. Pada borang tukar kata laluan sendiri, medan ulang kata laluan turut diisi dengan cadangan yang sama. Gunakan Tunjuk untuk menyemak dan simpan kata laluan dengan selamat sebelum menghantarnya. Cadangan memerlukan pelayar moden melalui localhost atau HTTPS; jika tidak tersedia, masukkan kata laluan sendiri.
+
+Penunjuk kekuatan ialah anggaran berdasarkan panjang, kepelbagaian aksara dan beberapa corak mudah, bukan semakan pangkalan data kebocoran atau jaminan keselamatan. Keperluan pelayan kekal minimum 12 aksara; penunjuk tidak memaksa pengguna menukar kata laluan sedia ada. Elakkan penggunaan semula kata laluan.
+
+## Penunjuk proses simpan dan pembekuan borang
+
+Semasa log masuk, menyimpan ahli/keluarga, mencipta akaun, mengubah kata laluan, mengurus status/pemadaman atau memulihkan data, butang tindakan memaparkan status seperti **Sedang menyimpan rekod…** dengan penunjuk proses. Medan, pilihan dan butang borang dikunci. Navigasi serta tindakan lain juga disekat sementara, termasuk Batal dan kekunci Escape untuk menutup dialog.
+
+Penghantaran berulang semasa permintaan yang sama diproses diabaikan. Apabila permintaan selesai atau gagal, borang dibuka semula; medan yang memang tidak berkenaan seperti tahap universiti tersembunyi kekal dilumpuhkan. Jika pelayan memberikan ralat, baca mesej dan betulkan maklumat sebelum mencuba lagi. Jangan tutup pelayar atau cabut pemacu semasa proses berjalan.

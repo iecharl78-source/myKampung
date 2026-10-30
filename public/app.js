@@ -2,6 +2,8 @@ import { ageLabel, todayInMalaysia } from './age.js';
 import { addressFields, malaysiaStates, postcodeSuggestions } from './address.js';
 import { employmentStatuses, educationLevels, studyLevels } from './education.js';
 import { memberDetailFields, memberEducationLevels } from './member-details.js';
+import { enhancePasswords } from './password-tools.js';
+import { installFormState } from './form-state.js';
 const $ = selector => document.querySelector(selector);
 let members = [], editing = null, duplicateConfirmation = '', restorePreviewToken = '', fileSelection = 0, memberAction = null;
 let currentUser=null, users=[], userAction=null, auditPage=1;
@@ -280,4 +282,8 @@ async function loadAudit() {
 $('#nav-audit').onclick=async()=>{ auditPage=1;try { await loadAudit();showPanel('audit-panel'); } catch(error) { notice(error.message); } };
 for(const [id,step] of [['audit-prev',-1],['audit-next',1],['audit-refresh',0]]) $('#'+id).onclick=async()=>{ auditPage=Math.max(1,auditPage+step);try { await loadAudit(); } catch(error) { notice(error.message); } };
 
+const refreshPasswords=enhancePasswords();
+document.addEventListener('submit',refreshPasswords,true);
+document.addEventListener('form-idle',refreshPasswords,true);
+installFormState();
 try { await load(); } catch(e) { showLogin(); if(e.message !== 'Sila log masuk.') notice(e.message); }

@@ -75,7 +75,7 @@ function validate(input) {
   const inactivityReason=isActive===0 ? text(input.inactivityReason ?? '',500) : '';
   return {name, phone, address, ...addressParts, ...normalizeMemberDetails(input), birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
