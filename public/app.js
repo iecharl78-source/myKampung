@@ -1,6 +1,7 @@
 import { ageLabel, todayInMalaysia } from './age.js';
 import { addressFields, malaysiaStates, postcodeSuggestions } from './address.js';
 import { employmentStatuses, educationLevels, studyLevels } from './education.js';
+import { memberDetailFields, memberEducationLevels } from './member-details.js';
 const $ = selector => document.querySelector(selector);
 let members = [], editing = null;
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -59,11 +60,27 @@ function familyField(person={}) {
 function openEditor(member) {
   editing=member?.id ?? null; $('#member-form').reset(); $('#family-fields').replaceChildren(); $('#form-error').textContent='';
   $('#editor-title').textContent=member ? 'Maklumat ahli & keluarga' : 'Daftar ahli baharu';
-  if (member) { for (const key of ['name','phone','birthDate','gender','occupation',...addressFields]) $('#member-form').elements[key].value=member[key] ?? ''; member.household.forEach(familyField); }
+  if (member) { for (const key of ['name','phone','birthDate','gender','occupation',...addressFields,...memberDetailFields]) $('#member-form').elements[key].value=member[key] ?? ''; member.household.forEach(familyField); }
+  updateMemberEducation();
   updatePostcodes();
   $('#member-form').elements.birthDate.max=todayInMalaysia(); updateMemberAge(); $('#editor').showModal();
 }
 function updateMemberAge() { $('#member-age').textContent=ageLabel($('#member-form').elements.birthDate.value); }
+const selectOptions=values=>'<option value="">Sila pilih</option>'+values.map(value=>`<option>${esc(value)}</option>`).join('');
+$('#member-form').elements.employmentStatus.innerHTML=selectOptions(employmentStatuses);
+$('#member-form').elements.educationLevel.innerHTML=selectOptions(memberEducationLevels);
+$('#member-form').elements.studyLevel.innerHTML=selectOptions(studyLevels);
+function updateMemberEducation() {
+  const form=$('#member-form'), student=form.elements.employmentStatus.value==='Pelajar', university=form.elements.educationLevel.value==='Universiti';
+  $('#member-education-label').textContent=student ? 'Tahap pendidikan semasa *' : 'Tahap pendidikan tertinggi';
+  form.elements.educationLevel.required=student;
+  for (const option of form.elements.educationLevel.options) if(option.value==='Tiada pendidikan formal') option.disabled=student;
+  if (student && form.elements.educationLevel.value==='Tiada pendidikan formal') form.elements.educationLevel.value='';
+  $('#member-study-section').hidden=!university;
+  form.elements.studyLevel.disabled=!university; form.elements.studyLevel.required=university;
+  if (!university) form.elements.studyLevel.value='';
+}
+for (const key of ['employmentStatus','educationLevel']) $('#member-form').elements[key].addEventListener('change',updateMemberEducation);
 function updatePostcodes() {
   const form=$('#member-form'), country=form.elements.country.value.trim().toLowerCase();
   const suggestions=postcodeSuggestions(members,Object.fromEntries(addressFields.map(key=>[key,form.elements[key].value])));

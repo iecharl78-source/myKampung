@@ -4,9 +4,10 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { migrateAddress } from './migrations.js';
+import { migrateAddress, migrateMemberDetails } from './migrations.js';
 import { formatAddress } from './public/address.js';
 import { normalizeEducation } from './public/education.js';
+import { normalizeMemberDetails, memberDetailFields } from './public/member-details.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const data = process.env.DATA_DIR || join(root, 'data');
@@ -16,6 +17,7 @@ db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS admin (id INTEGER PRIMARY KEY CHECK(id=1), salt TEXT NOT NULL, hash TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, phone TEXT NOT NULL, birthDate TEXT NOT NULL DEFAULT '', gender TEXT NOT NULL DEFAULT '', occupation TEXT NOT NULL DEFAULT '', address TEXT NOT NULL, household TEXT NOT NULL, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL);`);
 migrateAddress(db);
+migrateMemberDetails(db);
 if (!db.prepare('SELECT id FROM admin').get() && process.env.ADMIN_PASSWORD) {
   if (process.env.ADMIN_PASSWORD.length < 12) throw Error('ADMIN_PASSWORD perlu sekurang-kurangnya 12 aksara.');
   const salt = randomBytes(16).toString('hex');
@@ -48,9 +50,9 @@ function validate(input) {
     if (!name || !['Pasangan','Anak','Ibu','Bapa','Penjaga','Lain-lain'].includes(relationship)) throw Error('Lengkapkan nama dan hubungan ahli keluarga.');
     return {name, relationship, birthDate: date(person.birthDate), ...normalizeEducation(person)};
   });
-  return {name, phone, address, ...addressParts, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household};
+  return {name, phone, address, ...addressParts, ...normalizeMemberDetails(input), birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household};
 }
-const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -84,13 +86,17 @@ const server = http.createServer(async (req,res) => {
     if (path === '/api/members' && req.method === 'GET') return json(res,200,db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)})));
     if (path === '/api/members' && req.method === 'POST') {
       const m = validate(await body(req)), now = new Date().toISOString();
-      const result = db.prepare('INSERT INTO members (name,phone,birthDate,gender,occupation,address,household,createdAt,updatedAt,address1,address2,district,postcode,state,country) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(m.name,m.phone,m.birthDate,m.gender,m.occupation,m.address,JSON.stringify(m.household),now,now,m.address1,m.address2,m.district,m.postcode,m.state,m.country);
+      const columns = ['name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country',...memberDetailFields];
+      const record = {...m,household:JSON.stringify(m.household),createdAt:now,updatedAt:now};
+      const result = db.prepare(`INSERT INTO members (${columns.join(',')}) VALUES (${columns.map(()=>'?').join(',')})`).run(...columns.map(key=>record[key]));
       return json(res,201,{id:Number(result.lastInsertRowid)});
     }
     const match = path.match(/^\/api\/members\/(\d+)$/);
     if (match && req.method === 'PUT') {
       const m = validate(await body(req));
-      const result = db.prepare('UPDATE members SET name=?,phone=?,birthDate=?,gender=?,occupation=?,address=?,household=?,updatedAt=?,address1=?,address2=?,district=?,postcode=?,state=?,country=? WHERE id=?').run(m.name,m.phone,m.birthDate,m.gender,m.occupation,m.address,JSON.stringify(m.household),new Date().toISOString(),m.address1,m.address2,m.district,m.postcode,m.state,m.country,Number(match[1]));
+      const columns = ['name','phone','birthDate','gender','occupation','address','household','updatedAt','address1','address2','district','postcode','state','country',...memberDetailFields];
+      const record = {...m,household:JSON.stringify(m.household),updatedAt:new Date().toISOString()};
+      const result = db.prepare(`UPDATE members SET ${columns.map(key=>`${key}=?`).join(',')} WHERE id=?`).run(...columns.map(key=>record[key]),Number(match[1]));
       return json(res,result.changes ? 200 : 404,result.changes ? {ok:true} : {error:'Rekod tidak ditemui.'});
     }
     return json(res,404,{error:'Halaman tidak ditemui.'});

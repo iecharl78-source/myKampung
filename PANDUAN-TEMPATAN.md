@@ -82,3 +82,11 @@ Setiap baris ahli keluarga kini mempunyai pilihan **Status pekerjaan**: Bekerja,
 Jika **Pelajar** dipilih, **Tahap pendidikan** wajib dipilih: Universiti, Sekolah menengah, Sekolah rendah atau Taska/Tadika. Jika **Universiti** dipilih, pilih juga **Tahap pengajian**: Diploma, Sarjana Muda, Sarjana, Doktor Falsafah (PhD) atau Asasi. Ini merujuk kepada pengajian semasa, bukan kelayakan tertinggi yang pernah diperoleh.
 
 Apabila status ditukar daripada Pelajar, butiran pendidikan dibersihkan. Apabila tahap pendidikan ditukar daripada Universiti, tahap pengajian universiti dibersihkan. Tiada perubahan pada tarikh lahir, hubungan atau maklumat ahli keluarga lain.
+
+## Pekerjaan, pendidikan dan majikan ahli utama
+
+Borang ahli utama mempunyai **Status pekerjaan**, **Pekerjaan / jawatan**, **Tahap pendidikan** dan **Tahap pengajian universiti**. Untuk ahli berstatus Pelajar, isi tahap pendidikan semasa. Untuk ahli lain, tahap pendidikan tertinggi boleh direkodkan walaupun sudah bekerja atau bersara. Pendidikan ahli utama dikekalkan apabila status berubah daripada Pelajar kepada Bekerja. Tahap pengajian universiti wajib jika Universiti dipilih, dan dibersihkan jika tahap pendidikan bertukar kepada sekolah atau pilihan lain.
+
+Maklumat majikan terdiri daripada **Nama syarikat / majikan**, **Alamat syarikat / majikan** dan **No. telefon syarikat / majikan**. Semua medan ini pilihan dan boleh dikosongkan jika tiada maklumat. Maklumat yang telah diisi tidak dipadam apabila status pekerjaan ditukar; kemas kini atau kosongkan sendiri jika tidak lagi berkenaan.
+
+Pelayan menambah medan baharu ke pangkalan data secara automatik ketika dimulakan selepas kemas kini. Teks pekerjaan lama, data keluarga dan rekod lain dikekalkan. Status pekerjaan, pendidikan dan butiran majikan bagi rekod lama dibiarkan kosong untuk dilengkapkan, bukan diteka daripada pekerjaan lama. Sandarkan folder `data` sebelum mengemas kini.

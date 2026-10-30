@@ -11,3 +11,14 @@ export function migrateAddress(db) {
     db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
 }
+
+export function migrateMemberDetails(db) {
+  const existing = new Set(db.prepare('PRAGMA table_info(members)').all().map(c => c.name));
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    for (const column of ['employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone']) {
+      if (!existing.has(column)) db.exec(`ALTER TABLE members ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
+    }
+    db.exec('COMMIT');
+  } catch (error) { db.exec('ROLLBACK'); throw error; }
+}
