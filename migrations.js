@@ -22,3 +22,14 @@ export function migrateMemberDetails(db) {
     db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
 }
+
+export function migrateMemberStatus(db) {
+  const existing=new Set(db.prepare('PRAGMA table_info(members)').all().map(c=>c.name));
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if(!existing.has('isActive')) db.exec('ALTER TABLE members ADD COLUMN isActive INTEGER NOT NULL DEFAULT 1 CHECK(isActive IN (0,1))');
+    if(!existing.has('deactivatedAt')) db.exec("ALTER TABLE members ADD COLUMN deactivatedAt TEXT NOT NULL DEFAULT ''");
+    if(!existing.has('inactivityReason')) db.exec("ALTER TABLE members ADD COLUMN inactivityReason TEXT NOT NULL DEFAULT ''");
+    db.exec('COMMIT');
+  } catch(error) { db.exec('ROLLBACK'); throw error; }
+}

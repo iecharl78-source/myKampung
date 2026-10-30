@@ -4,7 +4,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { migrateAddress, migrateMemberDetails } from './migrations.js';
+import { migrateAddress, migrateMemberDetails, migrateMemberStatus } from './migrations.js';
 import { formatAddress } from './public/address.js';
 import { normalizeEducation } from './public/education.js';
 import { normalizeMemberDetails, memberDetailFields } from './public/member-details.js';
@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS admin (id INTEGER PRIMARY KEY CHECK(id=1), salt TEXT 
 CREATE TABLE IF NOT EXISTS members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, phone TEXT NOT NULL, birthDate TEXT NOT NULL DEFAULT '', gender TEXT NOT NULL DEFAULT '', occupation TEXT NOT NULL DEFAULT '', address TEXT NOT NULL, household TEXT NOT NULL, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL);`);
 migrateAddress(db);
 migrateMemberDetails(db);
+migrateMemberStatus(db);
 if (!db.prepare('SELECT id FROM admin').get() && process.env.ADMIN_PASSWORD) {
   if (process.env.ADMIN_PASSWORD.length < 12) throw Error('ADMIN_PASSWORD perlu sekurang-kurangnya 12 aksara.');
   const salt = randomBytes(16).toString('hex');
@@ -26,6 +27,16 @@ if (!db.prepare('SELECT id FROM admin').get() && process.env.ADMIN_PASSWORD) {
 }
 const sessions = new Map(), attempts = new Map(), restorePreviews = new Map();
 const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)}));
+function safetySnapshot(prefix) {
+  const backupDir=join(data,'backups'); mkdirSync(backupDir,{recursive:true,mode:0o700});
+  const filename=`${prefix}-${Date.now()}-${randomBytes(4).toString('hex')}.json`;
+  writeFileSync(join(backupDir,filename),JSON.stringify(createBackup(allMembers())),{mode:0o600,flag:'wx'});
+  return filename;
+}
+function correctPassword(password) {
+  const admin=db.prepare('SELECT * FROM admin').get();
+  return typeof password==='string' && password.length<=1000 && timingSafeEqual(scryptSync(password,admin.salt,64),Buffer.from(admin.hash,'hex'));
+}
 function duplicateWarning(res, member, input, excludedId) {
   const matches=duplicateMatches(member,allMembers(),excludedId);
   const confirmation=digest({member,matches});
@@ -62,7 +73,12 @@ function validate(input) {
     if (!name || !['Pasangan','Anak','Ibu','Bapa','Penjaga','Lain-lain'].includes(relationship)) throw Error('Lengkapkan nama dan hubungan ahli keluarga.');
     return {name, relationship, birthDate: date(person.birthDate), ...normalizeEducation(person)};
   });
-  return {name, phone, address, ...addressParts, ...normalizeMemberDetails(input), birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household};
+  const isActive=input.isActive ?? 1;
+  if(isActive!==0 && isActive!==1) throw Error('Maklumat status ahli tidak sah.');
+  const deactivatedAt=isActive===0 ? text(input.deactivatedAt ?? '',50) : '';
+  if(deactivatedAt && !Number.isFinite(Date.parse(deactivatedAt))) throw Error('Tarikh nyahaktif tidak sah.');
+  const inactivityReason=isActive===0 ? text(input.inactivityReason ?? '',500) : '';
+  return {name, phone, address, ...addressParts, ...normalizeMemberDetails(input), birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
 const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
@@ -112,16 +128,13 @@ const server = http.createServer(async (req,res) => {
     if (path === '/api/restore/confirm' && req.method === 'POST') {
       const input=await body(req), preview=restorePreviews.get(token);
       if (!preview || preview.expires<Date.now() || preview.previewToken!==input.previewToken) return json(res,409,{error:'Pratonton tamat atau tidak sah. Pilih fail sandaran semula.'});
-      const admin=db.prepare('SELECT * FROM admin').get();
-      if (typeof input.password!=='string' || input.password.length>1000 || !timingSafeEqual(scryptSync(input.password,admin.salt,64),Buffer.from(admin.hash,'hex'))) {
+      if (!correctPassword(input.password)) {
         restorePreviews.delete(token);
         return json(res,400,{error:'Kata laluan tidak tepat. Pilih fail semula untuk mencuba.'});
       }
       if (input.confirmation!=='PULIHKAN') return json(res,400,{error:'Sila taip PULIHKAN untuk mengesahkan penggantian data.'});
       if (digest(allMembers())!==preview.current) { restorePreviews.delete(token); return json(res,409,{error:'Data telah berubah sejak pratonton. Pilih fail semula untuk menyemak keadaan terkini.'}); }
-      const backupDir=join(data,'backups'); mkdirSync(backupDir,{recursive:true,mode:0o700});
-      const safetyBackup=`sebelum-pemulihan-${Date.now()}-${randomBytes(4).toString('hex')}.json`;
-      writeFileSync(join(backupDir,safetyBackup),JSON.stringify(createBackup(allMembers())),{mode:0o600,flag:'wx'});
+      const safetyBackup=safetySnapshot('sebelum-pemulihan');
       db.exec('BEGIN IMMEDIATE');
       try {
         db.exec('DELETE FROM members');
@@ -142,6 +155,26 @@ const server = http.createServer(async (req,res) => {
       return json(res,201,{id:Number(result.lastInsertRowid)});
     }
     const match = path.match(/^\/api\/members\/(\d+)$/);
+    const statusMatch=path.match(/^\/api\/members\/(\d+)\/status$/);
+    if(statusMatch && req.method==='POST') {
+      const input=await body(req), row=db.prepare('SELECT * FROM members WHERE id=?').get(Number(statusMatch[1]));
+      if(!row) return json(res,404,{error:'Rekod tidak ditemui.'});
+      if(input.expectedUpdatedAt!==row.updatedAt) return json(res,409,{error:'Rekod telah berubah. Muat semula direktori dan cuba lagi.'});
+      if(typeof input.active!=='boolean' || typeof input.reason!=='string' || input.reason.length>500) return json(res,400,{error:'Maklumat status ahli tidak sah.'});
+      const now=new Date().toISOString(), isActive=input.active?1:0;
+      if(row.isActive!==isActive) db.prepare('UPDATE members SET isActive=?,deactivatedAt=?,inactivityReason=?,updatedAt=? WHERE id=?').run(isActive,isActive?'':now,isActive?'':input.reason.trim(),now,row.id);
+      return json(res,200,{ok:true});
+    }
+    if(match && req.method==='DELETE') {
+      const input=await body(req), row=db.prepare('SELECT * FROM members WHERE id=?').get(Number(match[1]));
+      if(!row) return json(res,404,{error:'Rekod tidak ditemui.'});
+      if(input.expectedUpdatedAt!==row.updatedAt || input.expectedName!==row.name) return json(res,409,{error:'Rekod telah berubah. Muat semula direktori dan semak semula sebelum memadam.'});
+      if(input.confirmation!=='PADAM') return json(res,400,{error:'Sila taip PADAM untuk mengesahkan pemadaman ahli dan keluarga.'});
+      if(!correctPassword(input.password)) return json(res,400,{error:'Kata laluan pentadbir tidak tepat.'});
+      const safetyBackup=safetySnapshot('sebelum-padam');
+      db.prepare('DELETE FROM members WHERE id=?').run(row.id);
+      return json(res,200,{ok:true,safetyBackup});
+    }
     if (match && req.method === 'PUT') {
       const input=await body(req), m = validate(input);
       if(!db.prepare('SELECT id FROM members WHERE id=?').get(Number(match[1]))) return json(res,404,{error:'Rekod tidak ditemui.'});

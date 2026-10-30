@@ -3,7 +3,7 @@ import { addressFields, malaysiaStates, postcodeSuggestions } from './address.js
 import { employmentStatuses, educationLevels, studyLevels } from './education.js';
 import { memberDetailFields, memberEducationLevels } from './member-details.js';
 const $ = selector => document.querySelector(selector);
-let members = [], editing = null, duplicateConfirmation = '', restorePreviewToken = '', fileSelection = 0;
+let members = [], editing = null, duplicateConfirmation = '', restorePreviewToken = '', fileSelection = 0, memberAction = null;
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path, method='GET', data) {
   const response = await fetch(path,{method,headers:data ? {'Content-Type':'application/json'} : {},body:data ? JSON.stringify(data) : undefined});
@@ -20,16 +20,21 @@ function hidePassword() {
   $('#toggle-password').textContent='Tunjuk kata laluan';
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
-function showLogin() { hidePassword(); $('#restore-dialog').close(); resetRestore(); $('#login').hidden=false; $('#dashboard').hidden=true; $('#logout').hidden=true; }
+function showLogin() { hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore(); $('#login').hidden=false; $('#dashboard').hidden=true; $('#logout').hidden=true; }
 async function load() {
   members=await api('/api/members'); $('#login').hidden=true; $('#dashboard').hidden=false; $('#logout').hidden=false;
-  $('#member-count').textContent=members.length; $('#family-count').textContent=members.reduce((n,m)=>n+m.household.length,0); render();
+  const active=members.filter(m=>m.isActive===1);
+  $('#member-count').textContent=active.length; $('#inactive-count').textContent=members.length-active.length;
+  $('#family-count').textContent=active.reduce((n,m)=>n+m.household.length,0); render();
 }
 function render() {
   const query=$('#search').value.trim().toLocaleLowerCase('ms');
-  const rows=members.filter(m=>[m.name,m.phone,m.address].join(' ').toLocaleLowerCase('ms').includes(query));
-  $('#results').innerHTML=rows.length ? `<div class="table-wrap"><table><thead><tr><th>AHLI KOMUNITI</th><th>HUBUNGI</th><th>ALAMAT</th><th>KELUARGA</th><th><span class="sr-only">Tindakan</span></th></tr></thead><tbody>${rows.map(m=>`<tr><td><div class="person"><span class="avatar">${esc(m.name.charAt(0).toUpperCase())}</span><div><b>${esc(m.name)}</b><small>Ahli #${String(m.id).padStart(4,'0')} · ${esc(ageLabel(m.birthDate))}</small></div></div></td><td>${esc(m.phone)}</td><td class="address">${esc(m.address)}</td><td><span class="badge">${m.household.length} orang</span></td><td><button class="edit quiet" data-id="${m.id}">Lihat / edit ↗</button></td></tr>`).join('')}</tbody></table></div><div class="table-footer">${rows.length} daripada ${members.length} rekod ahli</div>` : `<div class="empty"><span>⌂</span><h3>${query ? 'Tiada rekod dijumpai' : 'Mulakan dengan ahli pertama'}</h3><p>${query ? 'Cuba nama, telefon atau alamat yang lain.' : 'Daftarkan ahli komuniti dan maklumat keluarga mereka.'}</p>${query ? '' : '<button class="secondary" id="empty-add">＋ Daftar ahli pertama</button>'}</div>`;
+  const filter=$('#status-filter').value;
+  const rows=members.filter(m=>(filter==='all' || m.isActive===(filter==='active'?1:0)) && [m.name,m.phone,m.address].join(' ').toLocaleLowerCase('ms').includes(query));
+  $('#results').innerHTML=rows.length ? `<div class="table-wrap"><table><thead><tr><th>AHLI KOMUNITI</th><th>HUBUNGI</th><th>ALAMAT</th><th>KELUARGA</th><th>STATUS</th><th><span class="sr-only">Tindakan</span></th></tr></thead><tbody>${rows.map(m=>`<tr><td><div class="person"><span class="avatar">${esc(m.name.charAt(0).toUpperCase())}</span><div><b>${esc(m.name)}</b><small>Ahli #${String(m.id).padStart(4,'0')} · ${esc(ageLabel(m.birthDate))}</small></div></div></td><td>${esc(m.phone)}</td><td class="address">${esc(m.address)}</td><td><span class="badge">${m.household.length} orang</span></td><td><span class="badge ${m.isActive===0?'inactive-badge':''}">${m.isActive===1?'Aktif':'Tidak aktif'}</span></td><td><div class="row-actions"><button class="edit quiet" data-id="${m.id}">Lihat / edit ↗</button><button class="member-status-action quiet" data-id="${m.id}">${m.isActive===1?'Nyahaktif':'Aktifkan semula'}</button><button class="member-delete-action quiet" data-id="${m.id}">Padam</button></div></td></tr>`).join('')}</tbody></table></div><div class="table-footer">${rows.length} daripada ${members.length} rekod ahli</div>` : `<div class="empty"><span>⌂</span><h3>${members.length ? 'Tiada rekod untuk carian atau status ini' : 'Mulakan dengan ahli pertama'}</h3><p>${members.length ? 'Cuba carian lain atau pilih status Semua.' : 'Daftarkan ahli komuniti dan maklumat keluarga mereka.'}</p>${members.length ? '' : '<button class="secondary" id="empty-add">＋ Daftar ahli pertama</button>'}</div>`;
   document.querySelectorAll('.edit').forEach(b=>b.onclick=()=>openEditor(members.find(m=>m.id===Number(b.dataset.id))));
+  document.querySelectorAll('.member-status-action').forEach(b=>b.onclick=()=>openMemberAction('status',members.find(m=>m.id===Number(b.dataset.id))));
+  document.querySelectorAll('.member-delete-action').forEach(b=>b.onclick=()=>openMemberAction('delete',members.find(m=>m.id===Number(b.dataset.id))));
   if ($('#empty-add')) $('#empty-add').onclick=()=>openEditor();
 }
 function familyField(person={}) {
@@ -61,6 +66,8 @@ function openEditor(member) {
   editing=member?.id ?? null; $('#member-form').reset(); $('#family-fields').replaceChildren(); $('#form-error').textContent='';
   clearDuplicates();
   $('#editor-title').textContent=member ? 'Maklumat ahli & keluarga' : 'Daftar ahli baharu';
+  $('#member-status-note').textContent=member?.isActive===0 ? `Ahli tidak aktif${member.deactivatedAt ? ' sejak '+new Date(member.deactivatedAt).toLocaleDateString('ms-MY',{timeZone:'Asia/Kuala_Lumpur'}) : ''}. ${member.inactivityReason || ''}` : '';
+  $('#member-status-note').hidden=member?.isActive!==0;
   if (member) { for (const key of ['name','phone','birthDate','gender','occupation',...addressFields,...memberDetailFields]) $('#member-form').elements[key].value=member[key] ?? ''; member.household.forEach(familyField); }
   updateMemberEducation();
   updatePostcodes();
@@ -107,6 +114,7 @@ $('#login-form').onsubmit=async event=>{
 };
 $('#logout').onclick=async()=>{ try { await api('/api/logout','POST'); members=[]; $('#results').replaceChildren(); showLogin(); notice('Anda telah log keluar.'); } catch(e) { notice(e.message); } };
 $('#search').oninput=render; $('#add-member').onclick=()=>openEditor();
+$('#status-filter').onchange=render;
 $('#add-family').onclick=()=>{ if ($('#family-fields').children.length>=30) { $('#form-error').textContent='Maksimum 30 ahli keluarga.'; return; } familyField(); };
 $('#close-editor').onclick=$('#cancel-editor').onclick=()=>$('#editor').close();
 function clearDuplicates() { duplicateConfirmation=''; $('#duplicate-warning').hidden=true; $('#duplicate-list').replaceChildren(); }
@@ -121,7 +129,7 @@ $('#member-form').onsubmit=async event=>{
     $('#form-error').textContent=e.message;
     if(e.details?.code==='DUPLICATE') {
       duplicateConfirmation=e.details.confirmation;
-      $('#duplicate-list').innerHTML=e.details.matches.map(m=>`<li><b>${esc(m.name)}</b> · #${m.id} · ${esc(m.phone)} — ${esc(m.reasons.join(', '))}</li>`).join('');
+      $('#duplicate-list').innerHTML=e.details.matches.map(m=>`<li><b>${esc(m.name)}</b> · #${m.id} · ${esc(m.phone)} · ${m.isActive===0?'Tidak aktif':'Aktif'} — ${esc(m.reasons.join(', '))}</li>`).join('');
       $('#duplicate-warning').hidden=false;
     }
   } finally { $('#save-member').disabled=false; $('#confirm-duplicate').disabled=false; }
@@ -168,4 +176,32 @@ $('#restore-form').onsubmit=async event=>{
     $('#restore-dialog').close(); resetRestore(); await load(); notice(`${result.records} rekod ahli dipulihkan. Sandaran sebelum pemulihan disimpan dalam data/backups/${result.safetyBackup}.`);
   } catch(error) { $('#restore-error').textContent=error.message; } finally { $('#restore-submit').disabled=false; }
 };
+
+
+function resetMemberAction() { memberAction=null; $('#action-form').reset(); $('#action-error').textContent=''; }
+function openMemberAction(type, member) {
+  resetMemberAction(); memberAction={type,member};
+  const deleting=type==='delete', activating=member.isActive===0;
+  $('#action-title').textContent=deleting ? 'Padam rekod ahli' : activating ? 'Aktifkan semula ahli' : 'Nyahaktif ahli';
+  $('#action-summary').textContent=`${member.name} · Ahli #${member.id} · ${member.phone}`;
+  $('#action-description').textContent=deleting ? `Rekod ahli ini dan ${member.household.length} ahli keluarga di bawahnya akan dipadam daripada sistem. Rekod ahli lain tidak terjejas. Gunakan Nyahaktif jika ahli hanya berpindah. Sandaran sebelum pemadaman disimpan secara automatik.` : activating ? 'Ahli dan isi rumah ini akan dikira semula dalam statistik aktif. Maklumat sedia ada dikekalkan.' : 'Ahli dan isi rumah ini tidak lagi dikira dalam statistik aktif. Semua maklumat kekal dan boleh dicari melalui penapis Tidak aktif atau Semua.';
+  $('#action-delete-fields').hidden=!deleting; $('#action-reason-section').hidden=deleting || activating;
+  $('#action-form').elements.password.required=deleting; $('#action-form').elements.confirmation.required=deleting;
+  $('#action-submit').textContent=deleting ? 'Padam ahli dan keluarga' : activating ? 'Aktifkan semula' : 'Nyahaktif ahli';
+  $('#action-submit').className=deleting?'danger':'primary'; $('#action-dialog').showModal();
+}
+$('#close-action').onclick=$('#cancel-action').onclick=()=>{ $('#action-dialog').close(); resetMemberAction(); };
+$('#action-dialog').addEventListener('cancel',resetMemberAction);
+$('#action-form').onsubmit=async event=>{
+  event.preventDefault(); if(!memberAction) return;
+  const {type,member}=memberAction, form=event.target;
+  $('#action-submit').disabled=true; $('#action-error').textContent='';
+  const password=form.elements.password.value; form.elements.password.value='';
+  try {
+    const result=type==='delete' ? await api(`/api/members/${member.id}`,'DELETE',{expectedUpdatedAt:member.updatedAt,expectedName:member.name,confirmation:form.elements.confirmation.value,password}) : await api(`/api/members/${member.id}/status`,'POST',{expectedUpdatedAt:member.updatedAt,active:member.isActive===0,reason:form.elements.reason.value});
+    $('#action-dialog').close(); resetMemberAction(); await load();
+    notice(type==='delete' ? `Rekod dipadam. Sandaran keselamatan: data/backups/${result.safetyBackup}.` : member.isActive===0 ? 'Ahli telah diaktifkan semula.' : 'Ahli telah dinyahaktifkan. Rekod kekal di bawah penapis Tidak aktif.');
+  } catch(error) { $('#action-error').textContent=error.message; } finally { $('#action-submit').disabled=false; }
+};
+
 try { await api('/api/session'); await load(); } catch(e) { showLogin(); if(e.message !== 'Sila log masuk.') notice(e.message); }

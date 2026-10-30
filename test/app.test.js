@@ -34,6 +34,8 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     assert.equal((await request('/api/members')).status,401);
     assert.equal((await request('/api/backup')).status,401);
     assert.equal((await request('/api/restore/preview','POST',{})).status,401);
+    assert.equal((await request('/api/members/1','DELETE',{})).status,401);
+    assert.equal((await request('/api/members/1/status','POST',{})).status,401);
     assert.equal((await request('/api/login','POST',{password:'wrong'})).status,401);
     let result=await request('/api/login','POST',{password});assert.equal(result.status,200);cookie=result.headers.get('set-cookie').split(';')[0];
     assert.match(result.headers.get('set-cookie'),/HttpOnly/);
@@ -112,6 +114,49 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     await stop();base=await start();
     result=await request('/api/login','POST',{password});assert.equal(result.status,200);cookie=result.headers.get('set-cookie').split(';')[0];
     assert.deepEqual(await (await request('/api/members')).json(),before);
+    // Nyahaktif mengekalkan keluarga dan disimpan merentas mula semula.
+    let current=before.find(row=>row.id===id);
+    const statusInput={expectedUpdatedAt:current.updatedAt,active:false,reason:'Berpindah keluar kampung'};
+    assert.equal((await request(`/api/members/${id}/status`,'POST',{...statusInput,active:'false'})).status,400);
+    assert.equal((await request(`/api/members/${id}/status`,'POST',{...statusInput,expectedUpdatedAt:'stale'})).status,409);
+    assert.equal((await request(`/api/members/${id}/status`,'POST',statusInput,{Origin:'https://other.example'})).status,403);
+    assert.equal((await request(`/api/members/${id}/status`,'POST',statusInput)).status,200);
+    rows=await (await request('/api/members')).json();current=rows.find(row=>row.id===id);
+    assert.equal(current.isActive,0);assert.equal(current.inactivityReason,statusInput.reason);assert.ok(current.deactivatedAt);assert.deepEqual(current.household,before.find(row=>row.id===id).household);
+    // Mengedit maklumat biasa tidak mengaktifkan semula ahli secara tidak sengaja.
+    assert.equal((await request(`/api/members/${id}`,'PUT',{...current,name:'Ahli Berpindah',phone:'0188888888',isActive:1})).status,200);
+    current=(await (await request('/api/members')).json()).find(row=>row.id===id);assert.equal(current.isActive,0);
+    const inactiveBackup=await (await request('/api/backup')).json();
+    assert.equal(inactiveBackup.members.find(row=>row.id===id).isActive,0);
+    assert.equal((await request('/api/restore/preview','POST',createBackup([{...current,isActive:7}]))).status,400);
+    await stop();base=await start();
+    result=await request('/api/login','POST',{password});cookie=result.headers.get('set-cookie').split(';')[0];
+    current=(await (await request('/api/members')).json()).find(row=>row.id===id);assert.equal(current.isActive,0);
+    assert.equal((await request(`/api/members/${id}/status`,'POST',{expectedUpdatedAt:current.updatedAt,active:true,reason:''})).status,200);
+    current=(await (await request('/api/members')).json()).find(row=>row.id===id);
+    assert.equal(current.isActive,1);assert.equal(current.deactivatedAt,'');assert.equal(current.inactivityReason,'');
+    const deleteInput={expectedUpdatedAt:current.updatedAt,expectedName:current.name,confirmation:'PADAM',password};
+    assert.equal((await request(`/api/members/${id}`,'DELETE',{...deleteInput,password:'wrong'})).status,400);
+    assert.equal((await request(`/api/members/${id}`,'DELETE',{...deleteInput,confirmation:'SALAH'})).status,400);
+    assert.equal((await request(`/api/members/${id}`,'DELETE',{...deleteInput,expectedUpdatedAt:'stale'})).status,409);
+    assert.equal((await request(`/api/members/${id}`,'DELETE',deleteInput,{Origin:'https://other.example'})).status,403);
+    const beforeDelete=await (await request('/api/members')).json();assert.equal(beforeDelete.length,2);
+    const deletion=await request(`/api/members/${id}`,'DELETE',deleteInput);assert.equal(deletion.status,200);
+    const deletionBackup=(await deletion.json()).safetyBackup;
+    assert.deepEqual(JSON.parse(await readFile(join(dir,'backups',deletionBackup),'utf8')).members,beforeDelete);
+    rows=await (await request('/api/members')).json();assert.equal(rows.length,1);assert.equal(rows[0].id,studentId);
+    assert.deepEqual(rows[0],beforeDelete.find(row=>row.id===studentId));
+    assert.equal((await request(`/api/members/${id}`,'DELETE',deleteInput)).status,404);
+    assert.equal((await request(`/api/members/${id}/status`,'POST',statusInput)).status,404);
+    // Pemulihan mengembalikan status tidak aktif, termasuk sebab dan keluarga.
+    preview=await (await request('/api/restore/preview','POST',inactiveBackup)).json();
+    assert.equal((await request('/api/restore/confirm','POST',{previewToken:preview.previewToken,password,confirmation:'PULIHKAN'})).status,200);
+    current=(await (await request('/api/members')).json()).find(row=>row.id===id);
+    assert.equal(current.isActive,0);assert.equal(current.inactivityReason,statusInput.reason);
+    const legacyBackup=createBackup(inactiveBackup.members.map(row=>{const {isActive,deactivatedAt,inactivityReason,...legacy}=row;return legacy;}));
+    preview=await (await request('/api/restore/preview','POST',legacyBackup)).json();
+    assert.equal((await request('/api/restore/confirm','POST',{previewToken:preview.previewToken,password,confirmation:'PULIHKAN'})).status,200);
+    assert.ok((await (await request('/api/members')).json()).every(row=>row.isActive===1));
     assert.equal((await request('/api/logout','POST')).status,200);
     assert.equal((await request('/api/members')).status,401);
   } finally { if(child && child.exitCode===null) await stop();await rm(dir,{recursive:true,force:true}); }

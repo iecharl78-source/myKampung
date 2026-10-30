@@ -116,3 +116,17 @@ Sistem memeriksa format, versi, checksum, ID unik dan kesahan maklumat sebelum m
 Sebelum menggantikan data, sistem menyimpan sandaran keadaan semasa dalam `data/backups/sebelum-pemulihan-….json`. Jika fail keselamatan tidak dapat ditulis, pemulihan tidak diteruskan. Penggantian data menggunakan satu transaksi supaya kegagalan penulisan tidak meninggalkan separuh rekod. Untuk membatalkan pemulihan yang telah berjaya, gunakan fungsi **Pulihkan data** dengan fail sebelum-pemulihan yang berkaitan.
 
 Kata laluan pentadbir semasa kekal selepas pemulihan. Sesi pentadbir lain ditamatkan supaya mereka log masuk semula. Sandaran JSON hanya memulihkan rekod komuniti; untuk memindahkan keseluruhan sistem termasuk akaun pentadbir, hentikan pelayan dan salin keseluruhan folder `data` seperti panduan terdahulu. Sandaran berjadual belum disediakan.
+
+## Nyahaktif, aktifkan semula dan padam ahli
+
+Setiap baris direktori mempunyai butang **Nyahaktif** (atau **Aktifkan semula** untuk ahli tidak aktif) dan **Padam**. Fungsi ini hanya boleh digunakan selepas log masuk pentadbir.
+
+**Nyahaktif** sesuai apabila ahli berpindah keluar kampung. Tekan butang itu, masukkan sebab jika diketahui dan sahkan. Tarikh nyahaktif direkodkan secara automatik; nama, alamat, pekerjaan, pendidikan, majikan dan semua maklumat keluarga kekal. Ahli serta tanggungan dalam isi rumahnya tidak lagi dikira dalam statistik aktif. Ini menukar status keseluruhan rekod isi rumah; jika hanya seorang tanggungan berpindah, kemas kini maklumat keluarga yang berkenaan secara berasingan.
+
+Direktori memaparkan ahli **Aktif** secara lalai. Gunakan penapis **Tidak aktif** atau **Semua** untuk mencari ahli yang dinyahaktifkan. Maklumat sebab dan tarikh boleh dilihat melalui **Lihat / edit**. Tekan **Aktifkan semula** dan sahkan untuk mengembalikannya kepada statistik aktif. Sebab dan tarikh nyahaktif semasa dibersihkan ketika diaktifkan semula; sejarah perubahan status belum disediakan. Mengedit profil biasa tidak menukar status aktif.
+
+**Padam** sesuai untuk rekod yang tersilap didaftarkan. Semak nama, ID dan nombor telefon yang dipaparkan, masukkan kata laluan pentadbir semasa dan taip **PADAM**. Pengesahan membuang rekod ahli serta semua tanggungan dalam rekodnya daripada pangkalan data semasa. Rekod ahli utama lain tidak terjejas. Tekan **Batal** jika tidak pasti atau gunakan Nyahaktif untuk ahli yang berpindah.
+
+Sebelum memadam, sistem menyimpan sandaran keseluruhan rekod semasa dalam `data/backups/sebelum-padam-….json`. Jika sandaran gagal disimpan, pemadaman tidak diteruskan. Fail sandaran itu masih mengandungi rekod yang dipadam dan perlu dilindungi seperti sandaran lain. Jika perlu memulihkannya melalui **Pulihkan data**, ingat bahawa pemulihan menggantikan keseluruhan direktori, termasuk perubahan lain yang berlaku selepas sandaran; semak dan sandarkan data terkini dahulu.
+
+Rekod lama ditandakan aktif secara automatik ketika menaik taraf. Status tidak aktif, sebab dan tarikh disertakan dalam sandaran versi semasa. Jika sandaran daripada versi lama yang belum mempunyai status dipulihkan, ahli di dalamnya dianggap aktif. Semakan pendua turut melibatkan ahli tidak aktif supaya ahli yang kembali boleh diaktifkan semula tanpa perlu mendaftar semula.

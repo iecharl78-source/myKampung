@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-export const memberColumns = ['id','name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country','employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone'];
+export const memberColumns = ['id','name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country','employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone','isActive','deactivatedAt','inactivityReason'];
 export const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const nameKey = value => value.normalize('NFKC').toLocaleLowerCase('ms').replace(/[^\p{L}\p{N}]/gu,'');
 const phoneKey = value => {
@@ -14,7 +14,7 @@ export function duplicateMatches(member, records, excludedId) {
     const reasons=[];
     if (nameKey(row.name)===nameKey(member.name)) reasons.push('Nama sama');
     if (phoneKey(row.phone)===phoneKey(member.phone)) reasons.push('Nombor telefon sama');
-    return reasons.length ? [{id:row.id,name:row.name,phone:row.phone,updatedAt:row.updatedAt,reasons}] : [];
+    return reasons.length ? [{id:row.id,name:row.name,phone:row.phone,updatedAt:row.updatedAt,isActive:row.isActive ?? 1,reasons}] : [];
   });
 }
 export function createBackup(members) {
