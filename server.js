@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,22 +9,18 @@ import { formatAddress } from './public/address.js';
 import { normalizeEducation } from './public/education.js';
 import { normalizeMemberDetails, memberDetailFields } from './public/member-details.js';
 import { memberColumns, digest, duplicateMatches, createBackup, readBackup } from './data-tools.js';
+import { initializeAccounts, publicUser, verifyPassword, audit, withAudit, accountRoutes } from './accounts.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const data = process.env.DATA_DIR || join(root, 'data');
 mkdirSync(data, { recursive: true, mode: 0o700 });
 const db = new DatabaseSync(join(data, 'kampung.sqlite'));
 db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
-CREATE TABLE IF NOT EXISTS admin (id INTEGER PRIMARY KEY CHECK(id=1), salt TEXT NOT NULL, hash TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, phone TEXT NOT NULL, birthDate TEXT NOT NULL DEFAULT '', gender TEXT NOT NULL DEFAULT '', occupation TEXT NOT NULL DEFAULT '', address TEXT NOT NULL, household TEXT NOT NULL, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL);`);
 migrateAddress(db);
 migrateMemberDetails(db);
 migrateMemberStatus(db);
-if (!db.prepare('SELECT id FROM admin').get() && process.env.ADMIN_PASSWORD) {
-  if (process.env.ADMIN_PASSWORD.length < 12) throw Error('ADMIN_PASSWORD perlu sekurang-kurangnya 12 aksara.');
-  const salt = randomBytes(16).toString('hex');
-  db.prepare('INSERT INTO admin VALUES (1,?,?)').run(salt, scryptSync(process.env.ADMIN_PASSWORD, salt, 64).toString('hex'));
-}
+initializeAccounts(db,process.env.ADMIN_PASSWORD);
 const sessions = new Map(), attempts = new Map(), restorePreviews = new Map();
 const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)}));
 function safetySnapshot(prefix) {
@@ -33,9 +29,8 @@ function safetySnapshot(prefix) {
   writeFileSync(join(backupDir,filename),JSON.stringify(createBackup(allMembers())),{mode:0o600,flag:'wx'});
   return filename;
 }
-function correctPassword(password) {
-  const admin=db.prepare('SELECT * FROM admin').get();
-  return typeof password==='string' && password.length<=1000 && timingSafeEqual(scryptSync(password,admin.salt,64),Buffer.from(admin.hash,'hex'));
+function revokeSessions(userId) {
+  for(const [key,session] of sessions) if(session.userId===userId) { sessions.delete(key);restorePreviews.delete(key); }
 }
 function duplicateWarning(res, member, input, excludedId) {
   const matches=duplicateMatches(member,allMembers(),excludedId);
@@ -94,27 +89,36 @@ const server = http.createServer(async (req,res) => {
       if (attempts.size > 10000) for (const [k,v] of attempts) if (v.until < now) attempts.delete(k);
       const rate = attempts.get(key);
       if (rate && rate.until > now && rate.count >= 5) return json(res,429,{error:'Terlalu banyak percubaan. Cuba lagi selepas 15 minit.'});
-      const input = await body(req), admin = db.prepare('SELECT * FROM admin').get();
-      if (!admin) return json(res,503,{error:'Pentadbir belum disediakan. Tetapkan ADMIN_PASSWORD pada pelayan.'});
+      const input = await body(req);
+      if(!db.prepare('SELECT id FROM users LIMIT 1').get()) return json(res,503,{error:'Pentadbir belum disediakan. Tetapkan ADMIN_PASSWORD pada pelayan.'});
+      const username=typeof input.username==='string' ? input.username.trim().toLowerCase() : 'admin';
+      const user=db.prepare('SELECT * FROM users WHERE username=?').get(username);
       const password = typeof input.password === 'string' && input.password.length <= 1000 ? input.password : '';
-      if (!timingSafeEqual(scryptSync(password,admin.salt,64),Buffer.from(admin.hash,'hex'))) {
+      if (!verifyPassword(user,password) || user.isActive!==1) {
         attempts.set(key,{count:rate && rate.until > now ? rate.count+1 : 1,until:rate && rate.until > now ? rate.until : now+900000});
-        return json(res,401,{error:'Kata laluan tidak tepat.'});
+        return json(res,401,{error:'Nama pengguna atau kata laluan tidak tepat, atau akaun tidak aktif.'});
       }
       attempts.delete(key);
-      for (const [k,v] of sessions) if (v < now) sessions.delete(k);
-      const token = randomBytes(32).toString('hex'); sessions.set(token,now+8*3600000);
+      for (const [k,v] of sessions) if (v.expires < now) sessions.delete(k);
+      const token = randomBytes(32).toString('hex'); sessions.set(token,{userId:user.id,expires:now+8*3600000});
       res.setHeader('Set-Cookie',`session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${process.env.COOKIE_SECURE === '1' ? '; Secure' : ''}`);
-      return json(res,200,{ok:true});
+      audit(db,user,'Log masuk','akaun',user.id);
+      return json(res,200,{ok:true,user:publicUser(user)});
     }
     const token = (req.headers.cookie || '').split(';').map(x=>x.trim()).find(x=>x.startsWith('session='))?.slice(8);
-    if (!token || (sessions.get(token) || 0) <= Date.now()) return json(res,401,{error:'Sila log masuk.'});
-    if (path === '/api/session' && req.method === 'GET') return json(res,200,{ok:true});
-    if (path === '/api/logout' && req.method === 'POST') { sessions.delete(token); restorePreviews.delete(token); res.setHeader('Set-Cookie','session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); return json(res,200,{ok:true}); }
+    const session=sessions.get(token);
+    const user=session && session.expires>Date.now() ? db.prepare('SELECT * FROM users WHERE id=? AND isActive=1').get(session.userId) : null;
+    if(!user) { if(token) { sessions.delete(token);restorePreviews.delete(token); } return json(res,401,{error:'Sila log masuk.'}); }
+    if (path === '/api/session' && req.method === 'GET') return json(res,200,{ok:true,user:publicUser(user)});
+    if(await accountRoutes({req,res,path,user,db,json,body,revokeSessions})) return;
+    const adminOnly=path==='/api/backup' || path.startsWith('/api/restore/') || req.method==='DELETE';
+    if(adminOnly && user.role!=='admin') return json(res,403,{error:'Akses ini terhad kepada pentadbir.'});
+    if (path === '/api/logout' && req.method === 'POST') { audit(db,user,'Log keluar','akaun',user.id); sessions.delete(token); restorePreviews.delete(token); res.setHeader('Set-Cookie','session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); return json(res,200,{ok:true}); }
     if (path === '/api/members' && req.method === 'GET') return json(res,200,allMembers());
     if (path === '/api/backup' && req.method === 'GET') {
       res.setHeader('Content-Disposition',`attachment; filename="myKampung-sandaran-${new Date().toISOString().replace(/[:.]/g,'-')}.json"`);
-      return json(res,200,createBackup(allMembers()));
+      const backup=createBackup(allMembers());audit(db,user,'Muat turun sandaran','sistem','');
+      return json(res,200,backup);
     }
     if (path === '/api/restore/preview' && req.method === 'POST') {
       restorePreviews.delete(token);
@@ -128,7 +132,7 @@ const server = http.createServer(async (req,res) => {
     if (path === '/api/restore/confirm' && req.method === 'POST') {
       const input=await body(req), preview=restorePreviews.get(token);
       if (!preview || preview.expires<Date.now() || preview.previewToken!==input.previewToken) return json(res,409,{error:'Pratonton tamat atau tidak sah. Pilih fail sandaran semula.'});
-      if (!correctPassword(input.password)) {
+      if (!verifyPassword(user,input.password)) {
         restorePreviews.delete(token);
         return json(res,400,{error:'Kata laluan tidak tepat. Pilih fail semula untuk mencuba.'});
       }
@@ -140,6 +144,7 @@ const server = http.createServer(async (req,res) => {
         db.exec('DELETE FROM members');
         const insert=db.prepare(`INSERT INTO members (${memberColumns.join(',')}) VALUES (${memberColumns.map(()=>'?').join(',')})`);
         for(const member of preview.records) insert.run(...memberColumns.map(key=>key==='household'?JSON.stringify(member.household):member[key]));
+        audit(db,user,'Pulihkan sandaran','sistem','',`${preview.records.length} rekod ahli`);
         db.exec('COMMIT');
       } catch(error) { db.exec('ROLLBACK'); throw error; }
       restorePreviews.clear();
@@ -151,7 +156,7 @@ const server = http.createServer(async (req,res) => {
       if(duplicateWarning(res,m,input)) return;
       const columns = ['name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country',...memberDetailFields];
       const record = {...m,household:JSON.stringify(m.household),createdAt:now,updatedAt:now};
-      const result = db.prepare(`INSERT INTO members (${columns.join(',')}) VALUES (${columns.map(()=>'?').join(',')})`).run(...columns.map(key=>record[key]));
+      const result = withAudit(db,user,'Daftar ahli','ahli',null,()=>db.prepare(`INSERT INTO members (${columns.join(',')}) VALUES (${columns.map(()=>'?').join(',')})`).run(...columns.map(key=>record[key])));
       return json(res,201,{id:Number(result.lastInsertRowid)});
     }
     const match = path.match(/^\/api\/members\/(\d+)$/);
@@ -162,7 +167,7 @@ const server = http.createServer(async (req,res) => {
       if(input.expectedUpdatedAt!==row.updatedAt) return json(res,409,{error:'Rekod telah berubah. Muat semula direktori dan cuba lagi.'});
       if(typeof input.active!=='boolean' || typeof input.reason!=='string' || input.reason.length>500) return json(res,400,{error:'Maklumat status ahli tidak sah.'});
       const now=new Date().toISOString(), isActive=input.active?1:0;
-      if(row.isActive!==isActive) db.prepare('UPDATE members SET isActive=?,deactivatedAt=?,inactivityReason=?,updatedAt=? WHERE id=?').run(isActive,isActive?'':now,isActive?'':input.reason.trim(),now,row.id);
+      if(row.isActive!==isActive) withAudit(db,user,isActive?'Aktifkan ahli':'Nyahaktif ahli','ahli',row.id,()=>db.prepare('UPDATE members SET isActive=?,deactivatedAt=?,inactivityReason=?,updatedAt=? WHERE id=?').run(isActive,isActive?'':now,isActive?'':input.reason.trim(),now,row.id));
       return json(res,200,{ok:true});
     }
     if(match && req.method==='DELETE') {
@@ -170,9 +175,9 @@ const server = http.createServer(async (req,res) => {
       if(!row) return json(res,404,{error:'Rekod tidak ditemui.'});
       if(input.expectedUpdatedAt!==row.updatedAt || input.expectedName!==row.name) return json(res,409,{error:'Rekod telah berubah. Muat semula direktori dan semak semula sebelum memadam.'});
       if(input.confirmation!=='PADAM') return json(res,400,{error:'Sila taip PADAM untuk mengesahkan pemadaman ahli dan keluarga.'});
-      if(!correctPassword(input.password)) return json(res,400,{error:'Kata laluan pentadbir tidak tepat.'});
+      if(!verifyPassword(user,input.password)) return json(res,400,{error:'Kata laluan pentadbir tidak tepat.'});
       const safetyBackup=safetySnapshot('sebelum-padam');
-      db.prepare('DELETE FROM members WHERE id=?').run(row.id);
+      withAudit(db,user,'Padam ahli','ahli',row.id,()=>db.prepare('DELETE FROM members WHERE id=?').run(row.id));
       return json(res,200,{ok:true,safetyBackup});
     }
     if (match && req.method === 'PUT') {
@@ -181,10 +186,10 @@ const server = http.createServer(async (req,res) => {
       if(duplicateWarning(res,m,input,Number(match[1]))) return;
       const columns = ['name','phone','birthDate','gender','occupation','address','household','updatedAt','address1','address2','district','postcode','state','country',...memberDetailFields];
       const record = {...m,household:JSON.stringify(m.household),updatedAt:new Date().toISOString()};
-      const result = db.prepare(`UPDATE members SET ${columns.map(key=>`${key}=?`).join(',')} WHERE id=?`).run(...columns.map(key=>record[key]),Number(match[1]));
+      const result = withAudit(db,user,'Kemas kini ahli / keluarga','ahli',Number(match[1]),()=>db.prepare(`UPDATE members SET ${columns.map(key=>`${key}=?`).join(',')} WHERE id=?`).run(...columns.map(key=>record[key]),Number(match[1])));
       return json(res,result.changes ? 200 : 404,result.changes ? {ok:true} : {error:'Rekod tidak ditemui.'});
     }
     return json(res,404,{error:'Halaman tidak ditemui.'});
-  } catch (e) { return json(res,400,{error:e.message === 'Format data tidak sah.' || /^(Data|Maklumat|Sila|Tarikh|Jantina|Maksimum|Lengkapkan|Format|Semakan)/.test(e.message) ? e.message : 'Permintaan gagal. Sila cuba lagi.'}); }
+  } catch (e) { return json(res,400,{error:e.message === 'Format data tidak sah.' || /^(Data|Maklumat|Sila|Tarikh|Jantina|Maksimum|Lengkapkan|Format|Semakan|Kata laluan)/.test(e.message) ? e.message : 'Permintaan gagal. Sila cuba lagi.'}); }
 });
 server.listen(Number(process.env.PORT || 3000),process.env.HOST || '127.0.0.1',()=>console.log(`myKampung berjalan pada port ${server.address().port}`));

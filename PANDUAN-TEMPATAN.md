@@ -39,7 +39,7 @@ Jika terminal menggunakan zsh, jalankan `bash` dahulu sebelum arahan di atas.
 
 Apabila terminal memaparkan `myKampung berjalan pada port 3000`, buka pelayar pada komputer yang sama dan taip `http://127.0.0.1:3000` dalam bar alamat.
 
-1. Log masuk menggunakan kata laluan yang baru ditetapkan.
+1. Log masuk menggunakan nama pengguna **admin** dan kata laluan yang baru ditetapkan. Untuk pemasangan versi lama, kata laluan asal dikekalkan selepas kemas kini.
 2. Tekan **Daftar ahli** dan gunakan maklumat rekaan dahulu.
 3. Masukkan nama, telefon dan alamat. Tambah ahli keluarga jika perlu.
 4. Tekan **Simpan maklumat**. Semak rekod dalam direktori.
@@ -138,3 +138,36 @@ Semakan ketika menyimpan kini meliputi nama ahli keluarga yang sama dalam borang
 Amaran memaparkan kedudukan baris ahli keluarga dan isi rumah yang berkaitan. Jika kedua-dua tarikh lahir tersedia, sistem menyatakan sama ada tarikhnya sama atau berbeza. Nama sama dengan tarikh lahir berbeza atau kosong masih diberi amaran untuk semakan, bukan diputuskan sebagai orang yang sama. Nama dibandingkan tanpa perbezaan huruf besar/kecil, ruang atau tanda baca. Jika benar-benar individu berbeza, gunakan **Simpan sebagai rekod berasingan** selepas menyemak. Menukar maklumat borang atau memadam baris keluarga membatalkan pengesahan amaran lama.
 
 Setiap baris keluarga mempunyai butang **Padam**. Tekan butang itu dan sahkan nama yang ingin dibuang. Tekan **Simpan maklumat** pada borang ahli untuk menyimpan pemadaman. Menekan Batal pada pengesahan mengekalkan baris; menutup atau membatalkan borang sebelum menyimpan tidak memadam rekod dalam pangkalan data. Ini hanya membuang tanggungan tersebut daripada isi rumah yang sedang diedit, bukan memadam ahli utama atau rekod dalam isi rumah lain. Bilangan keluarga dikemas kini selepas simpan. Buat sandaran melalui butang Sandaran sebelum perubahan penting jika perlu dipulihkan kemudian.
+
+## Akaun pentadbir dan petugas
+
+Selepas kemas kini ini, akaun pentadbir lama menjadi nama pengguna **admin**. Kata laluan sedia ada dan semua rekod komuniti dikekalkan. Pelayan menaik taraf jadual akaun secara automatik. Hentikan pelayan dan sandarkan keseluruhan folder `data` sebelum menaik taraf; salin semua fail aplikasi baharu, termasuk `accounts.js` dan seluruh folder `public`. Tiada pemasangan pakej tambahan diperlukan.
+
+Setiap orang yang mengurus sistem sepatutnya mempunyai akaun sendiri:
+
+| Fungsi | Pentadbir | Petugas |
+| --- | --- | --- |
+| Lihat semua ahli dan keluarga, daftar dan kemas kini profil | Ya | Ya |
+| Tambah/padam baris keluarga melalui borang ahli | Ya | Ya |
+| Nyahaktif/aktifkan semula ahli | Ya | Ya |
+| Padam ahli utama dan keseluruhan isi rumahnya | Ya | Tidak |
+| Muat turun sandaran dan pulihkan rekod | Ya | Tidak |
+| Cipta akaun, nyahaktif/aktifkan akaun lain, tetap semula kata laluan orang lain | Ya | Tidak |
+| Lihat sejarah tindakan | Ya | Tidak |
+| Tukar kata laluan sendiri | Ya | Ya |
+
+Pentadbir membuka menu **Akaun pengguna**, mengisi nama pengguna unik (3–40 aksara), nama penuh, peranan dan kata laluan awal (minimum 12 aksara). Nama pengguna menggunakan huruf, nombor, titik, sengkang atau garis bawah. Sampaikan kata laluan secara peribadi, bukan dalam rekod ahli atau ruangan nama. Minta pengguna menukar kata laluan selepas log masuk. Peranan dipilih ketika akaun dicipta; penyuntingan peranan akaun sedia ada belum disediakan.
+
+Butang **Nyahaktif** akaun menghentikan akses dan menamatkan semua sesi pengguna itu. Rekod komuniti yang pernah diciptanya kekal. Akaun boleh diaktifkan semula kemudian. Akaun pengguna tidak dipadam supaya sejarah tindakannya kekal. Pentadbir tidak boleh menyahaktifkan akaun sendiri dan sistem memastikan ada pentadbir aktif.
+
+Gunakan **Tetap semula kata laluan** untuk pengguna lain yang terlupa kata laluan; masukkan kata laluan pentadbir yang sedang log masuk dan kata laluan baharu pengguna. Tindakan ini turut menamatkan semua sesi pengguna berkenaan. Sistem tidak menghantar kata laluan melalui e-mel atau SMS. Jika semua pentadbir kehilangan akses, pemulihan layan diri belum disediakan; jangan padam pangkalan data kerana tindakan itu membuang rekod. Simpan akses sekurang-kurangnya satu akaun pentadbir dengan selamat.
+
+Setiap pengguna boleh menekan **Tukar kata laluan**, memasukkan kata laluan semasa dan mengulangi kata laluan baharu. Selepas berjaya, semua sesi akaun tersebut termasuk sesi semasa ditamatkan. Log masuk semula menggunakan nama pengguna yang sama dan kata laluan baharu. Menukar pemboleh ubah `ADMIN_PASSWORD` pada pelayan tidak menetapkan semula kata laluan akaun yang sudah wujud.
+
+## Sejarah tindakan
+
+Menu **Sejarah tindakan** memaparkan masa Malaysia, nama pengguna, tindakan dan ID rekod berkaitan. Gunakan Sebelumnya/Seterusnya untuk melihat 50 tindakan pada setiap halaman. Tindakan yang direkodkan termasuk log masuk/keluar berjaya, pendaftaran dan kemas kini ahli/keluarga, perubahan status, pemadaman ahli, muat turun/pemulihan sandaran serta pengurusan akaun dan kata laluan.
+
+Sejarah bermula apabila fungsi ini diaktifkan; tindakan versi lama tidak dicipta semula. Kandungan penuh profil, alamat, telefon, kata laluan dan hash kata laluan tidak disalin ke sejarah. Rekod ini ialah ringkasan tindakan, bukan perbandingan setiap medan sebelum/selepas atau log yang kebal daripada perubahan terus kepada fail pangkalan data.
+
+Sandaran JSON ahli tidak mengandungi akaun atau sejarah tindakan. Memulihkan fail JSON tidak menggantikan akaun atau memadam sejarah; pemulihan itu sendiri direkodkan. Untuk memindahkan keseluruhan sistem termasuk pengguna dan sejarah, hentikan pelayan dan salin keseluruhan folder `data` dengan selamat. Akses melalui telefon/komputer berlainan masih memerlukan persediaan rangkaian dan HTTPS seperti diterangkan sebelum ini.

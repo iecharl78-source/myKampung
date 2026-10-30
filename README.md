@@ -12,7 +12,7 @@ export ADMIN_PASSWORD
 npm start
 ```
 
-Buka pelayar pada port 3000 pada mesin pelayan. Kata laluan disimpan sebagai hash scrypt semasa mula pertama. Selepas pentadbir diwujudkan, pemboleh ubah itu tidak diperlukan lagi; menukarnya tidak menukar kata laluan sedia ada. Tiada kata laluan lalai. Sesi tamat selepas 8 jam atau apabila pelayan dimulakan semula.
+Buka pelayar pada port 3000 pada mesin pelayan. Nama pengguna pertama ialah `admin`; gunakan kata laluan yang ditetapkan di atas. Akaun daripada versi lama dinaik taraf kepada `admin` dengan kata laluan asal dikekalkan. Kata laluan disimpan sebagai hash scrypt semasa mula pertama. Selepas pentadbir diwujudkan, pemboleh ubah itu tidak diperlukan lagi; menukarnya tidak menukar kata laluan sedia ada. Tiada kata laluan lalai. Sesi tamat selepas 8 jam atau apabila pelayan dimulakan semula.
 
 `npm test` menjalankan ujian integrasi dengan pangkalan data sementara, termasuk log masuk, sekatan akses, pendaftaran keluarga, pengesahan input dan ketekalan data selepas mula semula.
 
@@ -22,6 +22,6 @@ Buka pelayar pada port 3000 pada mesin pelayan. Kata laluan disimpan sebagai has
 
 Pelayan terikat pada `127.0.0.1` secara lalai. Untuk kegunaan sebenar melalui telefon dan komputer, sediakan domain dan reverse proxy HTTPS, tetapkan `COOKIE_SECURE=1`, dan kekalkan port aplikasi terhad kepada reverse proxy. Jika proxy pada mesin berlainan, tetapkan `HOST` yang sesuai dengan kawalan rangkaian. Proxy mesti mengekalkan pengepala Host awam. Jangan dedahkan aplikasi melalui HTTP awam.
 
-Versi ini mempunyai satu akaun pentadbir, amaran rekod berganda, nyahaktif/aktifkan semula ahli, pemadaman dengan pengesahan serta sandaran/pemulihan rekod ahli dalam format JSON. Pendaftaran sendiri oleh penduduk, akaun berasingan, pemulihan kata laluan, log audit, modul bantuan dan eksport laporan belum disediakan. Ia sesuai untuk penilaian aliran asas dahulu; sebelum penggunaan awam, lengkapkan pengurusan akaun, sandaran berjadual dan semakan keselamatan mengikut keperluan komuniti. Ahli keluarga ialah tanggungan dalam rekod utama, bukan akaun atau ahli berdaftar yang berasingan. Elakkan merekodkan orang yang sama berulang kali di beberapa isi rumah. Rujuk PANDUAN-TEMPATAN.md untuk cara mengurus status, memadam, membuat sandaran dan memulihkan data.
+Versi ini mempunyai akaun berasingan untuk Pentadbir dan Petugas, pengurusan kata laluan, sejarah tindakan, amaran rekod berganda, nyahaktif/aktifkan semula ahli, pemadaman dengan pengesahan serta sandaran/pemulihan rekod ahli dalam format JSON. Petugas boleh melihat dan mengemas kini semua rekod komuniti; akaun, audit, sandaran, pemulihan dan pemadaman ahli utama terhad kepada Pentadbir. Pendaftaran sendiri oleh penduduk, pemulihan kata laluan melalui e-mel, modul bantuan dan eksport laporan belum disediakan. Sebelum penggunaan awam, sediakan HTTPS, sandaran berjadual dan semakan keselamatan mengikut keperluan komuniti. Ahli keluarga ialah tanggungan dalam rekod utama, bukan akaun atau ahli berdaftar yang berasingan. Rujuk PANDUAN-TEMPATAN.md untuk panduan penggunaan dan had fungsi.
 
 Gunakan checkout sedia ada dalam tugas cloud; jangan cipta Git worktree kecuali diminta.

@@ -4,6 +4,7 @@ import { employmentStatuses, educationLevels, studyLevels } from './education.js
 import { memberDetailFields, memberEducationLevels } from './member-details.js';
 const $ = selector => document.querySelector(selector);
 let members = [], editing = null, duplicateConfirmation = '', restorePreviewToken = '', fileSelection = 0, memberAction = null;
+let currentUser=null, users=[], userAction=null, auditPage=1;
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path, method='GET', data) {
   const response = await fetch(path,{method,headers:data ? {'Content-Type':'application/json'} : {},body:data ? JSON.stringify(data) : undefined});
@@ -20,9 +21,22 @@ function hidePassword() {
   $('#toggle-password').textContent='Tunjuk kata laluan';
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
-function showLogin() { hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore(); $('#login').hidden=false; $('#dashboard').hidden=true; $('#logout').hidden=true; }
+function showLogin() {
+  hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
+  for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
+  $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[]; currentUser=null;
+  for(const id of ['users-list','audit-list','current-user']) $('#'+id).replaceChildren();
+  $('#login').hidden=false;
+  for(const id of ['dashboard','accounts-panel','audit-panel','logout','current-user','open-password','nav-members','nav-accounts','nav-audit']) $('#'+id).hidden=true;
+}
 async function load() {
+  currentUser=(await api('/api/session')).user;
   members=await api('/api/members'); $('#login').hidden=true; $('#dashboard').hidden=false; $('#logout').hidden=false;
+  const admin=currentUser.role==='admin';
+  for(const id of ['backup','open-restore','nav-accounts','nav-audit']) $('#'+id).hidden=!admin;
+  for(const id of ['current-user','open-password','nav-members']) $('#'+id).hidden=false;
+  $('#current-user').textContent=`${currentUser.fullName} · ${admin?'Pentadbir':'Petugas'}`;
+  showPanel('dashboard');
   const active=members.filter(m=>m.isActive===1);
   $('#member-count').textContent=active.length; $('#inactive-count').textContent=members.length-active.length;
   $('#family-count').textContent=active.reduce((n,m)=>n+m.household.length,0); render();
@@ -31,7 +45,7 @@ function render() {
   const query=$('#search').value.trim().toLocaleLowerCase('ms');
   const filter=$('#status-filter').value;
   const rows=members.filter(m=>(filter==='all' || m.isActive===(filter==='active'?1:0)) && [m.name,m.phone,m.address].join(' ').toLocaleLowerCase('ms').includes(query));
-  $('#results').innerHTML=rows.length ? `<div class="table-wrap"><table><thead><tr><th>AHLI KOMUNITI</th><th>HUBUNGI</th><th>ALAMAT</th><th>KELUARGA</th><th>STATUS</th><th><span class="sr-only">Tindakan</span></th></tr></thead><tbody>${rows.map(m=>`<tr><td><div class="person"><span class="avatar">${esc(m.name.charAt(0).toUpperCase())}</span><div><b>${esc(m.name)}</b><small>Ahli #${String(m.id).padStart(4,'0')} · ${esc(ageLabel(m.birthDate))}</small></div></div></td><td>${esc(m.phone)}</td><td class="address">${esc(m.address)}</td><td><span class="badge">${m.household.length} orang</span></td><td><span class="badge ${m.isActive===0?'inactive-badge':''}">${m.isActive===1?'Aktif':'Tidak aktif'}</span></td><td><div class="row-actions"><button class="edit quiet" data-id="${m.id}">Lihat / edit ↗</button><button class="member-status-action quiet" data-id="${m.id}">${m.isActive===1?'Nyahaktif':'Aktifkan semula'}</button><button class="member-delete-action quiet" data-id="${m.id}">Padam</button></div></td></tr>`).join('')}</tbody></table></div><div class="table-footer">${rows.length} daripada ${members.length} rekod ahli</div>` : `<div class="empty"><span>⌂</span><h3>${members.length ? 'Tiada rekod untuk carian atau status ini' : 'Mulakan dengan ahli pertama'}</h3><p>${members.length ? 'Cuba carian lain atau pilih status Semua.' : 'Daftarkan ahli komuniti dan maklumat keluarga mereka.'}</p>${members.length ? '' : '<button class="secondary" id="empty-add">＋ Daftar ahli pertama</button>'}</div>`;
+  $('#results').innerHTML=rows.length ? `<div class="table-wrap"><table><thead><tr><th>AHLI KOMUNITI</th><th>HUBUNGI</th><th>ALAMAT</th><th>KELUARGA</th><th>STATUS</th><th><span class="sr-only">Tindakan</span></th></tr></thead><tbody>${rows.map(m=>`<tr><td><div class="person"><span class="avatar">${esc(m.name.charAt(0).toUpperCase())}</span><div><b>${esc(m.name)}</b><small>Ahli #${String(m.id).padStart(4,'0')} · ${esc(ageLabel(m.birthDate))}</small></div></div></td><td>${esc(m.phone)}</td><td class="address">${esc(m.address)}</td><td><span class="badge">${m.household.length} orang</span></td><td><span class="badge ${m.isActive===0?'inactive-badge':''}">${m.isActive===1?'Aktif':'Tidak aktif'}</span></td><td><div class="row-actions"><button class="edit quiet" data-id="${m.id}">Lihat / edit ↗</button><button class="member-status-action quiet" data-id="${m.id}">${m.isActive===1?'Nyahaktif':'Aktifkan semula'}</button>${currentUser?.role==='admin' ? `<button class="member-delete-action quiet" data-id="${m.id}">Padam</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div><div class="table-footer">${rows.length} daripada ${members.length} rekod ahli</div>` : `<div class="empty"><span>⌂</span><h3>${members.length ? 'Tiada rekod untuk carian atau status ini' : 'Mulakan dengan ahli pertama'}</h3><p>${members.length ? 'Cuba carian lain atau pilih status Semua.' : 'Daftarkan ahli komuniti dan maklumat keluarga mereka.'}</p>${members.length ? '' : '<button class="secondary" id="empty-add">＋ Daftar ahli pertama</button>'}</div>`;
   document.querySelectorAll('.edit').forEach(b=>b.onclick=()=>openEditor(members.find(m=>m.id===Number(b.dataset.id))));
   document.querySelectorAll('.member-status-action').forEach(b=>b.onclick=()=>openMemberAction('status',members.find(m=>m.id===Number(b.dataset.id))));
   document.querySelectorAll('.member-delete-action').forEach(b=>b.onclick=()=>openMemberAction('delete',members.find(m=>m.id===Number(b.dataset.id))));
@@ -116,7 +130,7 @@ $('#toggle-password').onclick=()=>{
 $('#login-form').onsubmit=async event=>{
   event.preventDefault(); const button=event.target.querySelector('button[type="submit"]'); button.disabled=true; notice('');
   const password=event.target.elements.password.value; hidePassword();
-  try { await api('/api/login','POST',{password}); event.target.reset(); await load(); } catch(e) { notice(e.message); } finally { button.disabled=false; }
+  try { await api('/api/login','POST',{username:event.target.elements.username.value,password}); event.target.reset(); await load(); } catch(e) { notice(e.message); } finally { button.disabled=false; }
 };
 $('#logout').onclick=async()=>{ try { await api('/api/logout','POST'); members=[]; $('#results').replaceChildren(); showLogin(); notice('Anda telah log keluar.'); } catch(e) { notice(e.message); } };
 $('#search').oninput=render; $('#add-member').onclick=()=>openEditor();
@@ -210,4 +224,60 @@ $('#action-form').onsubmit=async event=>{
   } catch(error) { $('#action-error').textContent=error.message; } finally { $('#action-submit').disabled=false; }
 };
 
-try { await api('/api/session'); await load(); } catch(e) { showLogin(); if(e.message !== 'Sila log masuk.') notice(e.message); }
+function showPanel(id) {
+  for(const panel of ['dashboard','accounts-panel','audit-panel']) $('#'+panel).hidden=panel!==id;
+  for(const [nav,panel] of [['nav-members','dashboard'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+}
+$('#nav-members').onclick=()=>showPanel('dashboard');
+async function loadUsers() {
+  users=await api('/api/users');
+  $('#users-list').innerHTML=`<div class="table-wrap"><table><thead><tr><th>PENGGUNA</th><th>PERANAN</th><th>STATUS</th><th>TINDAKAN</th></tr></thead><tbody>${users.map(user=>`<tr><td><b>${esc(user.fullName)}</b><br>${esc(user.username)}</td><td>${user.role==='admin'?'Pentadbir':'Petugas'}</td><td>${user.isActive?'Aktif':'Tidak aktif'}</td><td>${user.id===currentUser.id ? 'Akaun anda' : `<button class="quiet user-status" data-id="${user.id}">${user.isActive?'Nyahaktif':'Aktifkan'}</button><button class="quiet user-reset" data-id="${user.id}">Tetap semula kata laluan</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+  document.querySelectorAll('.user-status').forEach(button=>button.onclick=()=>openUserAction('status',Number(button.dataset.id)));
+  document.querySelectorAll('.user-reset').forEach(button=>button.onclick=()=>openUserAction('password',Number(button.dataset.id)));
+}
+$('#nav-accounts').onclick=async()=>{ try { await loadUsers();showPanel('accounts-panel'); } catch(error) { notice(error.message); } };
+$('#new-user-form').onsubmit=async event=>{
+  event.preventDefault(); const form=event.target,button=form.querySelector('button[type="submit"]');button.disabled=true;$('#new-user-error').textContent='';
+  try {
+    await api('/api/users','POST',{username:form.elements.newUsername.value,fullName:form.elements.newFullName.value,role:form.elements.newRole.value,password:form.elements.newPassword.value});
+    form.reset();await loadUsers();notice('Akaun pengguna berjaya dicipta.');
+  } catch(error) { $('#new-user-error').textContent=error.message; } finally { form.elements.newPassword.value='';button.disabled=false; }
+};
+function openUserAction(type,id) {
+  const user=users.find(u=>u.id===id);userAction={type,user};$('#user-action-form').reset();$('#user-action-error').textContent='';
+  $('#user-action-title').textContent=type==='password'?'Tetap semula kata laluan':user.isActive?'Nyahaktif akaun':'Aktifkan akaun';
+  $('#user-action-summary').textContent=`${user.fullName} (${user.username})`;
+  $('#reset-password-section').hidden=type!=='password';$('#user-action-form').elements.newPassword.required=type==='password';
+  $('#user-action-dialog').showModal();
+}
+$('#close-user-action').onclick=()=>{ $('#user-action-dialog').close();$('#user-action-form').reset();userAction=null; };
+$('#user-action-dialog').addEventListener('cancel',()=>{ $('#user-action-form').reset();userAction=null; });
+$('#user-action-form').onsubmit=async event=>{
+  event.preventDefault(); if(!userAction) return;
+  const {type,user}=userAction,form=event.target;$('#user-action-submit').disabled=true;$('#user-action-error').textContent='';
+  const input={currentPassword:form.elements.currentPassword.value,newPassword:form.elements.newPassword.value,active:!user.isActive};
+  form.elements.currentPassword.value='';form.elements.newPassword.value='';
+  try { await api(`/api/users/${user.id}/${type}`,'POST',input);$('#user-action-dialog').close();userAction=null;await loadUsers();notice('Akaun pengguna berjaya dikemas kini.'); }
+  catch(error) { $('#user-action-error').textContent=error.message; } finally { $('#user-action-submit').disabled=false; }
+};
+$('#open-password').onclick=()=>{ $('#password-form').reset();$('#password-error').textContent='';$('#password-dialog').showModal(); };
+$('#close-password').onclick=()=>{ $('#password-dialog').close();$('#password-form').reset(); };
+$('#password-dialog').addEventListener('cancel',()=>$('#password-form').reset());
+$('#password-form').onsubmit=async event=>{
+  event.preventDefault();const form=event.target;$('#password-error').textContent='';
+  if(form.elements.newPassword.value!==form.elements.confirmPassword.value) { $('#password-error').textContent='Kata laluan baharu tidak sepadan.';return; }
+  const input={currentPassword:form.elements.currentPassword.value,newPassword:form.elements.newPassword.value};
+  form.reset();$('#password-submit').disabled=true;
+  try { await api('/api/password','POST',input);showLogin();notice('Kata laluan ditukar. Sila log masuk semula.'); }
+  catch(error) { $('#password-error').textContent=error.message; } finally { $('#password-submit').disabled=false; }
+};
+async function loadAudit() {
+  const result=await api(`/api/audit?page=${auditPage}`);
+  $('#audit-list').innerHTML=result.rows.length ? `<div class="table-wrap"><table><thead><tr><th>TARIKH (MALAYSIA)</th><th>PENGGUNA</th><th>TINDAKAN</th><th>REKOD</th></tr></thead><tbody>${result.rows.map(row=>`<tr><td>${esc(new Date(row.createdAt).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur'}))}</td><td>${esc(row.actorName)}</td><td>${esc(row.action)}<small>${esc(row.summary)}</small></td><td>${esc(row.targetType)} ${esc(row.targetId)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">Belum ada sejarah tindakan.</p>';
+  $('#audit-page').textContent=`Halaman ${result.page} · ${result.total} tindakan`;
+  $('#audit-prev').disabled=auditPage<=1;$('#audit-next').disabled=auditPage*50>=result.total;
+}
+$('#nav-audit').onclick=async()=>{ auditPage=1;try { await loadAudit();showPanel('audit-panel'); } catch(error) { notice(error.message); } };
+for(const [id,step] of [['audit-prev',-1],['audit-next',1],['audit-refresh',0]]) $('#'+id).onclick=async()=>{ auditPage=Math.max(1,auditPage+step);try { await loadAudit(); } catch(error) { notice(error.message); } };
+
+try { await load(); } catch(e) { showLogin(); if(e.message !== 'Sila log masuk.') notice(e.message); }
