@@ -39,7 +39,7 @@ function validate(input) {
   });
   return {name, phone, address, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household};
 }
-const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");

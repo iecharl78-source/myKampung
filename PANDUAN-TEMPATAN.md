@@ -64,3 +64,9 @@ Percubaan ini hanya boleh dibuka pada komputer pelayan yang sama. Penerbitan per
 - Selepas lima percubaan kata laluan yang salah: tunggu 15 minit sebelum mencuba lagi.
 
 Ujian automatik boleh dijalankan dengan `npm.cmd test` pada Windows atau `npm test` pada macOS/Linux. Ujian ini menggunakan data rekaan dan pangkalan data sementara yang berasingan.
+
+## Mengemas kini aplikasi yang sudah mempunyai data
+
+Hentikan pelayan dengan `Ctrl+C` dan sandarkan folder `data` terlebih dahulu. Ekstrak ZIP versi baharu ke folder sementara. Salin fail aplikasi baharu ke folder myKampung yang sedang digunakan, termasuk seluruh folder `public`. Kekalkan folder `data` asal; jangan padam atau gantikannya. Jalankan semula aplikasi menggunakan arahan Node.js yang sama dan muat semula pelayar dengan `Ctrl+F5`.
+
+Umur ahli dan keluarga dikira daripada tarikh lahir mengikut tarikh Malaysia dan dipaparkan dalam tahun lengkap. Tarikh lahir kosong dipaparkan sebagai `Umur: —`. Tiada pengisian umur atau perubahan pangkalan data diperlukan. Butang **Tunjuk kata laluan** dan **Sembunyi kata laluan** terdapat pada borang log masuk; kata laluan disembunyikan semula apabila borang dihantar.

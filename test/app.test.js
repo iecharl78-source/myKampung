@@ -25,6 +25,7 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     let base=await start(), cookie='';
     const request=(path, method='GET', data, headers={})=>fetch(base+path,{method,headers:{'Content-Type':'application/json',Cookie:cookie,...headers},body:data===undefined?undefined:JSON.stringify(data)});
     const page=await request('/');assert.equal(page.status,200);assert.match(await page.text(),/lang="ms"/);
+    const ageScript=await request('/age.js');assert.equal(ageScript.status,200);assert.match(ageScript.headers.get('content-type'),/javascript/);
     assert.equal((await request('/api/members')).status,401);
     assert.equal((await request('/api/login','POST',{password:'wrong'})).status,401);
     let result=await request('/api/login','POST',{password});assert.equal(result.status,200);cookie=result.headers.get('set-cookie').split(';')[0];
