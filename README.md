@@ -2,9 +2,17 @@
 
 Versi asas pengurusan ahli dan isi rumah, dalam Bahasa Melayu dan mesra telefon. Pentadbir boleh mendaftar, mencari dan mengemas kini ahli serta ahli keluarga. Maklumat disimpan dalam SQLite pada pelayan; tiada perkhidmatan luaran atau pakej npm diperlukan.
 
+## Panduan untuk dikongsi
+
+- [Pemasangan tempatan untuk rakan](PANDUAN-RAKAN-LOCAL.md): muat turun kod, Node.js biasa/standalone, PowerShell, akaun pertama dan penyelesaian masalah.
+- [Manual pengguna](MANUAL-PENGGUNA.md): langkah penggunaan mengikut peranan dan semua fungsi semasa.
+- [Panduan teknikal tempatan](PANDUAN-TEMPATAN.md): naik taraf, sandaran dan pemulihan.
+
+Untuk percubaan rakan, kongsi ZIP kod daripada GitHub bersama panduan; rakan mencipta data dan kata laluan sendiri. Jangan sertakan folder data, sandaran atau kelayakan pemasangan anda.
+
 ## Mula
 
-Perlu Node.js 24 atau lebih baharu. Dari `/workspace/myKampung`, jalankan arahan Bash berikut untuk menetapkan kata laluan pentadbir pertama tanpa merekodkannya dalam sejarah shell:
+Perlu Node.js 24 atau lebih baharu. Dari folder aplikasi yang mempunyai `server.js`, jalankan arahan Bash berikut untuk menetapkan kata laluan pentadbir pertama tanpa merekodkannya dalam sejarah shell:
 
 ```bash
 read -rs -p 'Kata laluan pentadbir (minimum 12 aksara): ' ADMIN_PASSWORD
@@ -22,7 +30,7 @@ Buka pelayar pada port 3000 pada mesin pelayan. Nama pengguna pertama ialah `adm
 
 Pelayan terikat pada `127.0.0.1` secara lalai. Untuk kegunaan sebenar melalui telefon dan komputer, sediakan domain dan reverse proxy HTTPS, tetapkan `COOKIE_SECURE=1`, dan kekalkan port aplikasi terhad kepada reverse proxy. Jika proxy pada mesin berlainan, tetapkan `HOST` yang sesuai dengan kawalan rangkaian. Proxy mesti mengekalkan pengepala Host awam. Jangan dedahkan aplikasi melalui HTTP awam.
 
-Versi ini mempunyai akaun berasingan untuk Pentadbir, Petugas dan Ahli, pengurusan kata laluan, sejarah tindakan, amaran rekod berganda, nyahaktif/aktifkan semula ahli, pemadaman dengan pengesahan rekod bantuan yang telah diterima serta sandaran/pemulihan ahli dan bantuan dalam format JSON. Petugas boleh melihat dan mengemas kini semua rekod komuniti; akaun, audit, sandaran, pemulihan dan pemadaman ahli utama terhad kepada Pentadbir. Pendaftaran sendiri penduduk tersedia melalui /daftar dan memerlukan kelulusan Pentadbir sebelum menjadi ahli. Pemulihan kata laluan melalui e-mel serta permohonan/kelulusan bantuan belum disediakan. Sebelum penggunaan awam, sediakan HTTPS, sandaran berjadual dan semakan keselamatan mengikut keperluan komuniti. Ahli keluarga ialah tanggungan dalam rekod utama, bukan akaun atau ahli berdaftar yang berasingan. Menu Laporan menyediakan senarai ahli, keluarga dan bantuan, eksport CSV serta cetakan/PDF untuk Pentadbir. Rujuk PANDUAN-TEMPATAN.md untuk panduan penggunaan dan had fungsi.
+Versi ini mempunyai akaun berasingan untuk Pentadbir, Petugas dan Ahli, pengurusan kata laluan, sejarah tindakan, amaran rekod berganda, nyahaktif/aktifkan semula ahli, pemadaman dengan pengesahan rekod bantuan yang telah diterima serta sandaran/pemulihan ahli dan bantuan dalam format JSON. Petugas boleh melihat dan mengemas kini semua rekod komuniti; akaun, audit, sandaran, pemulihan dan pemadaman ahli utama terhad kepada Pentadbir. Pendaftaran sendiri penduduk tersedia melalui /daftar dan memerlukan kelulusan Pentadbir sebelum menjadi ahli. Pemulihan kata laluan melalui e-mel dan permohonan untuk mendapatkan bantuan baharu belum disediakan; maklumat bantuan yang telah diterima boleh dicadangkan oleh ahli untuk kelulusan pentadbir. Sebelum penggunaan awam, sediakan HTTPS, sandaran berjadual dan semakan keselamatan mengikut keperluan komuniti. Ahli keluarga ialah tanggungan dalam rekod utama, bukan akaun atau ahli berdaftar yang berasingan. Menu Laporan menyediakan senarai ahli, keluarga dan bantuan, eksport CSV serta cetakan/PDF untuk Pentadbir. Rujuk PANDUAN-TEMPATAN.md untuk panduan penggunaan dan had fungsi.
 
 Gunakan checkout sedia ada dalam tugas cloud; jangan cipta Git worktree kecuali diminta.
 

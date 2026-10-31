@@ -1,5 +1,7 @@
 # Cuba myKampung pada komputer sendiri
 
+Untuk penerima baharu yang mahu mencuba salinan sistem pada komputer sendiri, ikuti [PANDUAN-RAKAN-LOCAL.md](PANDUAN-RAKAN-LOCAL.md). Langkah penggunaan semasa mengikut peranan disusun dalam [MANUAL-PENGGUNA.md](MANUAL-PENGGUNA.md). Dokumen ini mengekalkan panduan teknikal dan sejarah fungsi bagi pemasangan sedia ada.
+
 ## 1. Persediaan
 
 Pasang Node.js versi 24 LTS atau lebih baharu daripada https://nodejs.org. Ekstrak fail ZIP. Buka Terminal atau PowerShell di dalam folder `myKampung` yang mengandungi `package.json`.
