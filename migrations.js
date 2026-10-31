@@ -45,3 +45,10 @@ export function migrateEmployerAddress(db) {
     db.exec('COMMIT');
   } catch(error) { db.exec('ROLLBACK');throw error; }
 }
+
+export function migrateMemberIdentity(db) {
+  if(!db.prepare('PRAGMA table_info(members)').all().some(column=>column.name==='identityKey'))db.exec("ALTER TABLE members ADD COLUMN identityKey TEXT NOT NULL DEFAULT ''");
+  db.exec(`UPDATE members SET identityKey=lower(hex(randomblob(16))) WHERE identityKey='';
+    CREATE UNIQUE INDEX IF NOT EXISTS member_identity ON members(identityKey) WHERE identityKey!='';
+    CREATE TRIGGER IF NOT EXISTS new_member_identity AFTER INSERT ON members WHEN NEW.identityKey='' BEGIN UPDATE members SET identityKey=lower(hex(randomblob(16))) WHERE id=NEW.id;END;`);
+}

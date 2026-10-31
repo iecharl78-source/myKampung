@@ -11,18 +11,28 @@ export function verifyPassword(user,password) {
   return timingSafeEqual(hash,user ? Buffer.from(user.hash,'hex') : Buffer.alloc(64)) && Boolean(user);
 }
 export function publicUser(user) {
-  return {id:user.id,username:user.username,fullName:user.fullName,role:user.role,isActive:user.isActive,createdAt:user.createdAt};
+  return {id:user.id,username:user.username,fullName:user.fullName,role:user.role,isActive:user.isActive,createdAt:user.createdAt,memberId:user.memberId??null};
 }
 export function initializeAccounts(db,initialPassword) {
   db.exec('BEGIN IMMEDIATE');
   try {
     db.exec(`CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, fullName TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('admin','petugas')), isActive INTEGER NOT NULL DEFAULT 1 CHECK(isActive IN (0,1)),
-      salt TEXT NOT NULL, hash TEXT NOT NULL, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL);
+      role TEXT NOT NULL CHECK(role IN ('admin','petugas','ahli')), isActive INTEGER NOT NULL DEFAULT 1 CHECK(isActive IN (0,1)),
+      salt TEXT NOT NULL, hash TEXT NOT NULL, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL,
+      memberId INTEGER UNIQUE REFERENCES members(id) ON DELETE SET NULL,registrationReference TEXT UNIQUE);
       CREATE TABLE IF NOT EXISTS audit_log (
       id INTEGER PRIMARY KEY, actorId INTEGER NOT NULL, actorName TEXT NOT NULL, action TEXT NOT NULL,
       targetType TEXT NOT NULL, targetId TEXT NOT NULL, summary TEXT NOT NULL, createdAt TEXT NOT NULL);`);
+    if(!db.prepare('PRAGMA table_info(users)').all().some(column=>column.name==='memberId')) {
+      db.exec(`ALTER TABLE users RENAME TO legacy_users;
+        CREATE TABLE users (id INTEGER PRIMARY KEY,username TEXT NOT NULL UNIQUE COLLATE NOCASE,fullName TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('admin','petugas','ahli')),isActive INTEGER NOT NULL DEFAULT 1 CHECK(isActive IN (0,1)),
+        salt TEXT NOT NULL,hash TEXT NOT NULL,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL,
+        memberId INTEGER UNIQUE REFERENCES members(id) ON DELETE SET NULL,registrationReference TEXT UNIQUE);
+        INSERT INTO users (id,username,fullName,role,isActive,salt,hash,createdAt,updatedAt) SELECT id,username,fullName,role,isActive,salt,hash,createdAt,updatedAt FROM legacy_users;
+        DROP TABLE legacy_users;`);
+    }
     const legacyExists=db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='admin'").get();
     if(!db.prepare('SELECT id FROM users LIMIT 1').get()) {
       const legacy=legacyExists ? db.prepare('SELECT * FROM admin WHERE id=1').get() : null;
@@ -76,19 +86,26 @@ export async function accountRoutes({req,res,path,user,db,json,body,revokeSessio
     const input=await body(req);
     if(typeof input.username!=='string' || !/^[a-zA-Z0-9_.-]{3,40}$/.test(input.username)) throw Error('Sila masukkan nama pengguna 3–40 aksara: huruf, nombor, titik, sengkang atau garis bawah.');
     if(typeof input.fullName!=='string' || !input.fullName.trim() || input.fullName.length>200) throw Error('Sila masukkan nama petugas yang sah.');
-    if(!['admin','petugas'].includes(input.role)) throw Error('Sila pilih peranan akaun yang sah.');
+    if(!['admin','petugas','ahli'].includes(input.role)) throw Error('Sila pilih peranan akaun yang sah.');
+    const member=input.role==='ahli' && Number.isSafeInteger(input.memberId)?db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(input.memberId):null;
+    if(input.role==='ahli' && (!member || db.prepare('SELECT id FROM users WHERE memberId=?').get(member.id)))throw Error('Sila pilih ahli aktif yang belum mempunyai akaun.');
     const username=input.username.toLowerCase();
     if(db.prepare('SELECT id FROM users WHERE username=?').get(username)) { json(res,409,{error:'Nama pengguna telah digunakan.'});return true; }
     const credentials=passwordRecord(input.password),now=new Date().toISOString();
-    const result=withAudit(db,user,'Cipta akaun','akaun',null,()=>db.prepare('INSERT INTO users (username,fullName,role,salt,hash,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?)').run(username,input.fullName.trim(),input.role,credentials.salt,credentials.hash,now,now),`Peranan: ${input.role}`);
+    const result=withAudit(db,user,'Cipta akaun','akaun',null,()=>db.prepare('INSERT INTO users (username,fullName,role,salt,hash,createdAt,updatedAt,memberId) VALUES (?,?,?,?,?,?,?,?)').run(username,input.fullName.trim(),input.role,credentials.salt,credentials.hash,now,now,member?.id??null),`Peranan: ${input.role}`);
     json(res,201,{id:Number(result.lastInsertRowid)});return true;
   }
-  const match=path.match(/^\/api\/users\/(\d+)\/(status|password)$/);
+  const match=path.match(/^\/api\/users\/(\d+)\/(status|password|member)$/);
   if(match && req.method==='POST') {
     const input=await body(req),target=db.prepare('SELECT * FROM users WHERE id=?').get(Number(match[1]));
     if(!target) { json(res,404,{error:'Akaun tidak ditemui.'});return true; }
     if(!verifyPassword(user,input.currentPassword)) { json(res,400,{error:'Kata laluan pentadbir semasa tidak tepat.'});return true; }
-    if(match[2]==='status') {
+    if(match[2]==='member') {
+      if(target.role!=='ahli')throw Error('Pautan ini hanya untuk akaun ahli.');
+      const member=Number.isSafeInteger(input.memberId)?db.prepare('SELECT id,name FROM members WHERE id=? AND isActive=1').get(input.memberId):null;
+      if(!member || db.prepare('SELECT id FROM users WHERE memberId=? AND id!=?').get(member.id,target.id))throw Error('Pilih ahli aktif yang belum dipautkan kepada akaun lain.');
+      withAudit(db,user,'Pautkan akaun ahli','akaun',target.id,()=>db.prepare('UPDATE users SET memberId=?,fullName=?,updatedAt=? WHERE id=?').run(member.id,member.name,new Date().toISOString(),target.id));
+    } else if(match[2]==='status') {
       if(typeof input.active!=='boolean') throw Error('Maklumat status akaun tidak sah.');
       if(target.id===user.id && !input.active) { json(res,400,{error:'Anda tidak boleh menyahaktifkan akaun sendiri.'});return true; }
       if(!input.active && target.role==='admin' && db.prepare("SELECT count(*) AS n FROM users WHERE role='admin' AND isActive=1").get().n<=1) { json(res,400,{error:'Sekurang-kurangnya seorang pentadbir aktif diperlukan.'});return true; }

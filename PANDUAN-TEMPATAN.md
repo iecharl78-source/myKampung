@@ -266,7 +266,7 @@ Data laporan dicapai semasa permintaan diproses. Eksport menggunakan penapis lap
 
 Akses dalam talian ditangguhkan; kemas kini ini tidak menerbitkan laman atau mengubah tetapan rangkaian. Borang pendaftaran boleh diuji pada pemasangan sedia ada melalui pautan **Daftar sebagai penduduk / Semak permohonan** di skrin log masuk, atau laluan `/daftar` pada alamat aplikasi. Dengan HOST lalai 127.0.0.1, hanya pelayar pada komputer pelayan yang sama boleh membukanya. Capaian daripada telefon/peranti lain masih memerlukan susunan rangkaian yang sesuai, yang akan disediakan kemudian.
 
-Penduduk boleh mengisi maklumat diri, alamat, pekerjaan/pendidikan, majikan (pilihan), dan ahli keluarga tanpa log masuk. Status pekerjaan ahli dan setiap tanggungan perlu dilengkapkan. Penghantar mengesahkan ketepatan maklumat serta persetujuan semakan sebelum menekan **Hantar permohonan**. Borang dibekukan ketika permintaan berlangsung. Penghantaran belum mencipta rekod ahli atau akaun log masuk penduduk.
+Penduduk boleh mengisi maklumat diri, alamat, pekerjaan/pendidikan, majikan (pilihan), dan ahli keluarga tanpa log masuk. Status pekerjaan ahli dan setiap tanggungan perlu dilengkapkan. Penghantar mengesahkan ketepatan maklumat serta persetujuan semakan sebelum menekan **Hantar permohonan**. Borang dibekukan ketika permintaan berlangsung. Pemohon turut menetapkan ID pengguna (3–40 aksara) dan kata laluan (minimum 12 aksara) serta mengesahkan kata laluan. Akaun disediakan dalam keadaan tidak aktif; rekod ahli hanya diwujudkan dan akaun diaktifkan selepas kelulusan pentadbir. Kata laluan dihash, tidak dimasukkan ke dalam data borang permohonan.
 
 Selepas dihantar, sistem memberikan kod rujukan rawak **MK-…** dan status **Menunggu semakan**. Simpan kod secara peribadi. Gunakan borang Semak status dengan kod tersebut untuk mengetahui keputusan dan catatan yang diberikan pentadbir. Semakan tidak memaparkan nama, telefon atau seluruh profil. Jika kod hilang, hubungi pentadbir; tiada carian awam melalui nama/telefon dan tiada pemberitahuan e-mel/SMS automatik.
 
@@ -280,12 +280,40 @@ Keputusan pendaftaran berbeza daripada status keahlian semasa. Permohonan yang p
 
 ### Sandaran permohonan
 
-Sandaran JSON versi 4 turut mengandungi permohonan, persetujuan, kod rujukan, keputusan dan pautan ahli. Fail ini mesti dilindungi kerana mengandungi maklumat peribadi serta kod semakan. Pemulihan menyemak data dan pautan terlebih dahulu, kemudian menggantikan rekod komuniti serta permohonan dalam satu transaksi. Had fail kekal 10 MB; maksimum 20,000 permohonan dalam sandaran.
+Sandaran JSON versi 5 turut mengandungi permohonan, persetujuan, kod rujukan, keputusan dan pautan ahli. Fail ini mesti dilindungi kerana mengandungi maklumat peribadi serta kod semakan. Pemulihan menyemak data dan pautan terlebih dahulu, kemudian menggantikan rekod komuniti serta permohonan dalam satu transaksi. Had fail kekal 10 MB; maksimum 20,000 permohonan dalam sandaran.
 
-Sandaran versi lama yang tiada permohonan boleh dipulihkan hanya apabila sistem semasa belum mempunyai permohonan. Jika sudah ada, gunakan sandaran versi 4 supaya permohonan tidak hilang. Sandaran penuh SQLite turut merangkumi jadual ini secara automatik. Akaun dan audit tidak digantikan melalui pemulihan JSON.
+Sandaran versi lama yang tiada permohonan boleh dipulihkan hanya apabila sistem semasa belum mempunyai permohonan. Jika sudah ada, gunakan sandaran versi 5 supaya permohonan tidak hilang. Sandaran penuh SQLite turut merangkumi jadual ini secara automatik. Akaun dan audit tidak digantikan melalui pemulihan JSON.
 
 ## Pengesahan dan proses log keluar
 
 Butang **Log keluar** kini membuka dialog pengesahan dahulu. **Batal** mengekalkan sesi. **Ya, log keluar** menghantar permintaan, memaparkan **Sedang log keluar…**, dan mengunci butang, medan, navigasi serta penutupan dialog sementara menunggu pelayan. Klik atau penghantaran berulang diabaikan.
 
 Jika pelayan memberikan ralat, dialog memaparkan mesej dan dibuka semula untuk mencuba lagi; sistem tidak mendakwa log keluar berjaya ketika permintaan belum disahkan. Selepas berjaya, sesi dipadam, skrin log masuk dipaparkan dan pemberitahuan **Anda telah log keluar** ditunjukkan. Jika sesi sudah tamat, pengguna dimaklumkan bahawa sesi telah tamat dan telah log keluar. Simpan perubahan borang terlebih dahulu.
+
+## Portal ahli: semua perubahan memerlukan kelulusan
+
+Selepas pendaftaran diluluskan, ahli log masuk di skrin utama menggunakan ID dan kata laluan yang dipilih semasa memohon. **Profil saya** hanya memaparkan maklumat diri, keluarga dan bantuan isi rumah sendiri. Ahli tidak mempunyai akses kepada direktori komuniti, akaun, laporan atau sandaran. Ahli keluarga kekal sebagai tanggungan; tiada akaun berasingan secara automatik.
+
+Untuk menukar maklumat, ahli mengisi borang dan menekan **Hantar untuk kelulusan**. Penambahan atau pemadaman ahli keluarga juga memerlukan kelulusan. Borang serta navigasi dikunci semasa penghantaran. Rekod rasmi kekal; bahagian status memaparkan cadangan dihantar, keputusan dan catatan. Hanya satu permohonan perubahan boleh menunggu semakan bagi setiap akaun. Jika ditolak, betulkan borang berdasarkan catatan dan hantar semula.
+
+Pentadbir membuka **Semakan perubahan**, membandingkan rekod rasmi dengan cadangan (medan berbeza ditandakan), kemudian meluluskan atau menolak dengan sebab. Semakan pendua turut merangkumi ahli keluarga. Jika rekod rasmi telah berubah sejak penghantaran atau ahli tidak lagi aktif/dipautkan kepada akaun sama, kelulusan dihalang; tolak dengan sebab dan minta penghantaran semula. Rekod hanya berubah apabila kelulusan, audit dan notifikasi selesai dalam satu transaksi. Petugas tidak boleh meluluskan perubahan daripada portal. Penyuntingan terus oleh pentadbir/petugas melalui direktori mengekalkan aliran pengurusan sedia ada.
+
+Permohonan lama tanpa ID/kata laluan masih boleh disemak. Untuk ahli sedia ada, pentadbir membuka **Akaun pengguna → Tambah pengguna**, memilih peranan **Ahli**, dan memautkan rekod ahli aktif yang belum mempunyai akaun. Untuk akaun yang kehilangan pautan selepas pemulihan sandaran lama, gunakan **Pautkan ahli**, pilih rekod yang telah disahkan dan masukkan kata laluan pentadbir. Pemautan memutuskan sesi akaun tersebut; status aktif akaun masih diurus berasingan. Jangan memaut berdasarkan nombor ID sahaja tanpa menyemak identiti. Ahli yang dinyahaktifkan tidak boleh menggunakan portal walaupun akaunnya masih aktif.
+
+## Aktiviti, hebahan dan pertanyaan
+
+Dalam **Aktiviti & hebahan**, Pentadbir/Petugas boleh menambah pengumuman atau aktiviti dengan tarikh/masa serta lokasi. Masa menggunakan Malaysia. Pilih Draf untuk menyimpan tanpa dipaparkan kepada ahli; edit siaran dan ubah status untuk menariknya daripada paparan ahli. Siaran baharu yang diterbitkan menghasilkan notifikasi; pilihan beritahu semula digunakan bagi perubahan siaran sedia ada. Kalendar memaparkan aktiviti mengikut tarikh mula pada bulan dipilih.
+
+**Pertanyaan** membolehkan ahli menghantar soalan dan menerima balasan Pentadbir/Petugas. Ahli hanya melihat pertanyaan sendiri; semua petugas dan pentadbir boleh melihat serta menjawabnya. Petugas boleh menutup atau membuka semula pertanyaan. Mesej tidak mengubah profil atau rekod bantuan, dan tidak memerlukan kelulusan profil.
+
+**Notifikasi** memaparkan 100 pemberitahuan terkini dan bilangan belum dibaca. Tandakan satu atau semua sebagai dibaca. Bilangan dikemas kini ketika membuka menu dan sekitar setiap seminit apabila aplikasi aktif. Ini pemberitahuan dalam sistem sahaja; tiada SMS, e-mel atau pemberitahuan telefon di luar aplikasi.
+
+## Sandaran portal dan naik taraf
+
+Hentikan aplikasi dan sandarkan seluruh folder `data` sebelum menggantikan fail aplikasi. Salin semua fail baharu termasuk `community.js`, `migrations.js`, `accounts.js` dan seluruh `public`. Mulakan semula menggunakan Node.js 24; naik taraf jadual adalah automatik dan kata laluan asal dikekalkan.
+
+JSON versi 5 turut menyimpan pengumuman, aktiviti dan ID pengguna yang diminta pada permohonan pendaftaran. Ia tidak mengandungi hash/kata laluan akaun, permohonan perubahan profil, mesej/pertanyaan, notifikasi atau audit. Jadual ini kekal pada pemasangan semasa ketika pemulihan JSON; **sandaran penuh SQLite/folder data diperlukan untuk pemindahan dan pemulihan lengkap portal**. Pada komputer baharu, permohonan pendaftaran yang dipulihkan melalui JSON sahaja tidak boleh mengaktifkan akaun asal tanpa data akaun; gunakan sandaran penuh, atau tolak permohonan lama dan minta pemohon memohon semula.
+
+Pautan akaun kepada ahli dikekalkan semasa pemulihan JSON baharu menggunakan identiti rekod yang stabil. Jika rekod asal tiada atau sandaran lama tiada identiti stabil, pautan dikosongkan untuk mengelakkan akaun terbuka kepada individu lain apabila nombor ID digunakan semula. Pentadbir boleh memautkan semula selepas semakan identiti. Sesi ahli ditamatkan selepas pemulihan. Sandaran lama tanpa hebahan/aktiviti tidak diterima apabila siaran sudah wujud.
+
+Akses awam masih ditangguhkan. Dengan tetapan lalai, uji semua peranan melalui pelayar pada komputer sama; gunakan tetingkap peribadi atau pelayar berlainan untuk sesi pentadbir dan ahli.

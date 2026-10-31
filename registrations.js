@@ -1,8 +1,9 @@
+import { notify } from './community.js';
 import { randomBytes } from 'node:crypto';
 import { memberColumns,digest,duplicateMatches } from './data-tools.js';
-import { audit,withAudit } from './accounts.js';
+import { audit,withAudit,passwordRecord,verifyPassword } from './accounts.js';
 
-export const registrationColumns=['id','reference','submissionKey','data','status','reviewNote','reviewedBy','reviewedAt','memberId','consentedAt','createdAt','updatedAt'];
+export const registrationColumns=['id','reference','submissionKey','data','status','reviewNote','reviewedBy','reviewedAt','memberId','consentedAt','createdAt','updatedAt','requestedUsername'];
 const limits=new Map();
 const submissionLimit=Number(process.env.REGISTRATION_MAX_PER_HOUR || 20);
 if(!Number.isSafeInteger(submissionLimit) || submissionLimit<1 || submissionLimit>1000)throw Error('REGISTRATION_MAX_PER_HOUR mesti antara 1 dan 1,000.');
@@ -17,6 +18,7 @@ export function initializeRegistrations(db) {
     id INTEGER PRIMARY KEY,reference TEXT NOT NULL UNIQUE,submissionKey TEXT NOT NULL UNIQUE,data TEXT NOT NULL,
     status TEXT NOT NULL CHECK(status IN ('pending','approved','rejected')),reviewNote TEXT NOT NULL DEFAULT '',reviewedBy TEXT NOT NULL DEFAULT '',reviewedAt TEXT NOT NULL DEFAULT '',
     memberId INTEGER REFERENCES members(id) ON DELETE SET NULL,consentedAt TEXT NOT NULL,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL);`);
+  if(!db.prepare('PRAGMA table_info(registrations)').all().some(column=>column.name==='requestedUsername'))db.exec("ALTER TABLE registrations ADD COLUMN requestedUsername TEXT NOT NULL DEFAULT ''");
 }
 export function registrationData(input,validate) {
   const data=validate({...input,isActive:1,deactivatedAt:'',inactivityReason:''});
@@ -32,23 +34,37 @@ export function readRegistrations(input,members,validate) {
     if(typeof row.reviewNote!=='string' || row.reviewNote.length>1000 || typeof row.reviewedBy!=='string' || row.reviewedBy.length>100 || typeof row.reviewedAt!=='string' || (row.reviewedAt && !Number.isFinite(Date.parse(row.reviewedAt))))throw Error('Maklumat semakan sandaran permohonan tidak sah.');
     if(row.memberId!==null && (!Number.isSafeInteger(row.memberId) || !memberIds.has(row.memberId) || row.status!=='approved'))throw Error('Maklumat pautan ahli permohonan tidak sah.');
     ids.add(row.id);refs.add(row.reference);keys.add(row.submissionKey);
-    return {...row,data:registrationData(row.data,validate)};
+    if(row.requestedUsername && !/^[a-z0-9_.-]{3,40}$/.test(row.requestedUsername))throw Error('Maklumat ID pengguna permohonan tidak sah.');
+    return {...row,requestedUsername:row.requestedUsername||'',data:registrationData(row.data,validate)};
   });
 }
 export async function publicRegistrationRoutes({req,res,path,db,json,body,validate,clientIp}) {
   if(path==='/api/registrations' && req.method==='POST') {
+    if(!db.prepare("SELECT id FROM users WHERE role='admin' LIMIT 1").get()){json(res,503,{error:'Pentadbir belum disediakan.'});return true;}
     const input=await body(req);
     if(!input || !/^[a-f0-9]{64}$/.test(input.submissionKey) || input.consent!==true)throw Error('Sila sahkan persetujuan dan maklumat permohonan.');
     const data=registrationData(input.data,validate);
+    if(typeof input.username!=='string' || !/^[a-zA-Z0-9_.-]{3,40}$/.test(input.username))throw Error('Sila tetapkan ID pengguna 3–40 aksara.');
+    const username=input.username.toLowerCase();
+    const account=db.prepare('SELECT * FROM users WHERE username=?').get(username);
     const existing=db.prepare('SELECT * FROM registrations WHERE submissionKey=?').get(input.submissionKey);
     if(existing) {
-      if(digest(JSON.parse(existing.data))!==digest(data)){json(res,409,{error:'Permohonan asal telah dihantar. Semak rujukan asal atau mulakan borang baharu.'});return true;}
+      if(existing.requestedUsername!==username || !verifyPassword(account,input.password) || digest(JSON.parse(existing.data))!==digest(data)){json(res,409,{error:'Permohonan asal telah dihantar. Semak rujukan asal atau mulakan borang baharu.'});return true;}
       json(res,200,{reference:existing.reference,status:existing.status});return true;
     }
     if(!permit('submit:'+clientIp,submissionLimit,3600000)) {json(res,429,{error:'Had permohonan sementara dicapai. Cuba lagi selepas satu jam atau hubungi pentadbir.'});return true;}
     if(db.prepare("SELECT count(*) n FROM registrations WHERE status='pending'").get().n>=5000){json(res,503,{error:'Permohonan baharu ditangguhkan sementara. Sila hubungi pentadbir.'});return true;}
+    if(account && (account.role!=='ahli' || account.memberId!==null || account.isActive || !verifyPassword(account,input.password) || db.prepare('SELECT status FROM registrations WHERE reference=?').get(account.registrationReference)?.status!=='rejected')){json(res,409,{error:'ID pengguna tidak tersedia. Pilih ID lain atau hubungi pentadbir.'});return true;}
+    const credentials=passwordRecord(input.password);
     const reference='MK-'+randomBytes(8).toString('hex'),now=new Date().toISOString();
-    db.prepare('INSERT INTO registrations (reference,submissionKey,data,status,consentedAt,createdAt,updatedAt) VALUES (?,?,?,\'pending\',?,?,?)').run(reference,input.submissionKey,JSON.stringify(data),now,now,now);
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.prepare('INSERT INTO registrations (reference,submissionKey,data,status,consentedAt,createdAt,updatedAt,requestedUsername) VALUES (?,?,?,\'pending\',?,?,?,?)').run(reference,input.submissionKey,JSON.stringify(data),now,now,now,username);
+      if(account)db.prepare('UPDATE users SET registrationReference=?,updatedAt=? WHERE id=?').run(reference,now,account.id);
+      else db.prepare("INSERT INTO users (username,fullName,role,isActive,salt,hash,createdAt,updatedAt,registrationReference) VALUES (?,?,'ahli',0,?,?,?,?,?)").run(username,data.name,credentials.salt,credentials.hash,now,now,reference);
+      db.exec('COMMIT');
+    }catch(error){db.exec('ROLLBACK');throw error;}
+
     json(res,201,{reference,status:'pending'});return true;
   }
   if(path==='/api/registration-status' && req.method==='GET') {
@@ -82,8 +98,13 @@ export async function registrationRoutes({req,res,path,user,db,json,body,validat
     let memberId=null;
     withAudit(db,user,input.decision==='approve'?'Lulus permohonan ahli':'Tolak permohonan ahli','permohonan',row.id,()=>{
       if(input.decision==='approve') {
-        const columns=memberColumns.filter(key=>key!=='id'),record={...data,household:JSON.stringify(data.household),createdAt:now,updatedAt:now};
+        const columns=memberColumns.filter(key=>!['id','identityKey'].includes(key)),record={...data,household:JSON.stringify(data.household),createdAt:now,updatedAt:now};
         memberId=Number(db.prepare(`INSERT INTO members (${columns.join(',')}) VALUES (${columns.map(()=>'?').join(',')})`).run(...columns.map(key=>record[key])).lastInsertRowid);
+        if(row.requestedUsername){
+          const account=db.prepare("SELECT * FROM users WHERE username=? AND registrationReference=? AND role='ahli' AND memberId IS NULL").get(row.requestedUsername,row.reference);
+          if(!account)throw Error('Maklumat akaun permohonan tidak tersedia. Hubungi pentadbir untuk semakan akaun.');
+          db.prepare('UPDATE users SET isActive=1,memberId=?,updatedAt=? WHERE id=?').run(memberId,now,account.id);notify(db,{userId:account.id,title:'Pendaftaran diluluskan',body:'Selamat datang. Anda kini boleh melihat dan mengemas kini profil sendiri.'});
+        }
         audit(db,user,'Daftar ahli melalui permohonan','ahli',memberId);
       }
       return db.prepare('UPDATE registrations SET status=?,reviewNote=?,reviewedBy=?,reviewedAt=?,memberId=?,updatedAt=? WHERE id=? AND status=\'pending\'').run(input.decision==='approve'?'approved':'rejected',note,user.username,now,memberId,now,row.id);

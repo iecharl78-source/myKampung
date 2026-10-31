@@ -12,6 +12,7 @@ import { initializeAccounts,passwordRecord,verifyPassword,publicUser } from '../
 test('Naik taraf akaun lama mengekalkan kata laluan, membuang hash lama dan tidak mencipta pendua',()=>{
   const db=new DatabaseSync(':memory:'),password=randomBytes(16).toString('hex'),credentials=passwordRecord(password);
   try {
+    db.exec('CREATE TABLE members (id INTEGER PRIMARY KEY)');
     db.exec('CREATE TABLE admin (id INTEGER PRIMARY KEY,salt TEXT,hash TEXT)');
     db.prepare('INSERT INTO admin VALUES (1,?,?)').run(credentials.salt,credentials.hash);
     initializeAccounts(db,'this-new-environment-value-must-not-replace-password');
@@ -23,6 +24,20 @@ test('Naik taraf akaun lama mengekalkan kata laluan, membuang hash lama dan tida
     users=db.prepare('SELECT * FROM users').all();assert.equal(users.length,1);assert.equal(verifyPassword(users[0],password),true);
     assert.equal(verifyPassword(null,password),false);assert.throws(()=>passwordRecord('short'),/Kata laluan/);
   } finally { db.close(); }
+});
+
+test('Naik taraf peranan lama mengekalkan ID/hash dan membenarkan pautan akaun ahli',()=>{
+  const db=new DatabaseSync(':memory:'),password=randomBytes(16).toString('hex'),credentials=passwordRecord(password);
+  try{
+    db.exec(`CREATE TABLE members(id INTEGER PRIMARY KEY); INSERT INTO members VALUES(9);
+      CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT NOT NULL UNIQUE COLLATE NOCASE,fullName TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('admin','petugas')),isActive INTEGER NOT NULL DEFAULT 1,salt TEXT NOT NULL,hash TEXT NOT NULL,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL);`);
+    const now=new Date().toISOString();db.prepare('INSERT INTO users VALUES(7,?,?,?,1,?,?,?,?)').run('admin','Pentadbir asal','admin',credentials.salt,credentials.hash,now,now);
+    initializeAccounts(db);initializeAccounts(db);
+    const admin=db.prepare('SELECT * FROM users WHERE id=7').get();assert.equal(verifyPassword(admin,password),true);assert.equal(admin.fullName,'Pentadbir asal');
+    db.prepare("INSERT INTO users(username,fullName,role,salt,hash,createdAt,updatedAt,memberId) VALUES('newresident','Ahli','ahli',?,?,?,?,9)").run(credentials.salt,credentials.hash,now,now);
+    assert.equal(db.prepare("SELECT memberId FROM users WHERE username='newresident'").get().memberId,9);
+    assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
+  }finally{db.close();}
 });
 
 test('Akaun berasingan, peranan, kata laluan, penamatan sesi dan audit',async()=>{

@@ -16,7 +16,7 @@ test('Pendaftaran awam menunggu kelulusan, keputusan hanya pentadbir, pendua dan
     const base=await new Promise((resolve,reject)=>{let out='',err='';const timeout=setTimeout(()=>reject(Error(err||'Startup timeout')),10000);child.stderr.on('data',v=>err+=v);child.stdout.on('data',v=>{out+=v;const m=out.match(/port (\d+)/);if(m){clearTimeout(timeout);resolve(`http://127.0.0.1:${m[1]}`);}});child.on('exit',()=>{clearTimeout(timeout);reject(Error(err));});});
     let cookie='';const req=(path,method='GET',data,auth=cookie,extra={})=>fetch(base+path,{method,headers:{Cookie:auth,'Content-Type':'application/json',...extra},body:data===undefined?undefined:JSON.stringify(data)});
     const data={name:'Pemohon Ujian',phone:'0123456789',address1:'Alamat Ujian',country:'Malaysia',employmentStatus:'Bekerja',household:[{name:'Anak Pemohon',relationship:'Anak',birthDate:'2010-01-01',employmentStatus:'Pelajar',educationLevel:'Sekolah menengah'}]};
-    const input={data,consent:true,submissionKey:randomBytes(32).toString('hex')};
+    const input={data,username:"applicant1",password,consent:true,submissionKey:randomBytes(32).toString('hex')};
     assert.equal((await req('/daftar')).status,200);assert.equal((await req('/api/registrations')).status,401);
     assert.equal((await req('/api/registrations','POST',{...input,consent:false})).status,400);
     assert.equal((await req('/api/registrations','POST',input,'',{Origin:'https://other.example'})).status,403);
@@ -43,19 +43,19 @@ test('Pendaftaran awam menunggu kelulusan, keputusan hanya pentadbir, pendua dan
     const members=await (await req('/api/members')).json();assert.equal(members.length,1);assert.equal(members[0].id,memberId);assert.equal(members[0].household[0].name,'Anak Pemohon');
     status=await (await req('/api/registration-status?reference='+receipt.reference,'GET',undefined,'')).json();assert.equal(status.status,'approved');assert.equal(status.reviewNote,'Disemak');
     // Permohonan lain menyerupai ahli diluluskan memerlukan semakan pendua.
-    await req('/api/registrations','POST',{...input,submissionKey:randomBytes(32).toString('hex')},'');
+    await req('/api/registrations','POST',{...input,username:'applicant2',submissionKey:randomBytes(32).toString('hex')},'');
     applications=await (await req('/api/registrations')).json();const duplicate=applications[0];
     response=await req(`/api/registrations/${duplicate.id}/review`,'POST',{...review,expectedUpdatedAt:duplicate.updatedAt});assert.equal(response.status,409);assert.equal((await response.json()).code,'REGISTRATION_DUPLICATE');
     assert.equal((await req(`/api/registrations/${duplicate.id}/review`,'POST',{decision:'reject',reviewNote:'',expectedUpdatedAt:duplicate.updatedAt})).status,400);
     assert.equal((await req(`/api/registrations/${duplicate.id}/review`,'POST',{decision:'reject',reviewNote:'Sudah berdaftar. Hubungi pentadbir.',expectedUpdatedAt:duplicate.updatedAt})).status,200);
     status=await (await req('/api/registration-status?reference='+duplicate.reference,'GET',undefined,'')).json();assert.equal(status.status,'rejected');assert.match(status.reviewNote,/Sudah berdaftar/);
-    const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,4);assert.equal(snapshot.registrations.length,2);
+    const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,5);assert.equal(snapshot.registrations.length,2);
     assert.equal((await req('/api/restore/preview','POST',createBackup(snapshot.members,snapshot.aid,snapshot.aidTypes))).status,409);
     const preview=await (await req('/api/restore/preview','POST',snapshot)).json();
     assert.equal((await req('/api/restore/confirm','POST',{previewToken:preview.previewToken,password,confirmation:'PULIHKAN'})).status,200);
     assert.equal((await (await req('/api/registrations')).json()).length,2);assert.equal((await (await req('/api/members')).json()).length,1);
     assert.ok((await (await req('/api/audit')).json()).rows.some(row=>row.action==='Lulus permohonan ahli'));
-    await req('/api/registrations','POST',{...input,submissionKey:randomBytes(32).toString('hex')},'');
+    await req('/api/registrations','POST',{...input,username:'applicant2',submissionKey:randomBytes(32).toString('hex')},'');
     const another=(await (await req('/api/registrations')).json())[0];
     response=await req(`/api/registrations/${another.id}/review`,'POST',{...review,expectedUpdatedAt:another.updatedAt});assert.equal(response.status,409);
     const checked=await response.json();

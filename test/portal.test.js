@@ -1,0 +1,97 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {randomBytes} from 'node:crypto';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {once} from 'node:events';
+import {createBackup} from '../data-tools.js';
+import {DatabaseSync} from 'node:sqlite';
+
+test('Portal ahli: kelulusan perubahan, pengasingan isi rumah, komunikasi dan siaran',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'kampung-portal-')),password=randomBytes(16).toString('hex');
+ const child=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env:{...process.env,DATA_DIR:dir,PORT:'0',HOST:'127.0.0.1',ADMIN_PASSWORD:password,COOKIE_SECURE:'0'},stdio:['ignore','pipe','pipe']});
+ try{
+  const base=await new Promise((resolve,reject)=>{let out='',err='';const timer=setTimeout(()=>reject(Error(err||'Timeout')),10000);child.stderr.on('data',v=>err+=v);child.stdout.on('data',v=>{out+=v;const m=out.match(/port (\d+)/);if(m){clearTimeout(timer);resolve(`http://127.0.0.1:${m[1]}`);}});child.on('exit',()=>{clearTimeout(timer);reject(Error(err));});});
+  let admin='';const req=(path,method='GET',data,cookie=admin)=>fetch(base+path,{method,headers:{Cookie:cookie,'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});
+  const login=async username=>{const r=await req('/api/login','POST',{username,password},'');assert.equal(r.status,200,await r.clone().text());return r.headers.get('set-cookie').split(';')[0];};
+  admin=await login('admin');
+  const data={name:'Ahli Pertama',phone:'0123456789',address1:'Alamat asal',country:'Malaysia',employmentStatus:'Bekerja',household:[]};
+  for(const [username,name,phone] of [['resident1',data.name,data.phone],['resident2','Ahli Kedua','0198765432']]){
+   const r=await req('/api/registrations','POST',{username,password,consent:true,submissionKey:randomBytes(32).toString('hex'),data:{...data,name,phone}},'');assert.equal(r.status,201,await r.clone().text());
+   assert.equal((await req('/api/login','POST',{username,password},'')).status,401);
+   const pending=(await (await req('/api/registrations')).json())[0];
+   assert.equal((await req(`/api/registrations/${pending.id}/review`,'POST',{decision:'approve',reviewNote:'',expectedUpdatedAt:pending.updatedAt})).status,200);
+  }
+  const first=await login('resident1'),second=await login('resident2');
+  for(const path of ['/api/members','/api/members/2','/api/aid','/api/users','/api/registrations','/api/backup','/api/reports'])assert.equal((await req(path,'GET',undefined,first)).status,403,path);
+  assert.equal((await req('/api/members/2','PUT',data,first)).status,403);
+  let profile=await (await req('/api/portal/profile','GET',undefined,first)).json();assert.equal(profile.name,data.name);assert.equal(profile.identityKey,undefined);
+  const other=await (await req('/api/portal/profile','GET',undefined,second)).json();assert.notEqual(profile.id,other.id);
+  let proposal={...profile,name:'Nama Dicadangkan',address1:'Alamat baharu',household:[{name:'Anak Baharu',relationship:'Anak',employmentStatus:'Pelajar',educationLevel:'Sekolah rendah'}],expectedUpdatedAt:profile.updatedAt,memberId:other.id};
+  let r=await req('/api/portal/profile','PUT',proposal,first);assert.equal(r.status,202,await r.clone().text());let requestId=(await r.json()).id;
+  assert.equal((await (await req('/api/portal/profile','GET',undefined,first)).json()).name,data.name);
+  assert.equal((await (await req('/api/portal/profile','GET',undefined,second)).json()).name,other.name);
+  assert.equal((await req('/api/portal/profile','PUT',proposal,first)).status,409);
+  assert.equal((await (await req('/api/profile-requests','GET',undefined,second)).json()).length,0);
+  assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'},first)).status,403);
+  await req('/api/users','POST',{username:'staffportal',fullName:'Petugas',role:'petugas',password});const staff=await login('staffportal');
+  assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'},staff)).status,403);
+  assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'reject'})).status,400);
+  assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'reject',reviewNote:'Sila lengkapkan nama penuh.'})).status,200);
+  let ownRequests=await (await req('/api/profile-requests','GET',undefined,first)).json();assert.equal(ownRequests[0].reviewNote,'Sila lengkapkan nama penuh.');assert.equal(ownRequests[0].status,'rejected');
+  r=await req('/api/portal/profile','PUT',proposal,first);assert.equal(r.status,202);requestId=(await r.json()).id;
+  // Kelulusan dan audit mesti atomik jika penulisan rekod rasmi gagal.
+  const db=new DatabaseSync(join(dir,'kampung.sqlite'));
+  db.exec("CREATE TRIGGER fail_profile BEFORE UPDATE ON members BEGIN SELECT RAISE(ABORT,'test failure'); END");
+  try{assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'})).status,400);assert.equal((await (await req('/api/profile-requests')).json())[0].status,'pending');}finally{db.exec('DROP TRIGGER fail_profile');}
+  assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve',reviewNote:'Disahkan'})).status,200);
+  assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'})).status,409);
+  profile=await (await req('/api/portal/profile','GET',undefined,first)).json();assert.equal(profile.name,proposal.name);assert.equal(profile.household.length,1);
+  // Padam keluarga juga hanya cadangan sehingga diluluskan; rekod berganda diberi amaran.
+  proposal={...profile,name:other.name,household:[],expectedUpdatedAt:profile.updatedAt};r=await req('/api/portal/profile','PUT',proposal,first);requestId=(await r.json()).id;
+  r=await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'});assert.equal(r.status,409);const duplicate=await r.json();assert.equal(duplicate.code,'PROFILE_DUPLICATE');assert.equal((await (await req('/api/portal/profile','GET',undefined,first)).json()).household.length,1);
+  assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve',duplicateConfirmation:duplicate.confirmation})).status,200);
+  profile=await (await req('/api/portal/profile','GET',undefined,first)).json();assert.equal(profile.household.length,0);
+  // Rekod berubah selepas permohonan: pentadbir tidak boleh menindih perubahan baharu.
+  r=await req('/api/portal/profile','PUT',{...profile,phone:'0112345678',expectedUpdatedAt:profile.updatedAt},first);requestId=(await r.json()).id;
+  db.prepare('UPDATE members SET updatedAt=? WHERE id=?').run('2099-01-01T00:00:00.000Z',profile.id);
+  assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'})).status,409);
+  await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'reject',reviewNote:'Rekod berubah, hantar semula.'});
+  assert.equal((await req('/api/announcements','POST',{title:'Palsu',body:'Palsu',published:1},first)).status,403);
+  assert.equal((await req('/api/events','POST',{title:'Aktiviti',body:'Maklumat',startsAt:'bad'},staff)).status,400);
+  await req('/api/announcements','POST',{title:'Draf rahsia',body:'Belum disiar',published:0},staff);
+  await req('/api/announcements','POST',{title:'Hebahan umum',body:'Maklumat sah',published:1},staff);
+  assert.equal((await (await req('/api/announcements','GET',undefined,first)).json()).length,1);
+  r=await req('/api/events','POST',{title:'Gotong royong',body:'Bawa peralatan',published:1,location:'Balai raya',startsAt:'2026-11-07T08:00:00+08:00',endsAt:'2026-11-07T12:00:00+08:00'},staff);assert.equal(r.status,201);
+  assert.equal((await (await req('/api/events','GET',undefined,first)).json())[0].startsAt,'2026-11-07T00:00:00.000Z');
+  r=await req('/api/questions','POST',{subject:'Pertanyaan bantuan',body:'Bagaimana memohon?'},first);assert.equal(r.status,201);const thread=(await r.json()).id;
+  assert.equal((await req('/api/questions/'+thread,'GET',undefined,second)).status,404);assert.equal((await req(`/api/questions/${thread}/reply`,'POST',{body:'Cuba akses'},second)).status,404);
+  assert.equal((await req(`/api/questions/${thread}/reply`,'POST',{body:'Sila hadir balai raya.'},staff)).status,200);
+  assert.equal((await (await req('/api/questions/'+thread,'GET',undefined,first)).json()).messages.length,2);
+  assert.equal((await req(`/api/questions/${thread}/status`,'POST',{status:'closed'},first)).status,403);
+  assert.equal((await req(`/api/questions/${thread}/status`,'POST',{status:'closed'},staff)).status,200);
+  assert.equal((await req(`/api/questions/${thread}/reply`,'POST',{body:'Mesej lewat'},first)).status,400);
+  const notifications=await (await req('/api/notifications','GET',undefined,first)).json();assert.ok(notifications.rows.some(n=>n.title==='Perubahan profil diluluskan'));assert.ok(notifications.rows.some(n=>n.title==='Balasan pertanyaan diterima'));
+  await req('/api/notifications/read','POST',{ids:[notifications.rows[0].id]},second);assert.equal((await (await req('/api/notifications','GET',undefined,first)).json()).unread,notifications.unread);
+  await req('/api/notifications/read','POST',{all:true},first);assert.equal((await (await req('/api/notifications','GET',undefined,first)).json()).unread,0);
+  const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,5);assert.equal(snapshot.community.events.length,1);assert.ok(!JSON.stringify(snapshot).includes(password));assert.ok(!JSON.stringify(snapshot).includes('Bagaimana memohon?'));
+  const preview=await (await req('/api/restore/preview','POST',snapshot)).json();assert.equal((await req('/api/restore/confirm','POST',{previewToken:preview.previewToken,password,confirmation:'PULIHKAN'})).status,200);
+  const restored=await login('resident1');assert.equal((await (await req('/api/portal/profile','GET',undefined,restored)).json()).id,profile.id);
+  assert.equal((await (await req('/api/questions/'+thread,'GET',undefined,restored)).json()).messages.length,2);
+  const current=(await (await req('/api/members')).json()).find(m=>m.id===profile.id);
+  assert.equal((await req(`/api/members/${profile.id}/status`,'POST',{expectedUpdatedAt:current.updatedAt,active:false,reason:'Berpindah'})).status,200);
+  assert.equal((await req('/api/portal/profile','GET',undefined,restored)).status,401);
+  assert.equal((await req('/api/login','POST',{username:'resident1',password},'')).status,401);
+  const oldStyle=createBackup(snapshot.members.map(({identityKey,...m})=>m),snapshot.aid,snapshot.aidTypes,snapshot.registrations,snapshot.community);
+  const oldPreview=await (await req('/api/restore/preview','POST',oldStyle)).json();assert.equal((await req('/api/restore/confirm','POST',{previewToken:oldPreview.previewToken,password,confirmation:'PULIHKAN'})).status,200);
+  assert.equal((await req('/api/login','POST',{username:'resident1',password},'')).status,401);
+  const resident=(await (await req('/api/users')).json()).find(u=>u.username==='resident1');assert.equal(resident.memberId,null);
+  assert.equal((await req(`/api/users/${resident.id}/member`,'POST',{memberId:profile.id,currentPassword:'wrong'})).status,400);
+  assert.equal((await req(`/api/users/${resident.id}/member`,'POST',{memberId:profile.id,currentPassword:password})).status,200);
+  const relinked=await login('resident1');assert.equal((await (await req('/api/portal/profile','GET',undefined,relinked)).json()).id,profile.id);
+  const another=(await (await req('/api/users')).json()).find(u=>u.username==='resident2');
+  assert.equal((await req(`/api/users/${another.id}/member`,'POST',{memberId:profile.id,currentPassword:password})).status,400);db.close();
+ }finally{if(child.exitCode===null){const exit=once(child,'exit');child.kill();await exit;}await rm(dir,{recursive:true,force:true});}
+});

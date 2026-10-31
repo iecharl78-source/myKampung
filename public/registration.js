@@ -2,6 +2,7 @@ import { employmentStatuses,educationLevels,studyLevels } from './education.js';
 import { memberEducationLevels } from './member-details.js';
 import { malaysiaStates } from './address.js';
 import { ageLabel,todayInMalaysia } from './age.js';
+import { enhancePasswords } from './password-tools.js';
 import { installFormState } from './form-state.js';
 const $=s=>document.querySelector(s),form=$('#registration-form');
 const options=values=>'<option value="">Sila pilih</option>'+values.map(value=>`<option>${value}</option>`).join('');
@@ -32,10 +33,11 @@ let previousData='',submissionKey='';
 async function request(path,method='GET',data){const response=await fetch(path,{method,headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined});const result=await response.json();if(!response.ok)throw Error(result.error||'Permintaan gagal.');return result;}
 form.onsubmit=async event=>{
   event.preventDefault();$('#registration-error').textContent='';
-  const data=Object.fromEntries(new FormData(form));data.household=[...document.querySelectorAll('.family-row')].map(row=>Object.fromEntries([...row.querySelectorAll('[data-field]')].map(input=>[input.dataset.field,input.value])));
-  const serialized=JSON.stringify(data);if(serialized!==previousData){submissionKey=[...crypto.getRandomValues(new Uint8Array(32))].map(v=>v.toString(16).padStart(2,'0')).join('');previousData=serialized;}
+  if(form.elements.password.value!==form.elements.confirmPassword.value){$('#registration-error').textContent='Kata laluan tidak sepadan.';return;}
+  const data=Object.fromEntries(new FormData(form));const username=data.username,password=data.password;delete data.username;delete data.password;delete data.confirmPassword;data.household=[...document.querySelectorAll('.family-row')].map(row=>Object.fromEntries([...row.querySelectorAll('[data-field]')].map(input=>[input.dataset.field,input.value])));
+  const serialized=JSON.stringify({data,username});if(serialized!==previousData){submissionKey=[...crypto.getRandomValues(new Uint8Array(32))].map(v=>v.toString(16).padStart(2,'0')).join('');previousData=serialized;}
   try{
-    const result=await request('/api/registrations','POST',{data,consent:$('#registration-consent').checked,submissionKey});
+    const result=await request('/api/registrations','POST',{data,username,password,consent:$('#registration-consent').checked,submissionKey});
     form.reset();$('#family-fields').replaceChildren();form.hidden=true;$('#registration-receipt').hidden=false;$('#registration-reference').textContent=result.reference;$('#registration-receipt-status').textContent=({pending:'Menunggu semakan pentadbir.',approved:'Permohonan diluluskan.',rejected:'Permohonan ditolak.'}[result.status])+' Simpan kod rujukan untuk menyemak keputusan.';$('#status-reference').value=result.reference;$('#registration-receipt').scrollIntoView({block:'start'});
   }catch(error){$('#registration-error').textContent=error.message;}
 };
@@ -44,4 +46,4 @@ $('#registration-status-form').onsubmit=async event=>{
   try{const result=await request('/api/registration-status?reference='+encodeURIComponent(event.target.elements.reference.value.trim()));output.textContent={pending:'Menunggu semakan pentadbir',approved:'Permohonan diluluskan',rejected:'Permohonan ditolak'}[result.status]+(result.reviewNote?' — '+result.reviewNote:'');}
   catch(error){output.textContent=error.message;}
 };
-$('#registration-new').onclick=()=>location.reload();updateEducation();installFormState();
+$('#registration-new').onclick=()=>location.reload();updateEducation();const refresh=enhancePasswords();document.addEventListener('submit',refresh,true);document.addEventListener('form-idle',refresh,true);installFormState();

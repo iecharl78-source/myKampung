@@ -6,6 +6,7 @@ import { enhancePasswords } from './password-tools.js';
 import { setupRegistrations } from './registrations-ui.js';
 import { setupReports } from './reports-ui.js';
 import { setupAidUI } from './aid-ui.js';
+import { setupPortal } from './portal-ui.js';
 import { installFormState } from './form-state.js';
 const $ = selector => document.querySelector(selector);
 let members = [], editing = null, duplicateConfirmation = '', restorePreviewToken = '', fileSelection = 0, memberAction = null;
@@ -28,16 +29,24 @@ function hidePassword() {
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
 function showLogin() {
-  aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
+  portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
   aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
   $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[]; currentUser=null;
   for(const id of ['users-list','audit-list','current-user']) $('#'+id).replaceChildren();
   $('#login').hidden=false;
-  for(const id of ['dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel','logout','current-user','open-password','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=true;
+  for(const id of ['portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel','logout','current-user','open-password','nav-portal','nav-community','nav-questions','nav-notifications','nav-profile-review','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=true;
 }
 async function load() {
   currentUser=(await api('/api/session')).user;
+  const resident=currentUser.role==='ahli',adminRole=currentUser.role==='admin';
+  $('#login').hidden=true;
+  for(const id of ['logout','current-user','open-password','nav-community','nav-questions','nav-notifications'])$('#'+id).hidden=false;
+  $('#nav-portal').hidden=!resident;$('#nav-profile-review').hidden=!adminRole;
+  for(const id of ['nav-members','nav-aid'])$('#'+id).hidden=resident;
+  for(const id of ['nav-accounts','nav-audit','nav-reports','nav-registrations'])$('#'+id).hidden=!adminRole;
+  if(resident){await portalUI.loadMember();await portalUI.loadNotifications();showPanel('portal-panel');return;}
+  await portalUI.loadNotifications();
   let counts;[members,counts]=await Promise.all([api('/api/members'),api('/api/aid-counts')]);
   aidCounts=new Map(counts.map(row=>[row.memberId,row]));
   $('#login').hidden=true; $('#dashboard').hidden=false; $('#logout').hidden=false;
@@ -254,27 +263,32 @@ $('#action-form').onsubmit=async event=>{
 };
 
 function showPanel(id) {
-  for(const panel of ['dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
-  for(const [nav,panel] of [['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+  for(const panel of ['portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
+  for(const [nav,panel] of [['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
 }
 $('#nav-members').onclick=()=>showPanel('dashboard');
 async function loadUsers() {
   users=await api('/api/users');
-  $('#users-list').innerHTML=`<div class="table-wrap"><table><thead><tr><th>PENGGUNA</th><th>PERANAN</th><th>STATUS</th><th>TINDAKAN</th></tr></thead><tbody>${users.map(user=>`<tr><td><b>${esc(user.fullName)}</b><br>${esc(user.username)}</td><td>${user.role==='admin'?'Pentadbir':'Petugas'}</td><td>${user.isActive?'Aktif':'Tidak aktif'}</td><td>${user.id===currentUser.id ? 'Akaun anda' : `<button class="quiet user-status" data-id="${user.id}">${user.isActive?'Nyahaktif':'Aktifkan'}</button><button class="quiet user-reset" data-id="${user.id}">Tetap semula kata laluan</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+  updateMemberOptions();
+  $('#users-list').innerHTML=`<div class="table-wrap"><table><thead><tr><th>PENGGUNA</th><th>PERANAN</th><th>STATUS</th><th>TINDAKAN</th></tr></thead><tbody>${users.map(user=>`<tr><td><b>${esc(user.fullName)}</b><br>${esc(user.username)}</td><td>${({admin:'Pentadbir',petugas:'Petugas',ahli:'Ahli'})[user.role]}</td><td>${user.isActive?'Aktif':'Tidak aktif'}</td><td>${user.id===currentUser.id ? 'Akaun anda' : `<button class="quiet user-status" data-id="${user.id}">${user.isActive?'Nyahaktif':'Aktifkan'}</button>${user.role==='ahli'?`<button class="quiet user-link" data-id="${user.id}">Pautkan ahli (#${user.memberId??'belum dipautkan'})</button>`:''}<button class="quiet user-reset" data-id="${user.id}">Tetap semula kata laluan</button>`}</td></tr>`).join('')}</tbody></table></div>`;
   document.querySelectorAll('.user-status').forEach(button=>button.onclick=()=>openUserAction('status',Number(button.dataset.id)));
+  document.querySelectorAll('.user-link').forEach(button=>button.onclick=()=>openUserAction('member',Number(button.dataset.id)));
   document.querySelectorAll('.user-reset').forEach(button=>button.onclick=()=>openUserAction('password',Number(button.dataset.id)));
 }
+function updateMemberOptions(){const f=$('#new-user-form'),resident=f.elements.newRole.value==='ahli';$('#user-member-section').hidden=!resident;f.elements.memberId.required=resident;f.elements.memberId.innerHTML='<option value="">Pilih ahli</option>'+members.filter(m=>m.isActive&&!users.some(u=>u.memberId===m.id)).map(m=>`<option value="${m.id}">${esc(m.name)} (#${m.id})</option>`).join('');}
+$('#new-user-form').elements.newRole.onchange=updateMemberOptions;
 $('#nav-accounts').onclick=async()=>{ try { await loadUsers();showPanel('accounts-panel'); } catch(error) { notice(error.message); } };
 $('#new-user-form').onsubmit=async event=>{
   event.preventDefault(); const form=event.target,button=form.querySelector('button[type="submit"]');button.disabled=true;$('#new-user-error').textContent='';
   try {
-    await api('/api/users','POST',{username:form.elements.newUsername.value,fullName:form.elements.newFullName.value,role:form.elements.newRole.value,password:form.elements.newPassword.value});
+    await api('/api/users','POST',{username:form.elements.newUsername.value,fullName:form.elements.newFullName.value,role:form.elements.newRole.value,password:form.elements.newPassword.value,memberId:Number(form.elements.memberId.value)});
     form.reset();await loadUsers();notice('Akaun pengguna berjaya dicipta.');
   } catch(error) { $('#new-user-error').textContent=error.message; } finally { form.elements.newPassword.value='';button.disabled=false; }
 };
 function openUserAction(type,id) {
   const user=users.find(u=>u.id===id);userAction={type,user};$('#user-action-form').reset();$('#user-action-error').textContent='';
-  $('#user-action-title').textContent=type==='password'?'Tetap semula kata laluan':user.isActive?'Nyahaktif akaun':'Aktifkan akaun';
+  $('#relink-member-section').hidden=type!=='member';const linkSelect=$('#user-action-form').elements.memberId;linkSelect.required=type==='member';linkSelect.innerHTML='<option value="">Pilih ahli</option>'+members.filter(m=>m.isActive&&!users.some(u=>u.memberId===m.id&&u.id!==id)).map(m=>`<option value="${m.id}">${esc(m.name)} (#${m.id})</option>`).join('');linkSelect.value=user.memberId??'';
+  $('#user-action-title').textContent=type==='member'?'Pautkan akaun kepada rekod ahli':type==='password'?'Tetap semula kata laluan':user.isActive?'Nyahaktif akaun':'Aktifkan akaun';
   $('#user-action-summary').textContent=`${user.fullName} (${user.username})`;
   $('#reset-password-section').hidden=type!=='password';$('#user-action-form').elements.newPassword.required=type==='password';
   $('#user-action-dialog').showModal();
@@ -284,7 +298,7 @@ $('#user-action-dialog').addEventListener('cancel',()=>{ $('#user-action-form').
 $('#user-action-form').onsubmit=async event=>{
   event.preventDefault(); if(!userAction) return;
   const {type,user}=userAction,form=event.target;$('#user-action-submit').disabled=true;$('#user-action-error').textContent='';
-  const input={currentPassword:form.elements.currentPassword.value,newPassword:form.elements.newPassword.value,active:!user.isActive};
+  const input={currentPassword:form.elements.currentPassword.value,newPassword:form.elements.newPassword.value,active:!user.isActive,memberId:Number(form.elements.memberId.value)};
   form.elements.currentPassword.value='';form.elements.newPassword.value='';
   try { await api(`/api/users/${user.id}/${type}`,'POST',input);$('#user-action-dialog').close();userAction=null;await loadUsers();notice('Akaun pengguna berjaya dikemas kini.'); }
   catch(error) { $('#user-action-error').textContent=error.message; } finally { $('#user-action-submit').disabled=false; }
@@ -320,6 +334,7 @@ function syncAidCounts(records) {
   }
   aidCounts=counts;render();
 }
+const portalUI=setupPortal({api,showPanel,getUser:()=>currentUser,notice});
 const aidUI=setupAidUI({api,showPanel,getUser:()=>currentUser,notice,onRecordsChanged:syncAidCounts});
 const registrationsUI=setupRegistrations({api,showPanel,notice,refreshMembers:load});
 const reportsUI=setupReports({api,showPanel,notice});
