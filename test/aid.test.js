@@ -49,6 +49,7 @@ test('Bantuan: peranan, pendua, sejarah keluarga, sandaran, transaksi dan pemuli
     const base=await new Promise((resolve,reject)=>{let out='',errors='';const timeout=setTimeout(()=>reject(Error(errors||'Startup timeout')),10000);child.stderr.on('data',d=>errors+=d);child.stdout.on('data',d=>{out+=d;const m=out.match(/port (\d+)/);if(m){clearTimeout(timeout);resolve(`http://127.0.0.1:${m[1]}`);}});child.on('exit',()=>{clearTimeout(timeout);reject(Error(errors));});});
     let cookie='';const req=(path,method='GET',data,auth=cookie)=>fetch(base+path,{method,headers:{Cookie:auth,'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});
     assert.equal((await req('/api/aid')).status,401);
+    assert.equal((await req('/api/aid-counts')).status,401);
     let response=await req('/api/login','POST',{password});cookie=response.headers.get('set-cookie').split(';')[0];
     response=await req('/api/members','POST',{...member,phone:'0123456789',address:'Alamat Ujian'});assert.equal(response.status,201);
     const memberId=(await response.json()).id,aid={...payload,memberId};
@@ -59,6 +60,17 @@ test('Bantuan: peranan, pendua, sejarah keluarga, sandaran, transaksi dan pemuli
     assert.equal((await req('/api/aid-types','POST',{title:'Bakul Katalog',category:'Makanan',provider:'Agensi Ujian'})).status,409);
     aid.aidTypeId=typeId;aid.title='Bakul Katalog';
     response=await req('/api/aid','POST',aid,staff);assert.equal(response.status,201);const id=(await response.json()).id;
+    assert.deepEqual(await (await req('/api/aid-counts')).json(),[{memberId,total:1,primaryCount:0,familyCount:1,householdCount:0}]);
+    const extraIds=[];
+    for(const recipientKind of ['ahli','isi_rumah']) {
+      const extra=await req('/api/aid','POST',{...aid,recipientKind},staff);assert.equal(extra.status,201);extraIds.push((await extra.json()).id);
+    }
+    assert.deepEqual(await (await req('/api/aid-counts')).json(),[{memberId,total:3,primaryCount:1,familyCount:1,householdCount:1}]);
+    for(const extraId of extraIds) {
+      const extra=(await (await req('/api/aid')).json()).find(row=>row.id===extraId);
+      assert.equal((await req(`/api/aid/${extraId}`,'DELETE',{expectedUpdatedAt:extra.updatedAt,confirmation:'PADAM'})).status,200);
+    }
+    assert.equal((await (await req('/api/aid-counts')).json())[0].total,1);
     response=await req('/api/aid','POST',aid);assert.equal(response.status,409);assert.equal((await response.json()).code,'AID_DUPLICATE');
     let row=(await (await req('/api/aid')).json())[0];assert.equal(row.householdName,'Ahli Ujian');
     assert.equal((await req(`/api/aid/${id}`,'PUT',{...aid,expectedUpdatedAt:'stale'})).status,409);
@@ -91,6 +103,7 @@ test('Bantuan: peranan, pendua, sejarah keluarga, sandaran, transaksi dan pemuli
     assert.equal((await req(`/api/aid/${id}`,'DELETE',{expectedUpdatedAt:row.updatedAt,confirmation:'wrong'})).status,400);
     assert.equal((await req(`/api/aid/${id}`,'DELETE',{expectedUpdatedAt:row.updatedAt,confirmation:'PADAM'})).status,200);
     assert.equal((await (await req('/api/aid')).json()).length,0);
+    assert.deepEqual(await (await req('/api/aid-counts')).json(),[]);
     assert.ok((await (await req('/api/audit')).json()).rows.some(log=>log.action==='Rekod bantuan diterima'));
   } finally {if(child.exitCode===null){const exit=once(child,'exit');child.kill();await exit;}await rm(dir,{recursive:true,force:true});}
 });

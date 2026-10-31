@@ -8,6 +8,7 @@ import { installFormState } from './form-state.js';
 const $ = selector => document.querySelector(selector);
 let members = [], editing = null, duplicateConfirmation = '', restorePreviewToken = '', fileSelection = 0, memberAction = null;
 let currentUser=null, users=[], userAction=null, auditPage=1;
+let aidCounts=new Map();
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path, method='GET', data) {
   const response = await fetch(path,{method,headers:data ? {'Content-Type':'application/json'} : {},body:data ? JSON.stringify(data) : undefined});
@@ -25,6 +26,7 @@ function hidePassword() {
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
 function showLogin() {
+  aidCounts.clear();
   aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
   $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[]; currentUser=null;
@@ -34,7 +36,9 @@ function showLogin() {
 }
 async function load() {
   currentUser=(await api('/api/session')).user;
-  members=await api('/api/members'); $('#login').hidden=true; $('#dashboard').hidden=false; $('#logout').hidden=false;
+  let counts;[members,counts]=await Promise.all([api('/api/members'),api('/api/aid-counts')]);
+  aidCounts=new Map(counts.map(row=>[row.memberId,row]));
+  $('#login').hidden=true; $('#dashboard').hidden=false; $('#logout').hidden=false;
   const admin=currentUser.role==='admin';
   for(const id of ['backup','open-restore','nav-accounts','nav-audit']) $('#'+id).hidden=!admin;
   for(const id of ['current-user','open-password','nav-members','nav-aid']) $('#'+id).hidden=false;
@@ -48,8 +52,12 @@ function render() {
   const query=$('#search').value.trim().toLocaleLowerCase('ms');
   const filter=$('#status-filter').value;
   const rows=members.filter(m=>(filter==='all' || m.isActive===(filter==='active'?1:0)) && [m.name,m.phone,m.address].join(' ').toLocaleLowerCase('ms').includes(query));
-  $('#results').innerHTML=rows.length ? `<div class="table-wrap"><table><thead><tr><th>AHLI KOMUNITI</th><th>HUBUNGI</th><th>ALAMAT</th><th>KELUARGA</th><th>STATUS</th><th><span class="sr-only">Tindakan</span></th></tr></thead><tbody>${rows.map(m=>`<tr><td><div class="person"><span class="avatar">${esc(m.name.charAt(0).toUpperCase())}</span><div><b>${esc(m.name)}</b><small>Ahli #${String(m.id).padStart(4,'0')} · ${esc(ageLabel(m.birthDate))}</small></div></div></td><td>${esc(m.phone)}</td><td class="address">${esc(m.address)}</td><td><span class="badge">${m.household.length} orang</span></td><td><span class="badge ${m.isActive===0?'inactive-badge':''}">${m.isActive===1?'Aktif':'Tidak aktif'}</span></td><td><div class="row-actions"><button class="edit quiet" data-id="${m.id}">Lihat / edit ↗</button><button class="member-status-action quiet" data-id="${m.id}">${m.isActive===1?'Nyahaktif':'Aktifkan semula'}</button>${currentUser?.role==='admin' ? `<button class="member-delete-action quiet" data-id="${m.id}">Padam</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div><div class="table-footer">${rows.length} daripada ${members.length} rekod ahli</div>` : `<div class="empty"><span>⌂</span><h3>${members.length ? 'Tiada rekod untuk carian atau status ini' : 'Mulakan dengan ahli pertama'}</h3><p>${members.length ? 'Cuba carian lain atau pilih status Semua.' : 'Daftarkan ahli komuniti dan maklumat keluarga mereka.'}</p>${members.length ? '' : '<button class="secondary" id="empty-add">＋ Daftar ahli pertama</button>'}</div>`;
+  $('#results').innerHTML=rows.length ? `<div class="table-wrap"><table><thead><tr><th>AHLI KOMUNITI</th><th>HUBUNGI</th><th>ALAMAT</th><th>KELUARGA</th><th>BANTUAN DITERIMA</th><th>STATUS</th><th><span class="sr-only">Tindakan</span></th></tr></thead><tbody>${rows.map(m=>`<tr><td><div class="person"><span class="avatar">${esc(m.name.charAt(0).toUpperCase())}</span><div><b>${esc(m.name)}</b><small>Ahli #${String(m.id).padStart(4,'0')} · ${esc(ageLabel(m.birthDate))}</small></div></div></td><td>${esc(m.phone)}</td><td class="address">${esc(m.address)}</td><td><span class="badge">${m.household.length} orang</span></td><td class="aid-count-cell"><button type="button" class="member-aid-count badge" data-id="${m.id}" aria-label="Lihat ${aidCounts.get(m.id)?.total || 0} rekod bantuan untuk ${esc(m.name)}">${aidCounts.get(m.id)?.total || 0} bantuan</button><small>Ahli: ${aidCounts.get(m.id)?.primaryCount || 0}<br>Keluarga: ${aidCounts.get(m.id)?.familyCount || 0}<br>Isi rumah: ${aidCounts.get(m.id)?.householdCount || 0}</small></td><td><span class="badge ${m.isActive===0?'inactive-badge':''}">${m.isActive===1?'Aktif':'Tidak aktif'}</span></td><td><div class="row-actions"><button class="edit quiet" data-id="${m.id}">Lihat / edit ↗</button><button class="member-status-action quiet" data-id="${m.id}">${m.isActive===1?'Nyahaktif':'Aktifkan semula'}</button>${currentUser?.role==='admin' ? `<button class="member-delete-action quiet" data-id="${m.id}">Padam</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div><div class="table-footer">${rows.length} daripada ${members.length} rekod ahli</div>` : `<div class="empty"><span>⌂</span><h3>${members.length ? 'Tiada rekod untuk carian atau status ini' : 'Mulakan dengan ahli pertama'}</h3><p>${members.length ? 'Cuba carian lain atau pilih status Semua.' : 'Daftarkan ahli komuniti dan maklumat keluarga mereka.'}</p>${members.length ? '' : '<button class="secondary" id="empty-add">＋ Daftar ahli pertama</button>'}</div>`;
   document.querySelectorAll('.edit').forEach(b=>b.onclick=()=>openEditor(members.find(m=>m.id===Number(b.dataset.id))));
+  document.querySelectorAll('.member-aid-count').forEach(button=>button.onclick=async()=>{
+    await openEditor(members.find(member=>member.id===Number(button.dataset.id)));
+    $('#member-aid-section').scrollIntoView({block:'start',behavior:'smooth'});
+  });
   document.querySelectorAll('.member-status-action').forEach(b=>b.onclick=()=>openMemberAction('status',members.find(m=>m.id===Number(b.dataset.id))));
   document.querySelectorAll('.member-delete-action').forEach(b=>b.onclick=()=>openMemberAction('delete',members.find(m=>m.id===Number(b.dataset.id))));
   if ($('#empty-add')) $('#empty-add').onclick=()=>openEditor();
@@ -95,7 +103,7 @@ function openEditor(member) {
   updateMemberEducation();
   updatePostcodes();
   updateEmployerPostcodes();
-  $('#member-form').elements.birthDate.max=todayInMalaysia(); updateMemberAge(); $('#editor').showModal();aidUI.showMember(member);
+  $('#member-form').elements.birthDate.max=todayInMalaysia(); updateMemberAge(); $('#editor').showModal();return aidUI.showMember(member);
 }
 function updateMemberAge() { $('#member-age').textContent=ageLabel($('#member-form').elements.birthDate.value); }
 const selectOptions=values=>'<option value="">Sila pilih</option>'+values.map(value=>`<option>${esc(value)}</option>`).join('');
@@ -297,7 +305,18 @@ async function loadAudit() {
 $('#nav-audit').onclick=async()=>{ auditPage=1;try { await loadAudit();showPanel('audit-panel'); } catch(error) { notice(error.message); } };
 for(const [id,step] of [['audit-prev',-1],['audit-next',1],['audit-refresh',0]]) $('#'+id).onclick=async()=>{ auditPage=Math.max(1,auditPage+step);try { await loadAudit(); } catch(error) { notice(error.message); } };
 
-const aidUI=setupAidUI({api,showPanel,getUser:()=>currentUser,notice});
+function syncAidCounts(records) {
+  const counts=new Map();
+  for(const record of records) {
+    if(!counts.has(record.memberId)) counts.set(record.memberId,{total:0,primaryCount:0,familyCount:0,householdCount:0});
+    const row=counts.get(record.memberId);row.total++;
+    if(record.recipientKind==='ahli')row.primaryCount++;
+    if(record.recipientKind==='keluarga')row.familyCount++;
+    if(record.recipientKind==='isi_rumah')row.householdCount++;
+  }
+  aidCounts=counts;render();
+}
+const aidUI=setupAidUI({api,showPanel,getUser:()=>currentUser,notice,onRecordsChanged:syncAidCounts});
 const refreshPasswords=enhancePasswords();
 document.addEventListener('submit',refreshPasswords,true);
 document.addEventListener('form-idle',refreshPasswords,true);

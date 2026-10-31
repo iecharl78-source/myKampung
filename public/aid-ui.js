@@ -1,6 +1,6 @@
 import { todayInMalaysia } from './age.js';
 
-export function setupAidUI({api,showPanel,getUser,notice}) {
+export function setupAidUI({api,showPanel,getUser,notice,onRecordsChanged=()=>{}}) {
   const $=selector=>document.querySelector(selector);
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=cents=>new Intl.NumberFormat('ms-MY',{style:'currency',currency:'MYR'}).format(cents/100);
@@ -8,6 +8,7 @@ export function setupAidUI({api,showPanel,getUser,notice}) {
   let records=[],members=[],types=[],editingType=null,profileMember=null,editing=null,confirmation='',deleting=null;
   async function load() {
     [records,members,types]=await Promise.all([api('/api/aid'),api('/api/members'),api('/api/aid-types')]);
+    onRecordsChanged(records);
     const selected=$('#aid-member-filter').value;
     $('#aid-member-filter').innerHTML='<option value="">Semua isi rumah</option>'+members.map(m=>`<option value="${m.id}">${esc(m.name)} (#${m.id})</option>`).join('');
     if(members.some(m=>String(m.id)===selected)) $('#aid-member-filter').value=selected;

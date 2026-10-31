@@ -92,6 +92,13 @@ export function readAidBackup(input,members) {
   });
 }
 export async function aidRoutes({req,res,path,user,db,json,body,safetySnapshot}) {
+  if(path==='/api/aid-counts' && req.method==='GET') {
+    json(res,200,db.prepare(`SELECT memberId,count(*) AS total,
+      sum(CASE WHEN recipientKind='ahli' THEN 1 ELSE 0 END) AS primaryCount,
+      sum(CASE WHEN recipientKind='keluarga' THEN 1 ELSE 0 END) AS familyCount,
+      sum(CASE WHEN recipientKind='isi_rumah' THEN 1 ELSE 0 END) AS householdCount
+      FROM aid_records GROUP BY memberId`).all());return true;
+  }
   if(path==='/api/aid-types' || /^\/api\/aid-types\/\d+$/.test(path)) {
     if(path==='/api/aid-types' && req.method==='GET') {json(res,200,db.prepare('SELECT * FROM aid_types ORDER BY title,id').all());return true;}
     if(user.role!=='admin') {json(res,403,{error:'Pengurusan jenis bantuan terhad kepada pentadbir.'});return true;}
