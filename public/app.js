@@ -3,6 +3,7 @@ import { addressFields, malaysiaStates, postcodeSuggestions } from './address.js
 import { employmentStatuses, educationLevels, studyLevels } from './education.js';
 import { memberDetailFields, memberEducationLevels } from './member-details.js';
 import { enhancePasswords } from './password-tools.js';
+import { setupReports } from './reports-ui.js';
 import { setupAidUI } from './aid-ui.js';
 import { installFormState } from './form-state.js';
 const $ = selector => document.querySelector(selector);
@@ -26,13 +27,13 @@ function hidePassword() {
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
 function showLogin() {
-  aidCounts.clear();
+  aidCounts.clear();reportsUI.reset();
   aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
   $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[]; currentUser=null;
   for(const id of ['users-list','audit-list','current-user']) $('#'+id).replaceChildren();
   $('#login').hidden=false;
-  for(const id of ['dashboard','accounts-panel','audit-panel','aid-panel','logout','current-user','open-password','nav-members','nav-aid','nav-accounts','nav-audit']) $('#'+id).hidden=true;
+  for(const id of ['dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','logout','current-user','open-password','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports']) $('#'+id).hidden=true;
 }
 async function load() {
   currentUser=(await api('/api/session')).user;
@@ -40,7 +41,7 @@ async function load() {
   aidCounts=new Map(counts.map(row=>[row.memberId,row]));
   $('#login').hidden=true; $('#dashboard').hidden=false; $('#logout').hidden=false;
   const admin=currentUser.role==='admin';
-  for(const id of ['backup','open-restore','nav-accounts','nav-audit']) $('#'+id).hidden=!admin;
+  for(const id of ['backup','open-restore','nav-accounts','nav-audit','nav-reports']) $('#'+id).hidden=!admin;
   for(const id of ['current-user','open-password','nav-members','nav-aid']) $('#'+id).hidden=false;
   $('#current-user').textContent=`${currentUser.fullName} · ${admin?'Pentadbir':'Petugas'}`;
   showPanel('dashboard');
@@ -250,8 +251,8 @@ $('#action-form').onsubmit=async event=>{
 };
 
 function showPanel(id) {
-  for(const panel of ['dashboard','accounts-panel','audit-panel','aid-panel']) $('#'+panel).hidden=panel!==id;
-  for(const [nav,panel] of [['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+  for(const panel of ['dashboard','accounts-panel','audit-panel','aid-panel','reports-panel']) $('#'+panel).hidden=panel!==id;
+  for(const [nav,panel] of [['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
 }
 $('#nav-members').onclick=()=>showPanel('dashboard');
 async function loadUsers() {
@@ -317,6 +318,7 @@ function syncAidCounts(records) {
   aidCounts=counts;render();
 }
 const aidUI=setupAidUI({api,showPanel,getUser:()=>currentUser,notice,onRecordsChanged:syncAidCounts});
+const reportsUI=setupReports({api,showPanel,notice});
 const refreshPasswords=enhancePasswords();
 document.addEventListener('submit',refreshPasswords,true);
 document.addEventListener('form-idle',refreshPasswords,true);

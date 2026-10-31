@@ -9,6 +9,7 @@ import { formatAddress } from './public/address.js';
 import { normalizeEducation } from './public/education.js';
 import { normalizeMemberDetails, memberDetailFields } from './public/member-details.js';
 import { memberColumns, digest, duplicateMatches, createBackup, readBackup } from './data-tools.js';
+import { reportRoute } from './reports.js';
 import { initializeAid,aidRoutes,aidColumns,readAidBackup,aidTypeColumns,readAidTypes } from './aid.js';
 import { initializeAccounts, publicUser, verifyPassword, audit, withAudit, accountRoutes } from './accounts.js';
 
@@ -81,7 +82,7 @@ function validate(input) {
   const inactivityReason=isActive===0 ? text(input.inactivityReason ?? '',500) : '';
   return {name, phone, address, ...addressParts, ...normalizeMemberDetails(input), birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -119,6 +120,7 @@ const server = http.createServer(async (req,res) => {
     if(await accountRoutes({req,res,path,user,db,json,body,revokeSessions})) return;
     const adminOnly=path==='/api/backup' || path.startsWith('/api/restore/') || req.method==='DELETE';
     if(adminOnly && user.role!=='admin') return json(res,403,{error:'Akses ini terhad kepada pentadbir.'});
+    if(reportRoute({req,res,path,user,db,json,members:allMembers,aid:allAid})) return;
     if(await aidRoutes({req,res,path,user,db,json,body,safetySnapshot})) return;
     if (path === '/api/logout' && req.method === 'POST') { audit(db,user,'Log keluar','akaun',user.id); sessions.delete(token); restorePreviews.delete(token); res.setHeader('Set-Cookie','session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); return json(res,200,{ok:true}); }
     if (path === '/api/members' && req.method === 'GET') return json(res,200,allMembers());

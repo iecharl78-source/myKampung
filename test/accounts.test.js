@@ -46,12 +46,15 @@ test('Akaun berasingan, peranan, kata laluan, penamatan sesi dan audit',async()=
     assert.equal((await req('/api/users','POST',{username:'rolebad',fullName:'Ujian',role:'owner',password:staffPassword})).status,400);
     assert.equal((await req('/api/users','POST',{username:'short',fullName:'Ujian',role:'petugas',password:'short'})).status,400);
     let staffCookie=await login('petugas1',staffPassword),secondStaffSession=await login('petugas1',staffPassword);
-    for(const path of ['/api/users','/api/audit','/api/backup']) assert.equal((await req(path,'GET',undefined,staffCookie)).status,403);
+    for(const path of ['/api/users','/api/audit','/api/backup','/api/reports','/api/reports?format=csv']) assert.equal((await req(path,'GET',undefined,staffCookie)).status,403);
     assert.equal((await req('/api/users','POST',{username:'hacker',role:'admin',password:staffPassword},staffCookie)).status,403);
     assert.equal((await req('/api/restore/preview','POST',{},staffCookie)).status,403);
     assert.equal((await req('/api/members/1','DELETE',{},staffCookie)).status,403);
     const member={name:'Ahli Rahsia Ujian',phone:'0123456789',address1:'Alamat Rahsia Ujian',household:[]};
     response=await req('/api/members','POST',member,staffCookie);assert.equal(response.status,201);const memberId=(await response.json()).id;
+    const report=await (await req('/api/reports?type=members&status=all')).json();assert.equal(report.total,1);assert.equal(report.rows[0].name,member.name);
+    const csv=await req('/api/reports?type=members&format=csv');assert.equal(csv.status,200);assert.match(csv.headers.get('content-type'),/text\/csv/);assert.match(csv.headers.get('content-disposition'),/attachment/);assert.ok((await csv.text()).includes(member.name));
+    assert.equal((await req('/api/reports?type=aid&from=bad')).status,400);
     let row=(await (await req('/api/members','GET',undefined,staffCookie)).json())[0];
     assert.equal((await req(`/api/members/${memberId}`,'PUT',{...row,occupation:'Guru'},staffCookie)).status,200);
     row=(await (await req('/api/members','GET',undefined,staffCookie)).json())[0];

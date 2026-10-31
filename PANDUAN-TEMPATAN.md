@@ -241,3 +241,23 @@ Sandaran format versi 3 merangkumi senarai jenis bantuan dan pautannya. Pemuliha
 Lajur **Bantuan diterima** dalam direktori menunjukkan jumlah rekod bantuan bagi setiap ahli/isi rumah, dengan pecahan **Ahli**, **Keluarga** dan **Isi rumah**. Setiap rekod penerimaan dikira sekali mengikut jenis penerimanya. Bilangan ini bukan bilangan jenis bantuan berbeza atau kuantiti barang. Jika bantuan yang sama diterima pada dua agihan berasingan dan direkodkan dua kali, ia dikira dua rekod.
 
 Ahli tanpa bantuan dipaparkan sebagai `0 bantuan`. Klik jumlah bantuan untuk terus membuka bahagian sejarah bantuan dalam profil ahli. Bilangan dikemas kini apabila direktori dimuatkan serta selepas penambahan, suntingan, pemadaman atau pemulihan rekod bantuan melalui aplikasi. Sejarah keluarga yang tidak lagi berada dalam senarai tanggungan tetap dikira; penapis Aktif/Tidak aktif menentukan ahli yang dipaparkan, bukan memadam sejarah bantuan.
+
+## Laporan, CSV dan cetakan
+
+Menu **Laporan** tersedia kepada Pentadbir sahaja. Petugas disekat pada paparan dan API laporan/eksport. Tiga laporan disediakan:
+
+- **Senarai ahli:** maklumat hubungan, alamat, pekerjaan, umur, bilangan tanggungan dan jumlah rekod bantuan bagi ahli utama.
+- **Senarai ahli keluarga:** seorang tanggungan pada setiap baris, bersama ID/nama ahli utama, hubungan, umur, pekerjaan dan pendidikan.
+- **Bantuan diterima:** penerima asal, isi rumah semasa, bantuan, pemberi, tarikh, nilai RM, kuantiti, unit dan catatan.
+
+Pilih status aktif/tidak aktif/semua, negeri, daerah dan carian. Status/negeri/daerah mengikut profil isi rumah semasa; untuk melihat keseluruhan sejarah termasuk penerima yang sudah berpindah, pilih **Semua**. Pada laporan bantuan, penapis tarikh merujuk kepada tarikh bantuan diterima dan kategori merujuk kepada kategori yang tersimpan dalam rekod sejarah. Negeri lama yang belum diasingkan daripada Alamat 1 perlu dilengkapkan dalam profil untuk padanan penapis negeri.
+
+Tekan **Jana laporan**. Ringkasan memaparkan jumlah rekod sepadan dan bilangan isi rumah berbeza. Laporan bantuan turut memaparkan jumlah nilai RM yang telah diisi, tanpa menganggap nilai kosong sebagai sifar bantuan atau mencampurkan kuantiti barang berlainan unit. Umur dikira semasa laporan dijana, bukan umur pada tarikh bantuan.
+
+Paparan dan cetakan terhad kepada **500 rekod pertama**. Jika hasil lebih banyak, amaran had dipaparkan dan disertakan dalam cetakan. **Muat turun CSV** mengandungi semua hasil sepadan. Untuk mencetak subset yang lebih kecil, sempitkan penapis terlebih dahulu. Menukar penapis membatalkan paparan lama dan melumpuhkan butang eksport/cetak sehingga laporan dijana semula.
+
+Fail CSV menggunakan UTF-8 dan boleh dibuka dalam Excel. Untuk mengekalkan sifar awal pada poskod/telefon, gunakan **Data → From Text/CSV** dan tetapkan lajur tersebut sebagai **Text**, bukan nombor. Nilai yang bermula dengan corak formula seperti `=`, `+`, `-` atau `@` diberi awalan apostrof supaya tidak dijalankan sebagai formula oleh perisian hamparan; ini boleh terlihat sebagai aksara tambahan dalam sesetengah aplikasi. CSV bukan sandaran yang boleh dipulihkan melalui fungsi Pulihkan data.
+
+Gunakan **Cetak / Simpan PDF** untuk membuka dialog cetak pelayar dan pilih pencetak atau **Save as PDF**. Cetakan hanya merangkumi hasil laporan, penapis dan masa dijana dalam waktu Malaysia, tanpa menu, borang atau butang aplikasi. Susun atur dicadangkan A4 melintang; hasil sebenar bergantung pada tetapan pelayar/pencetak.
+
+Data laporan dicapai semasa permintaan diproses. Eksport menggunakan penapis laporan terakhir pada data terkini, jadi jana semula dahulu jika rekod berubah sejak paparan disediakan. Sejarah tindakan merekodkan penjanaan laporan dan eksport CSV, tetapi cetakan tempatan melalui pelayar tidak direkodkan sebagai tindakan pelayan. Laporan dan CSV mengandungi maklumat peribadi; simpan dan kongsikan hanya kepada pihak yang dibenarkan. Akaun, kata laluan dan hash tidak dimasukkan dalam laporan.
