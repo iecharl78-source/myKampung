@@ -216,7 +216,7 @@ Pentadbir dan Petugas boleh merekod serta menyunting bantuan. Hanya Pentadbir bo
 
 ## Sandaran dan pemulihan selepas modul bantuan
 
-Butang **Sandaran** kini menghasilkan format versi 4 yang mengandungi ahli, keluarga, semua bantuan termasuk penerima asal, senarai jenis bantuan serta permohonan pendaftaran. Hadnya 10 MB, 20,000 ahli dan 50,000 rekod bantuan. Akaun dan sejarah tindakan masih tidak dimasukkan; gunakan salinan keseluruhan folder `data` ketika pelayan dihentikan untuk sandaran sistem penuh.
+Butang **Sandaran rekod JSON** menghasilkan format versi 5 yang mengandungi ahli, keluarga, semua bantuan termasuk penerima asal, senarai jenis bantuan serta permohonan pendaftaran. Hadnya 10 MB, 20,000 ahli dan 50,000 rekod bantuan. Akaun dan sejarah tindakan masih tidak dimasukkan; gunakan salinan keseluruhan folder `data` ketika pelayan dihentikan untuk sandaran sistem penuh.
 
 Pratonton pemulihan memaparkan bilangan bantuan. Pemulihan versi terkini menggantikan ahli/keluarga, **bantuan dan jenis bantuan** bersama-sama dalam satu transaksi; jika penulisan gagal, kedua-duanya dikekalkan pada keadaan sebelumnya. Sandaran keselamatan sebelum pemulihan juga mengandungi bantuan. Jika ahli atau bantuan berubah selepas pratonton, pilih fail semula sebelum mengesahkan.
 
@@ -345,3 +345,34 @@ Ahli melihat bilangan permohonan profil/bantuan sendiri yang menunggu semakan, b
 Semua peranan melihat bilangan notifikasi sendiri yang belum dibaca, pertanyaan terbuka yang dibenarkan mengikut akses, lima aktiviti akan datang atau sedang berlangsung, dan tiga hebahan terkini yang telah disiarkan. Aktiviti tamat dan siaran draf tidak dipaparkan. **Lihat dalam kalendar** memilih bulan aktiviti dan membuka butiran berkaitan. Petugas tidak melihat kad kelulusan yang dikhaskan kepada pentadbir.
 
 Ringkasan dikemas kini semasa membuka Papan pemuka atau menekan **Muat semula ringkasan**; masa kemas kini dipaparkan dalam waktu Malaysia. Untuk menaik taraf, salin juga `dashboard.js` dan `public/dashboard-ui.js` bersama fail aplikasi lain, kemudian mulakan semula pelayan. Tiada jadual data baharu diperlukan untuk papan pemuka.
+
+## Sandaran penuh dan latihan pemulihan tempatan
+
+Pentadbir membuka **Papan pemuka → Sandaran penuh sistem**, memasukkan kata laluan pentadbir semasa dan menekan **Sediakan & muat turun sandaran penuh**. Borang dibekukan ketika salinan disediakan. Fail `kampung-full-….sqlite` menggunakan salinan SQLite yang konsisten walaupun aplikasi berjalan dan disemak integritinya sebelum dihantar. Ahli/Petugas tidak boleh memuat turunnya. Simpan fail yang selesai dimuat turun pada pemacu lain; fail ini mengandungi rekod, akaun/hash kata laluan, permohonan, mesej, notifikasi dan audit. Tiada penyulitan fail automatik; gunakan storan peribadi atau pemacu disulitkan.
+
+**Sandaran rekod JSON** dan **Pulihkan data** dalam direktori kekal untuk rekod komuniti sahaja. Jangan pilih fail SQLite dalam borang pemulihan JSON. Muat turun penuh secara manual tidak mengaktifkan sandaran berjadual; skrip sandaran penuh/berjadual sedia ada kekal tersedia.
+
+### Pemulihan penuh ke folder baharu
+
+Gunakan versi aplikasi ini dan Node.js 24. Hentikan pelayan terlebih dahulu dengan `Ctrl+C` supaya tidak tersalah menggunakan pemasangan lama ketika bertukar data. Simpan folder `data` asal. Dari folder aplikasi, contoh PowerShell berikut memulihkan fail sandaran ke folder baharu; gantikan laluan fail dan folder mengikut komputer anda:
+
+```powershell
+node scripts/restore-full.js --source 'E:\Sandaran\kampung-full-contoh.sqlite' --destination 'D:\myKampung-data-pulih'
+$env:DATA_DIR = 'D:\myKampung-data-pulih'
+node server.js
+```
+
+Bagi Node.js standalone, gantikan `node` dalam kedua-dua arahan dengan `& 'D:\laluan-node\node.exe'` menggunakan laluan sebenar fail `node.exe`. Folder induk destinasi mesti sudah wujud, tetapi folder destinasi mesti **belum wujud**. Skrip menolak destinasi sedia ada, memeriksa integriti dan pautan rekod, memastikan akaun pentadbir aktif wujud, dan menghasilkan `kampung.sqlite` dalam folder baharu. Fail sandaran dan folder data asal tidak ditindih.
+
+Contoh macOS/Linux:
+
+```bash
+node scripts/restore-full.js --source '/media/sandaran/kampung-full-contoh.sqlite' --destination '/home/nama/myKampung-data-pulih'
+DATA_DIR='/home/nama/myKampung-data-pulih' node server.js
+```
+
+Log masuk menggunakan ID/kata laluan yang terdapat dalam sandaran, bukan nilai ADMIN_PASSWORD baharu. Semua sesi lama tamat apabila pelayan dimulakan semula. Semak ahli, keluarga, bantuan, permohonan menunggu, mesej, notifikasi, akaun dan sejarah tindakan sebelum menerima pemasangan pulih sebagai pemasangan utama. Catat folder DATA_DIR yang dipilih dan terus gunakan folder itu setiap kali memulakan aplikasi; terminal baharu tidak semestinya menyimpan pemboleh ubah ini.
+
+Untuk kembali ke data asal, hentikan pelayan, tetapkan DATA_DIR semula ke folder data asal dan mulakan aplikasi. Jangan salin pangkalan data ke atas fail yang sedang digunakan. Latihan pemulihan boleh dibuat menggunakan data ujian dan folder baharu dahulu; ia tidak memerlukan penerbitan dalam talian.
+
+Semasa menaik taraf, salin `full-backup-route.js` dan seluruh folder `scripts` termasuk `backup-full.js` serta `restore-full.js`, bersama fail aplikasi lain.

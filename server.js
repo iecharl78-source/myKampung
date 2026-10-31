@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {fullBackupRoute} from './full-backup-route.js';
 import {dashboardData} from './dashboard.js';
 import {initializeAidRequests,aidRequestRoutes} from './aid-requests.js';
 import { runtimeConfig,clientAddress } from './runtime-config.js';
@@ -131,6 +132,7 @@ const server = http.createServer(async (req,res) => {
     const user=session && session.expires>Date.now() ? db.prepare('SELECT * FROM users WHERE id=? AND isActive=1').get(session.userId) : null;
     if(!user || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) { if(token) { sessions.delete(token);restorePreviews.delete(token); } return json(res,401,{error:'Sila log masuk.'}); }
     if (path === '/api/session' && req.method === 'GET') return json(res,200,{ok:true,user:publicUser(user)});
+    if(await fullBackupRoute({req,res,path,user,db,json,body,dataDir:data,isSessionActive:()=>sessions.get(token)===session&&session.expires>Date.now()&&db.prepare("SELECT id FROM users WHERE id=? AND role='admin' AND isActive=1").get(user.id)}))return;
     if(path==='/api/dashboard' && req.method==='GET')return json(res,200,dashboardData(db,user));
     if(await aidRequestRoutes({req,res,path,user,db,json,body}))return;
     if(await communityRoutes({req,res,path,user,db,json,body,validate})) return;

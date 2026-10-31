@@ -4,6 +4,7 @@ export function installFormState(root=document) {
   root.addEventListener('click',event=>{ if(busy) { event.preventDefault();event.stopImmediatePropagation(); } },true);
   root.addEventListener('cancel',event=>{ if(busy) event.preventDefault(); },true);
   const messages={
+    'full-backup-form':'Sedang menyediakan sandaran penuh…',
     'portal-aid-form':'Sedang menghantar permohonan bantuan…','aid-review-form':'Sedang menyimpan keputusan bantuan…','portal-profile-form':'Sedang menghantar permohonan…','profile-review-form':'Sedang menyimpan keputusan…','community-post-form':'Sedang menyimpan siaran…','question-form':'Sedang menghantar pertanyaan…','question-reply-form':'Sedang menghantar balasan…','question-status-form':'Sedang menyimpan status…','notification-form':'Sedang menyimpan…',
     'login-form':'Sedang log masuk…', 'logout-form':'Sedang log keluar…', 'registration-form':'Sedang menghantar permohonan…', 'registration-status-form':'Sedang menyemak status…', 'registration-review-form':'Sedang menyimpan keputusan semakan…', 'report-form':'Sedang menjana laporan…', 'member-form':'Sedang menyimpan rekod…',
     'restore-form':'Sedang memulihkan data…', 'action-form':'Sedang memproses tindakan…',

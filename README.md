@@ -43,3 +43,9 @@ Sandaran JSON versi 5 mengandungi rekod ahli, bantuan, permohonan pendaftaran se
 ## Papan pemuka
 
 Paparan pertama selepas log masuk merangkum permohonan menunggu semakan (Pentadbir), permohonan/keputusan isi rumah sendiri (Ahli), notifikasi belum dibaca, pertanyaan terbuka, aktiviti akan datang/berlangsung dan hebahan diterbitkan. Kad menyediakan pautan terus kepada tindakan yang dibenarkan mengikut peranan. Tekan Muat semula ringkasan untuk mendapatkan jumlah terkini.
+
+## Sandaran penuh dari aplikasi
+
+Pentadbir boleh memuat turun sandaran SQLite lengkap melalui **Papan pemuka → Sandaran penuh sistem**, dengan pengesahan kata laluan semasa. Berbeza daripada JSON, fail ini merangkumi akaun, mesej dan semua jadual portal. Sandaran berjadual tidak diaktifkan secara automatik.
+
+Pemulihan penuh dibuat ke folder baharu yang belum wujud menggunakan `node scripts/restore-full.js --source fail.sqlite --destination folder-baharu`, kemudian aplikasi dimulakan dengan `DATA_DIR` merujuk folder itu. Skrip mengekalkan sumber serta data asal dan menyemak integriti serta kewujudan pentadbir aktif. Rujuk panduan tempatan untuk contoh Windows/Node.js standalone dan latihan pemulihan.

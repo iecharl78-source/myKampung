@@ -6,7 +6,7 @@ export function setupDashboard({api,getUser,showPanel,notice}){
  async function load(){
   const ticket=++generation,user=getUser(),data=await api('/api/dashboard');if(ticket!==generation||getUser()?.id!==user?.id)return;
   $('#home-title').textContent=`Selamat datang, ${user.fullName}`;$('#home-stamp').textContent='Dikemas kini: '+date(data.generatedAt)+' (Malaysia)';
-  const resident=data.role==='ahli',admin=data.role==='admin';
+  const resident=data.role==='ahli',admin=data.role==='admin';$('#home-backup').hidden=!admin;
   let html='';if(admin)html+=card('home-pending-registration','Pendaftaran menunggu semakan',data.pending.registrations,'nav-registrations')+card('home-pending-profile','Perubahan profil menunggu semakan',data.pending.profiles,'nav-profile-review')+card('home-pending-aid','Maklumat bantuan menunggu semakan',data.pending.aid,'nav-profile-review');
   if(resident)html+=card('home-own-profile-pending','Perubahan profil menunggu semakan',data.requests.profiles.pending,'nav-portal')+card('home-own-aid-pending','Maklumat bantuan menunggu semakan',data.requests.aid.pending,'nav-portal');
   html+=card('home-unread','Notifikasi belum dibaca',data.unread,'nav-notifications')+card('home-questions',resident?'Pertanyaan saya yang terbuka':'Pertanyaan terbuka',data.openQuestions,'nav-questions');$('#home-summary').innerHTML=html;
@@ -17,7 +17,19 @@ export function setupDashboard({api,getUser,showPanel,notice}){
   document.querySelectorAll('[data-home-target]').forEach(button=>button.onclick=async()=>{try{const id=button.querySelector('strong')?.id;if(id==='home-pending-registration')$('#registration-filter').value='pending';const target=$('#'+button.dataset.homeTarget);await target.onclick();const section={ 'home-pending-aid':'aid-review-list','home-pending-profile':'profile-review-list','home-own-profile-pending':'portal-request-status','home-own-aid-pending':'portal-aid-requests'}[id];if(section)$('#'+section).scrollIntoView({block:'start'});}catch(error){notice(error.message);}});
   document.querySelectorAll('[data-home-event]').forEach(button=>button.onclick=async()=>{try{$('#calendar-month').value=button.dataset.month;await $('#nav-community').onclick();if(!$('#community-panel').hidden)document.getElementById('event-'+button.dataset.homeEvent)?.scrollIntoView({block:'center'});}catch(error){notice(error.message);}});
  }
+ $('#open-full-backup').onclick=()=>{$('#full-backup-form').reset();$('#full-backup-error').textContent='';$('#full-backup-dialog').showModal();};
+ $('#full-backup-close').onclick=()=>{$('#full-backup-dialog').close();$('#full-backup-form').reset();};
+ $('#full-backup-dialog').addEventListener('cancel',()=>$('#full-backup-form').reset());
+ $('#full-backup-form').onsubmit=async event=>{
+  event.preventDefault();$('#full-backup-error').textContent='';const password=event.target.elements.currentPassword.value;event.target.elements.currentPassword.value='';
+  try{
+   const response=await fetch('/api/backup/full',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({currentPassword:password})});
+   if(!response.ok){const error=await response.json();if(response.status===401)await api('/api/session');throw Error(error.error||'Sandaran penuh gagal disediakan.');}
+   const blob=await response.blob(),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=response.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1]||'myKampung-full.sqlite';document.body.append(link);event.target.addEventListener('form-idle',()=>{link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);},{once:true});
+   $('#full-backup-dialog').close();$('#full-backup-result').textContent='Sandaran penuh telah disediakan untuk muat turun. Pastikan fail disimpan, kemudian salin ke pemacu lain.';notice('Sandaran penuh siap disediakan.');
+  }catch(error){$('#full-backup-error').textContent=error.message;}
+ };
  $('#nav-home').onclick=async()=>{try{await load();showPanel('home-panel');window.scrollTo({top:0});}catch(error){notice(error.message);}};
  $('#home-refresh').onclick=()=>load().catch(error=>notice(error.message));
- return {load,reset(){generation++;for(const id of ['home-title','home-stamp','home-summary','home-community','home-decision-list','home-events','home-announcements'])$('#'+id).replaceChildren();}};
+ return {load,reset(){generation++;$('#full-backup-dialog').close();$('#full-backup-form').reset();$('#full-backup-error').textContent='';$('#full-backup-result').textContent='';$('#home-backup').hidden=true;for(const id of ['home-title','home-stamp','home-summary','home-community','home-decision-list','home-events','home-announcements'])$('#'+id).replaceChildren();}};
 }
