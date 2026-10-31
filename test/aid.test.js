@@ -7,7 +7,7 @@ import { mkdtemp,rm,readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { once } from 'node:events';
-import { validateAid,readAidBackup } from '../aid.js';
+import { validateAid,readAidBackup,initializeAid } from '../aid.js';
 import { createBackup,readBackup } from '../data-tools.js';
 
 const member={id:1,name:'Ahli Ujian',birthDate:'1990-01-01',isActive:1,createdAt:'2026-01-01T00:00:00Z',updatedAt:'2026-01-01T00:00:00Z',household:[{name:'Anak Ujian',birthDate:'2015-01-01',relationship:'Anak'}]};
@@ -31,6 +31,17 @@ test('Sandaran bantuan disemak integriti dan hubungan dengan ahli; format lama k
   assert.deepEqual(readAidBackup(createBackup([member]),[member]),[]);
 });
 
+test('Jenis bantuan lama diambil masuk sekali tanpa mengubah nama sejarah',()=>{
+  const db=new DatabaseSync(':memory:');
+  try {
+    db.exec("CREATE TABLE members (id INTEGER PRIMARY KEY); INSERT INTO members VALUES(1); CREATE TABLE aid_records (id INTEGER PRIMARY KEY,memberId INTEGER,recipientKind TEXT,recipientName TEXT,recipientBirthDate TEXT,title TEXT,category TEXT,provider TEXT,receivedDate TEXT,amountCents INTEGER,quantity REAL,unit TEXT,notes TEXT,createdAt TEXT,updatedAt TEXT); INSERT INTO aid_records VALUES(1,1,'ahli','Ahli','','Bantuan Lama','Makanan','Agensi','2026-01-01',1000,NULL,'','','2026-01-01','2026-01-01');");
+    initializeAid(db);const type=db.prepare('SELECT * FROM aid_types').get();assert.equal(type.title,'Bantuan Lama');
+    assert.equal(db.prepare('SELECT aidTypeId FROM aid_records').get().aidTypeId,type.id);
+    db.prepare('UPDATE aid_types SET title=? WHERE id=?').run('Nama Baharu',type.id);
+    initializeAid(db);assert.equal(db.prepare('SELECT count(*) AS n FROM aid_types').get().n,1);assert.equal(db.prepare('SELECT title FROM aid_records').get().title,'Bantuan Lama');
+  }finally{db.close();}
+});
+
 test('Bantuan: peranan, pendua, sejarah keluarga, sandaran, transaksi dan pemulihan',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'kampung-aid-')),password=randomBytes(16).toString('hex');
   const child=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env:{...process.env,DATA_DIR:dir,PORT:'0',HOST:'127.0.0.1',ADMIN_PASSWORD:password,COOKIE_SECURE:'0'},stdio:['ignore','pipe','pipe']});
@@ -43,6 +54,10 @@ test('Bantuan: peranan, pendua, sejarah keluarga, sandaran, transaksi dan pemuli
     const memberId=(await response.json()).id,aid={...payload,memberId};
     await req('/api/users','POST',{username:'aidstaff',fullName:'Petugas Bantuan',role:'petugas',password});
     response=await req('/api/login','POST',{username:'aidstaff',password});const staff=response.headers.get('set-cookie').split(';')[0];
+    assert.equal((await req('/api/aid-types','POST',{title:'Bantuan Staff',category:'Makanan'},staff)).status,403);
+    response=await req('/api/aid-types','POST',{title:'Bakul Katalog',category:'Makanan',provider:'Agensi Ujian',description:'Ujian',isActive:1});assert.equal(response.status,201);const typeId=(await response.json()).id;
+    assert.equal((await req('/api/aid-types','POST',{title:'Bakul Katalog',category:'Makanan',provider:'Agensi Ujian'})).status,409);
+    aid.aidTypeId=typeId;aid.title='Bakul Katalog';
     response=await req('/api/aid','POST',aid,staff);assert.equal(response.status,201);const id=(await response.json()).id;
     response=await req('/api/aid','POST',aid);assert.equal(response.status,409);assert.equal((await response.json()).code,'AID_DUPLICATE');
     let row=(await (await req('/api/aid')).json())[0];assert.equal(row.householdName,'Ahli Ujian');
@@ -51,7 +66,12 @@ test('Bantuan: peranan, pendua, sejarah keluarga, sandaran, transaksi dan pemuli
     assert.equal((await req(`/api/members/${memberId}`,'DELETE',{expectedUpdatedAt:originalMember.updatedAt,expectedName:originalMember.name,confirmation:'PADAM',password})).status,409);
     assert.equal((await req(`/api/members/${memberId}`,'PUT',{...originalMember,household:[]})).status,200);
     assert.equal((await req(`/api/aid/${id}`,'PUT',{...aid,notes:'Keluarga asal kekal',expectedUpdatedAt:row.updatedAt},staff)).status,200);
-    const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,2);assert.equal(snapshot.aid.length,1);
+    const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,3);assert.equal(snapshot.aid.length,1);assert.equal(snapshot.aidTypes.length,1);
+    const type=(await (await req('/api/aid-types')).json())[0];
+    assert.equal((await req(`/api/aid-types/${typeId}`,'PUT',{...type,title:'Nama baharu katalog',isActive:0,expectedUpdatedAt:type.updatedAt})).status,200);
+    assert.equal((await (await req('/api/aid')).json())[0].title,'Bakul Katalog');
+    assert.equal((await req('/api/aid','POST',{...aid,receivedDate:'2026-01-02'},staff)).status,400);
+    assert.equal((await req('/api/restore/preview','POST',createBackup(snapshot.members,snapshot.aid))).status,409);
     assert.equal((await req('/api/restore/preview','POST',createBackup(snapshot.members))).status,409);
     assert.equal((await req('/api/restore/preview','POST',createBackup(snapshot.members,[{...snapshot.aid[0],memberId:9999}]))).status,400);
     let preview=await (await req('/api/restore/preview','POST',snapshot)).json();assert.equal(preview.aid,1);

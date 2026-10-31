@@ -95,7 +95,7 @@ function openEditor(member) {
   updateMemberEducation();
   updatePostcodes();
   updateEmployerPostcodes();
-  $('#member-form').elements.birthDate.max=todayInMalaysia(); updateMemberAge(); $('#editor').showModal();
+  $('#member-form').elements.birthDate.max=todayInMalaysia(); updateMemberAge(); $('#editor').showModal();aidUI.showMember(member);
 }
 function updateMemberAge() { $('#member-age').textContent=ageLabel($('#member-form').elements.birthDate.value); }
 const selectOptions=values=>'<option value="">Sila pilih</option>'+values.map(value=>`<option>${esc(value)}</option>`).join('');
@@ -152,6 +152,7 @@ $('#logout').onclick=async()=>{ try { await api('/api/logout','POST'); members=[
 $('#search').oninput=render; $('#add-member').onclick=()=>openEditor();
 $('#status-filter').onchange=render;
 $('#add-family').onclick=()=>{ if ($('#family-fields').children.length>=30) { $('#form-error').textContent='Maksimum 30 ahli keluarga.'; return; } familyField(); };
+$('#editor').addEventListener('close',()=>aidUI.clearMember());
 $('#close-editor').onclick=$('#cancel-editor').onclick=()=>$('#editor').close();
 function clearDuplicates() { duplicateConfirmation=''; $('#duplicate-warning').hidden=true; $('#duplicate-list').replaceChildren(); }
 $('#member-form').addEventListener('input',clearDuplicates);

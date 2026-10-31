@@ -198,10 +198,10 @@ Pangkalan data dinaik taraf secara automatik ketika pelayan dimulakan. Keseluruh
 
 ## Rekod bantuan diterima
 
-Menu **Rekod bantuan** tersedia kepada Pentadbir dan Petugas. Versi ini merekodkan bantuan yang **sudah diterima**, bukan permohonan, kelayakan atau kelulusan bantuan. Jadual bantuan ditambah secara automatik ketika pelayan dimulakan selepas kemas kini; semua maklumat asas sedia ada dikekalkan.
+Menu **Bantuan** tersedia kepada Pentadbir dan Petugas. Versi ini merekodkan bantuan yang **sudah diterima**, bukan permohonan, kelayakan atau kelulusan bantuan. Jadual bantuan ditambah secara automatik ketika pelayan dimulakan selepas kemas kini; semua maklumat asas sedia ada dikekalkan.
 
-1. Tekan **Rekod bantuan**, kemudian **＋ Rekod bantuan**.
-2. Pilih ahli/isi rumah aktif. Jenis penerima boleh berupa **Ahli utama**, **Isi rumah** atau **Ahli keluarga**. Untuk keluarga, pilih orang dalam senarai keluarga isi rumah tersebut.
+1. Buka **Ahli & isi rumah**, pilih **Lihat / edit** ahli, kemudian tekan **＋ Rekod bantuan diterima** dalam bahagian **Bantuan diterima ahli dan keluarga**.
+2. Ahli/isi rumah aktif dipilih secara automatik mengikut profil. Pilih jenis bantuan yang telah didaftarkan oleh pentadbir. Jenis penerima boleh berupa **Ahli utama**, **Isi rumah** atau **Ahli keluarga**. Untuk keluarga, pilih orang dalam senarai keluarga isi rumah tersebut.
 3. Isi nama bantuan, kategori, pemberi/agensi dan tarikh bantuan diterima. Tarikh masa hadapan tidak diterima.
 4. Isi nilai dalam **RM**, atau kuantiti berserta unit seperti bakul/pek/kg. Sekurang-kurangnya satu daripada nilai atau kuantiti mesti diisi. Nilai RM menggunakan maksimum dua perpuluhan; kuantiti maksimum tiga perpuluhan. Jika kedua-duanya diisi, nilai RM dianggap nilai bantuan itu dan bukan nilai setiap unit.
 5. Tambah catatan jika perlu dan tekan **Simpan bantuan**. Borang dikunci sehingga penyimpanan selesai.
@@ -216,8 +216,22 @@ Pentadbir dan Petugas boleh merekod serta menyunting bantuan. Hanya Pentadbir bo
 
 ## Sandaran dan pemulihan selepas modul bantuan
 
-Butang **Sandaran** kini menghasilkan format versi 2 yang mengandungi ahli, keluarga dan semua bantuan, termasuk penerima asal. Hadnya 10 MB, 20,000 ahli dan 50,000 rekod bantuan. Akaun dan sejarah tindakan masih tidak dimasukkan; gunakan salinan keseluruhan folder `data` ketika pelayan dihentikan untuk sandaran sistem penuh.
+Butang **Sandaran** kini menghasilkan format versi 3 yang mengandungi ahli, keluarga, semua bantuan termasuk penerima asal, serta senarai jenis bantuan. Hadnya 10 MB, 20,000 ahli dan 50,000 rekod bantuan. Akaun dan sejarah tindakan masih tidak dimasukkan; gunakan salinan keseluruhan folder `data` ketika pelayan dihentikan untuk sandaran sistem penuh.
 
-Pratonton pemulihan memaparkan bilangan bantuan. Pemulihan versi 2 menggantikan ahli/keluarga **dan bantuan** bersama-sama dalam satu transaksi; jika penulisan gagal, kedua-duanya dikekalkan pada keadaan sebelumnya. Sandaran keselamatan sebelum pemulihan juga mengandungi bantuan. Jika ahli atau bantuan berubah selepas pratonton, pilih fail semula sebelum mengesahkan.
+Pratonton pemulihan memaparkan bilangan bantuan. Pemulihan versi terkini menggantikan ahli/keluarga, **bantuan dan jenis bantuan** bersama-sama dalam satu transaksi; jika penulisan gagal, kedua-duanya dikekalkan pada keadaan sebelumnya. Sandaran keselamatan sebelum pemulihan juga mengandungi bantuan. Jika ahli atau bantuan berubah selepas pratonton, pilih fail semula sebelum mengesahkan.
 
 Fail versi 1 daripada versi aplikasi lama masih boleh dipulihkan jika sistem semasa belum mempunyai bantuan. Jika bantuan sudah direkodkan, pemulihan versi 1 disekat supaya rekod bantuan tidak hilang atau dipautkan kepada ahli yang salah. Gunakan fail versi 2 yang sesuai. Akaun pengguna dan sejarah tindakan tidak digantikan oleh pemulihan rekod komuniti.
+
+## Susunan baharu maklumat bantuan
+
+**Dalam profil ahli:** selepas maklumat keluarga, bahagian **Bantuan diterima ahli dan keluarga** memaparkan semua bantuan ahli utama, tanggungan dan isi rumah tersebut. Ia tidak terjejas oleh penapis di menu Bantuan. Ringkasan menunjukkan bilangan bantuan dan jumlah nilai RM yang direkodkan. Gunakan Lihat / edit atau Padam (Pentadbir sahaja) pada rekod berkenaan.
+
+Untuk menambah bantuan, tekan **＋ Rekod bantuan diterima** dalam profil ahli aktif. Penerima isi rumah dikunci kepada profil yang dibuka; pilih sama ada bantuan untuk ahli utama, isi rumah atau ahli keluarga tertentu. Simpan maklumat ahli/keluarga terlebih dahulu jika senarai penerima baru berubah. Bantuan menggunakan borang dan penyimpanan berasingan: membatalkan borang maklumat ahli tidak membatalkan bantuan yang telah berjaya disimpan. Ahli baharu mesti disimpan dahulu sebelum bantuan boleh ditambah.
+
+**Dalam menu Bantuan:** bahagian atas mengandungi senarai jenis bantuan dan borang pengurusan jenis oleh Pentadbir. Bahagian bawah mengekalkan senarai keseluruhan bantuan yang telah diterima, bersama carian, penapis tarikh/isi rumah dan ringkasan. Pendaftaran penerimaan baharu dimulakan dari profil ahli, bukannya borang umum dalam menu ini.
+
+Pentadbir boleh menambah nama jenis, kategori, pemberi asal (pilihan), penerangan dan status. Petugas boleh melihat jenis dan memilih jenis aktif ketika merekod bantuan diterima. Maklumat pemberi asal diisi sebagai cadangan dan boleh dikemas kini mengikut agihan sebenar. Gunakan Edit jenis untuk menukar butiran atau status; jenis tidak dipadam supaya sejarah kekal. Jenis tidak aktif tidak ditawarkan untuk agihan baharu.
+
+Nama bantuan dan kategori pada penerimaan baharu diperoleh daripada jenis yang dipilih. Nama/kategori dalam rekod penerimaan sedia ada kekal sebagai gambaran sejarah apabila jenis tersebut dinamakan semula atau dinyahaktifkan. Rekod lama tanpa pautan jenis boleh terus dilihat/disunting. Ketika naik taraf pertama, jenis daripada rekod bantuan lama diambil masuk ke senarai jenis secara automatik; tiada rekod penerimaan lama dipadam.
+
+Sandaran format versi 3 merangkumi senarai jenis bantuan dan pautannya. Pemulihan menyemak bahawa setiap pautan jenis bantuan merujuk kepada jenis yang sah sebelum mengubah data. Fail versi 1/2 yang tidak mengandungi senarai jenis hanya boleh dipulihkan jika sistem belum mempunyai jenis bantuan; jika sudah ada, gunakan sandaran versi 3 supaya katalog tidak hilang. Untuk kembali kepada keseluruhan pemasangan lama, gunakan sandaran penuh folder data yang dibuat ketika pelayan dihentikan sebelum naik taraf. Akaun dan sejarah tindakan masih tidak digantikan oleh pemulihan JSON.

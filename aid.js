@@ -2,16 +2,30 @@ import { todayInMalaysia } from './public/age.js';
 import { withAudit } from './accounts.js';
 import { digest } from './data-tools.js';
 
-export const aidColumns=['id','memberId','recipientKind','recipientName','recipientBirthDate','title','category','provider','receivedDate','amountCents','quantity','unit','notes','createdAt','updatedAt'];
+export const aidColumns=['id','memberId','recipientKind','recipientName','recipientBirthDate','title','category','provider','receivedDate','amountCents','quantity','unit','notes','createdAt','updatedAt','aidTypeId'];
+export const aidTypeColumns=['id','title','category','provider','description','isActive','createdAt','updatedAt'];
 export const aidCategories=['Bantuan tunai','Makanan','Pendidikan','Kesihatan','Perumahan','Lain-lain'];
 export function initializeAid(db) {
-  db.exec(`CREATE TABLE IF NOT EXISTS aid_records (
+  db.exec(`CREATE TABLE IF NOT EXISTS aid_types (id INTEGER PRIMARY KEY,title TEXT NOT NULL,category TEXT NOT NULL,provider TEXT NOT NULL,description TEXT NOT NULL,isActive INTEGER NOT NULL DEFAULT 1 CHECK(isActive IN (0,1)),createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS aid_records (
     id INTEGER PRIMARY KEY, memberId INTEGER NOT NULL REFERENCES members(id) ON DELETE RESTRICT,
     recipientKind TEXT NOT NULL, recipientName TEXT NOT NULL, recipientBirthDate TEXT NOT NULL,
     title TEXT NOT NULL, category TEXT NOT NULL, provider TEXT NOT NULL, receivedDate TEXT NOT NULL,
     amountCents INTEGER, quantity REAL, unit TEXT NOT NULL, notes TEXT NOT NULL,
     createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS aid_member_date ON aid_records(memberId,receivedDate);`);
+  if(!db.prepare('PRAGMA table_info(aid_records)').all().some(column=>column.name==='aidTypeId')) {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec('ALTER TABLE aid_records ADD COLUMN aidTypeId INTEGER REFERENCES aid_types(id)');
+      const now=new Date().toISOString();
+      for(const row of db.prepare('SELECT DISTINCT title,category,provider FROM aid_records').all()) {
+        const result=db.prepare('INSERT INTO aid_types (title,category,provider,description,createdAt,updatedAt) VALUES (?,?,?,?,?,?)').run(row.title,row.category,row.provider,'Diambil daripada rekod bantuan lama',now,now);
+        db.prepare('UPDATE aid_records SET aidTypeId=? WHERE title=? AND category=? AND provider=?').run(Number(result.lastInsertRowid),row.title,row.category,row.provider);
+      }
+      db.exec('COMMIT');
+    } catch(error) {db.exec('ROLLBACK');throw error;}
+  }
 }
 function text(value,max=200) {
   if(typeof value!=='string' || value.length>max) throw Error('Maklumat bantuan tidak sah atau terlalu panjang.');
@@ -49,7 +63,22 @@ export function validateAid(input,member,previous,historical=false) {
     quantity=Number(input.quantity);if(!unit) throw Error('Sila isi unit bantuan, contohnya bakul atau pek.');
   } else unit='';
   if(amountCents===null && quantity===null) throw Error('Sila isi nilai RM atau kuantiti bantuan yang diterima.');
-  return {memberId:member.id,recipientKind,recipientName,recipientBirthDate,title,category,provider,receivedDate,amountCents,quantity,unit,notes:text(input.notes || '',2000)};
+  const aidTypeId=input.aidTypeId??null;
+  if(aidTypeId!==null && (!Number.isSafeInteger(aidTypeId) || aidTypeId<=0)) throw Error('Maklumat jenis bantuan tidak sah.');
+  return {memberId:member.id,recipientKind,recipientName,recipientBirthDate,title,category,provider,receivedDate,amountCents,quantity,unit,notes:text(input.notes || '',2000),aidTypeId};
+}
+export function validateAidType(input) {
+  const title=text(input.title),category=text(input.category,50),provider=text(input.provider || ''),description=text(input.description || '',1000);
+  if(!title || !aidCategories.includes(category) || ![0,1].includes(input.isActive??1)) throw Error('Sila lengkapkan nama, kategori dan status jenis bantuan yang sah.');
+  return {title,category,provider,description,isActive:input.isActive??1};
+}
+export function readAidTypes(input) {
+  if(input.version<3) return [];
+  const ids=new Set();
+  return input.aidTypes.map(row=>{
+    if(!row || !Number.isSafeInteger(row.id) || row.id<=0 || ids.has(row.id) || typeof row.createdAt!=='string' || typeof row.updatedAt!=='string' || !Number.isFinite(Date.parse(row.createdAt)) || !Number.isFinite(Date.parse(row.updatedAt))) throw Error('Maklumat sandaran jenis bantuan tidak sah.');
+    ids.add(row.id);return {...validateAidType(row),id:row.id,createdAt:row.createdAt,updatedAt:row.updatedAt};
+  });
 }
 export function readAidBackup(input,members) {
   if(input.version===1) return [];
@@ -63,6 +92,22 @@ export function readAidBackup(input,members) {
   });
 }
 export async function aidRoutes({req,res,path,user,db,json,body,safetySnapshot}) {
+  if(path==='/api/aid-types' || /^\/api\/aid-types\/\d+$/.test(path)) {
+    if(path==='/api/aid-types' && req.method==='GET') {json(res,200,db.prepare('SELECT * FROM aid_types ORDER BY title,id').all());return true;}
+    if(user.role!=='admin') {json(res,403,{error:'Pengurusan jenis bantuan terhad kepada pentadbir.'});return true;}
+    const match=path.match(/^\/api\/aid-types\/(\d+)$/);
+    if((!match && req.method==='POST') || (match && req.method==='PUT')) {
+      const input=await body(req),record=validateAidType(input),previous=match?db.prepare('SELECT * FROM aid_types WHERE id=?').get(Number(match[1])):null;
+      if(match && !previous) {json(res,404,{error:'Jenis bantuan tidak ditemui.'});return true;}
+      if(previous && previous.updatedAt!==input.expectedUpdatedAt) {json(res,409,{error:'Jenis bantuan telah berubah. Muat semula senarai.'});return true;}
+      const duplicate=db.prepare('SELECT id FROM aid_types WHERE lower(trim(title))=lower(?) AND lower(trim(provider))=lower(?) AND id!=?').get(record.title,record.provider,previous?.id || -1);
+      if(duplicate) {json(res,409,{error:'Jenis bantuan dan pemberi yang sama telah didaftarkan.'});return true;}
+      const now=new Date().toISOString();
+      const result=withAudit(db,user,previous?'Kemas kini jenis bantuan':'Tambah jenis bantuan','jenis_bantuan',previous?.id??null,()=>previous?db.prepare('UPDATE aid_types SET title=?,category=?,provider=?,description=?,isActive=?,updatedAt=? WHERE id=?').run(record.title,record.category,record.provider,record.description,record.isActive,now,previous.id):db.prepare('INSERT INTO aid_types (title,category,provider,description,isActive,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?)').run(record.title,record.category,record.provider,record.description,record.isActive,now,now));
+      json(res,previous?200:201,{id:previous?.id || Number(result.lastInsertRowid)});return true;
+    }
+    json(res,404,{error:'Halaman tidak ditemui.'});return true;
+  }
   if(path!=='/api/aid' && !/^\/api\/aid\/\d+$/.test(path)) return false;
   if(path==='/api/aid' && req.method==='GET') {
     json(res,200,db.prepare('SELECT a.*,m.name AS householdName,m.isActive AS memberActive FROM aid_records a JOIN members m ON m.id=a.memberId ORDER BY a.receivedDate DESC,a.id DESC').all());return true;
@@ -74,6 +119,13 @@ export async function aidRoutes({req,res,path,user,db,json,body,safetySnapshot})
     if(previous && input.expectedUpdatedAt!==previous.updatedAt) {json(res,409,{error:'Rekod bantuan telah berubah. Muat semula dan semak rekod.'});return true;}
     const raw=db.prepare('SELECT * FROM members WHERE id=?').get(Number.isSafeInteger(input.memberId)?input.memberId:-1);
     const member=raw?{...raw,household:JSON.parse(raw.household)}:null;
+    if(input.aidTypeId!=null) {
+      const type=db.prepare('SELECT * FROM aid_types WHERE id=?').get(input.aidTypeId);
+      if(!type || (!type.isActive && previous?.aidTypeId!==type.id)) throw Error('Sila pilih jenis bantuan aktif yang sah.');
+      input.title=previous?.aidTypeId===type.id?previous.title:type.title;
+      input.category=previous?.aidTypeId===type.id?previous.category:type.category;
+      input.provider=input.provider || type.provider;
+    }
     const record=validateAid(input,member,previous),now=new Date().toISOString();
     const duplicates=db.prepare('SELECT * FROM aid_records WHERE memberId=? AND id!=?').all(record.memberId,previous?.id || -1).filter(row=>['recipientKind','recipientName','recipientBirthDate','title','provider','receivedDate'].every(key=>row[key].toLocaleLowerCase('ms')===record[key].toLocaleLowerCase('ms')));
     const confirmation=digest({record,duplicates});
