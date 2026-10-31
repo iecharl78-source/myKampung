@@ -327,3 +327,9 @@ Maklumat dihantar sebagai **permohonan maklumat bantuan**. Penambahan belum munc
 Pentadbir membuka **Semakan perubahan → Permohonan maklumat bantuan**, menyemak cadangan dan rekod rasmi semasa (untuk kemaskini), kemudian meluluskan atau menolak dengan sebab. Sistem menyemak padanan bantuan berganda, penerima keluarga dan perubahan pada rekod sejak penghantaran. Petugas dan ahli tidak boleh meluluskan permohonan. Keputusan dihantar sebagai notifikasi kepada ahli.
 
 Sandaran JSON masih versi 5 dan merangkumi bantuan rasmi yang telah diluluskan. Jadual permohonan maklumat bantuan, sama seperti permohonan perubahan profil, memerlukan **sandaran penuh SQLite/folder data** untuk pemindahan lengkap. Selepas pemulihan JSON, permohonan kemaskini bantuan lama yang hilang pautan rekod mesti ditolak dengan catatan dan dihantar semula; ini menghalang kelulusan kepada rekod lain yang menggunakan nombor ID sama. Semasa menaik taraf, salin juga `aid-requests.js` dan `public/portal-aid.js` bersama fail lain.
+
+### Pengesahan sebelum penghantaran ahli
+
+Selepas ahli menekan **Hantar untuk kelulusan** pada borang profil/keluarga atau maklumat bantuan, dialog pengesahan meminta ahli memastikan maklumat tepat dan lengkap. **OK** meneruskan penghantaran untuk semakan pentadbir. **Batal** mengekalkan suntingan pada borang tanpa menghantar permohonan, supaya ahli boleh menyemaknya semula. Borang dikunci semasa permintaan penghantaran sebenar berlangsung.
+
+**Batal kemaskini** pada profil kini butang berwarna jingga, berbeza daripada butang Kemaskini dan butang penghantaran hijau. Butang ini membuang suntingan yang belum dihantar, memaparkan semula rekod rasmi dan mengunci profil.
