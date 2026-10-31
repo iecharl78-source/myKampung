@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {initializeAidRequests,aidRequestRoutes} from './aid-requests.js';
 import { runtimeConfig,clientAddress } from './runtime-config.js';
 const runtime=runtimeConfig();
 import { DatabaseSync } from 'node:sqlite';
@@ -32,6 +33,7 @@ initializeAccounts(db,process.env.ADMIN_PASSWORD);
 initializeAid(db);
 initializeRegistrations(db);
 initializeCommunity(db);
+initializeAidRequests(db);
 const sessions = new Map(), attempts = new Map(), restorePreviews = new Map();
 const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)}));
 const allAid=()=>db.prepare('SELECT * FROM aid_records ORDER BY id').all();
@@ -90,7 +92,7 @@ function validate(input) {
   const inactivityReason=isActive===0 ? text(input.inactivityReason ?? '',500) : '';
   return {name, phone, address, ...addressParts, ...normalizeMemberDetails(input), birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -128,6 +130,7 @@ const server = http.createServer(async (req,res) => {
     const user=session && session.expires>Date.now() ? db.prepare('SELECT * FROM users WHERE id=? AND isActive=1').get(session.userId) : null;
     if(!user || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) { if(token) { sessions.delete(token);restorePreviews.delete(token); } return json(res,401,{error:'Sila log masuk.'}); }
     if (path === '/api/session' && req.method === 'GET') return json(res,200,{ok:true,user:publicUser(user)});
+    if(await aidRequestRoutes({req,res,path,user,db,json,body}))return;
     if(await communityRoutes({req,res,path,user,db,json,body,validate})) return;
     if(user.role==='ahli' && !['/api/password','/api/logout'].includes(path))return json(res,403,{error:'Akaun ahli hanya boleh mengakses portal sendiri.'});
     if(await registrationRoutes({req,res,path,user,db,json,body,validate})) return;
@@ -179,6 +182,7 @@ const server = http.createServer(async (req,res) => {
         for(const member of preview.records) insert.run(...memberColumns.map(key=>key==='household'?JSON.stringify(member.household):member[key]));
         for(const link of links){const restored=db.prepare('SELECT id FROM members WHERE identityKey=?').get(link.identityKey);if(restored)db.prepare('UPDATE users SET memberId=? WHERE id=?').run(restored.id,link.id);}
         db.prepare('UPDATE profile_requests SET memberId=(SELECT id FROM members WHERE members.identityKey=profile_requests.identityKey)').run();
+        db.prepare('UPDATE aid_requests SET memberId=(SELECT id FROM members WHERE members.identityKey=aid_requests.identityKey)').run();
         for(const kind of ['announcements','events']){db.exec(`DELETE FROM ${kind}`);for(const record of preview.community[kind]){const keys=Object.keys(record);db.prepare(`INSERT INTO ${kind} (${keys.join(',')}) VALUES (${keys.map(()=>'?').join(',')})`).run(...keys.map(key=>record[key]));}}
         const insertType=db.prepare(`INSERT INTO aid_types (${aidTypeColumns.join(',')}) VALUES (${aidTypeColumns.map(()=>'?').join(',')})`);
         for(const record of preview.aidTypes) insertType.run(...aidTypeColumns.map(key=>record[key]));

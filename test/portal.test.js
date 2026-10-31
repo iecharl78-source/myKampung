@@ -9,7 +9,7 @@ import {once} from 'node:events';
 import {createBackup} from '../data-tools.js';
 import {DatabaseSync} from 'node:sqlite';
 
-test('Portal ahli: kelulusan perubahan, pengasingan isi rumah, komunikasi dan siaran',async()=>{
+test('Portal ahli: kelulusan perubahan, pengasingan isi rumah, bantuan sendiri, komunikasi dan siaran',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'kampung-portal-')),password=randomBytes(16).toString('hex');
  const child=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env:{...process.env,DATA_DIR:dir,PORT:'0',HOST:'127.0.0.1',ADMIN_PASSWORD:password,COOKIE_SECURE:'0'},stdio:['ignore','pipe','pipe']});
  try{
@@ -73,6 +73,31 @@ test('Portal ahli: kelulusan perubahan, pengasingan isi rumah, komunikasi dan si
   assert.equal((await req(`/api/questions/${thread}/status`,'POST',{status:'closed'},first)).status,403);
   assert.equal((await req(`/api/questions/${thread}/status`,'POST',{status:'closed'},staff)).status,200);
   assert.equal((await req(`/api/questions/${thread}/reply`,'POST',{body:'Mesej lewat'},first)).status,400);
+  // Ahli menambah/mengubah bantuan sendiri melalui kelulusan, tidak boleh menyasarkan isi rumah lain.
+  const aidInput={memberId:other.id,title:'Bantuan ahli',category:'Makanan',provider:'Agensi Ujian',recipientKind:'ahli',receivedDate:'2026-01-01',amount:'100.50',quantity:'',unit:'',notes:'Maklumat awal'};
+  r=await req('/api/aid-requests','POST',aidInput,first);assert.equal(r.status,202,await r.clone().text());let aidRequestId=(await r.json()).id;
+  assert.equal((await (await req('/api/portal/aid','GET',undefined,first)).json()).length,0);
+  assert.equal((await (await req('/api/aid-requests','GET',undefined,second)).json()).length,0);
+  assert.equal((await req(`/api/aid-requests/${aidRequestId}/review`,'POST',{decision:'approve',reviewNote:''},staff)).status,403);
+  assert.equal((await req(`/api/aid-requests/${aidRequestId}/review`,'POST',{decision:'approve',reviewNote:''},first)).status,403);
+  assert.equal((await req('/api/aid-requests','POST',aidInput,first)).status,202);assert.equal((await (await req('/api/aid-requests','GET',undefined,first)).json()).length,1);
+  assert.equal((await req(`/api/aid-requests/${aidRequestId}/review`,'POST',{decision:'approve',reviewNote:'Disahkan'})).status,200);
+  let officialAid=(await (await req('/api/portal/aid','GET',undefined,first)).json())[0];assert.equal(officialAid.memberId,profile.id);assert.equal(officialAid.amountCents,10050);assert.equal((await (await req('/api/portal/aid','GET',undefined,second)).json()).length,0);
+  assert.equal((await req('/api/aid-requests','POST',{...aidInput,aidId:officialAid.id,expectedUpdatedAt:officialAid.updatedAt},second)).status,404);
+  r=await req('/api/aid-requests','POST',{...aidInput,aidId:officialAid.id,expectedUpdatedAt:officialAid.updatedAt,amount:'200'},first);aidRequestId=(await r.json()).id;
+  assert.equal((await (await req('/api/portal/aid','GET',undefined,first)).json())[0].amountCents,10050);
+  assert.equal((await req(`/api/aid-requests/${aidRequestId}/review`,'POST',{decision:'reject',reviewNote:''})).status,400);
+  assert.equal((await req(`/api/aid-requests/${aidRequestId}/review`,'POST',{decision:'reject',reviewNote:'Semak jumlah sebenar.'})).status,200);
+  r=await req('/api/aid-requests','POST',{...aidInput,aidId:officialAid.id,expectedUpdatedAt:officialAid.updatedAt,amount:'300'},first);aidRequestId=(await r.json()).id;
+  assert.equal((await req(`/api/aid-requests/${aidRequestId}/review`,'POST',{decision:'approve',reviewNote:''})).status,200);
+  officialAid=(await (await req('/api/portal/aid','GET',undefined,first)).json())[0];assert.equal(officialAid.amountCents,30000);
+  r=await req('/api/aid-requests','POST',aidInput,first);aidRequestId=(await r.json()).id;
+  r=await req(`/api/aid-requests/${aidRequestId}/review`,'POST',{decision:'approve',reviewNote:''});assert.equal(r.status,409);const aidDuplicate=await r.json();assert.equal(aidDuplicate.code,'AID_REQUEST_DUPLICATE');
+  assert.equal((await req(`/api/aid-requests/${aidRequestId}/review`,'POST',{decision:'approve',reviewNote:'Rekod berasingan',duplicateConfirmation:aidDuplicate.confirmation})).status,200);
+  r=await req('/api/aid-requests','POST',{...aidInput,aidId:officialAid.id,expectedUpdatedAt:officialAid.updatedAt,amount:'400'},first);aidRequestId=(await r.json()).id;
+  db.prepare('UPDATE aid_records SET updatedAt=? WHERE id=?').run('2099-02-01T00:00:00.000Z',officialAid.id);
+  assert.equal((await req(`/api/aid-requests/${aidRequestId}/review`,'POST',{decision:'approve',reviewNote:''})).status,409);
+  assert.equal((await req(`/api/aid-requests/${aidRequestId}/review`,'POST',{decision:'reject',reviewNote:'Rekod telah berubah.'})).status,200);
   const notifications=await (await req('/api/notifications','GET',undefined,first)).json();assert.ok(notifications.rows.some(n=>n.title==='Perubahan profil diluluskan'));assert.ok(notifications.rows.some(n=>n.title==='Balasan pertanyaan diterima'));
   await req('/api/notifications/read','POST',{ids:[notifications.rows[0].id]},second);assert.equal((await (await req('/api/notifications','GET',undefined,first)).json()).unread,notifications.unread);
   await req('/api/notifications/read','POST',{all:true},first);assert.equal((await (await req('/api/notifications','GET',undefined,first)).json()).unread,0);
