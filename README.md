@@ -39,3 +39,7 @@ Pemohon menetapkan ID pengguna dan kata laluan semasa pendaftaran `/daftar`; aka
 **Aktiviti & hebahan** menyediakan pengumuman dan kalendar waktu Malaysia. Pentadbir/Petugas mengurus siaran; Ahli hanya melihat siaran diterbitkan. **Pertanyaan** membolehkan komunikasi peribadi ahli dengan Pentadbir/Petugas. **Notifikasi** memaklumkan siaran, keputusan semakan dan balasan dalam aplikasi (tiada e-mel/SMS/push).
 
 Sandaran JSON versi 5 mengandungi rekod ahli, bantuan, permohonan pendaftaran serta hebahan/aktiviti. Akaun, kata laluan, permohonan perubahan profil/bantuan, pertanyaan, mesej, notifikasi dan audit memerlukan **sandaran penuh SQLite/folder data**. Untuk memindahkan pemasangan lengkap, gunakan sandaran penuh. Rujuk panduan tempatan untuk pemautan semula akaun dan cara menguji portal tanpa penerbitan dalam talian.
+
+## Papan pemuka
+
+Paparan pertama selepas log masuk merangkum permohonan menunggu semakan (Pentadbir), permohonan/keputusan isi rumah sendiri (Ahli), notifikasi belum dibaca, pertanyaan terbuka, aktiviti akan datang/berlangsung dan hebahan diterbitkan. Kad menyediakan pautan terus kepada tindakan yang dibenarkan mengikut peranan. Tekan Muat semula ringkasan untuk mendapatkan jumlah terkini.

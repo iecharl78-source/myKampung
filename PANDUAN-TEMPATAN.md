@@ -333,3 +333,15 @@ Sandaran JSON masih versi 5 dan merangkumi bantuan rasmi yang telah diluluskan. 
 Selepas ahli menekan **Hantar untuk kelulusan** pada borang profil/keluarga atau maklumat bantuan, dialog pengesahan meminta ahli memastikan maklumat tepat dan lengkap. **OK** meneruskan penghantaran untuk semakan pentadbir. **Batal** mengekalkan suntingan pada borang tanpa menghantar permohonan, supaya ahli boleh menyemaknya semula. Borang dikunci semasa permintaan penghantaran sebenar berlangsung.
 
 **Batal kemaskini** pada profil kini butang berwarna jingga, berbeza daripada butang Kemaskini dan butang penghantaran hijau. Butang ini membuang suntingan yang belum dihantar, memaparkan semula rekod rasmi dan mengunci profil.
+
+## Papan pemuka mengikut peranan
+
+Selepas log masuk atau memuat semula aplikasi, **Papan pemuka** menjadi paparan pertama. Menu **Ahli & isi rumah** dan **Profil saya** kekal tersedia untuk rekod terperinci.
+
+Pentadbir melihat bilangan pendaftaran, perubahan profil dan maklumat bantuan yang menunggu semakan. Tekan kad untuk membuka senarai berkaitan; kad pendaftaran memilih status menunggu semakan secara automatik. Pautan maklumat bantuan terus membawa pentadbir ke bahagian semakan bantuan. Ringkasan komuniti menunjukkan ahli aktif, ahli tidak aktif dan keluarga isi rumah aktif.
+
+Ahli melihat bilangan permohonan profil/bantuan sendiri yang menunggu semakan, bilangan keputusan diluluskan/ditolak dan lima keputusan terkini berserta catatan. Ringkasan keluarga dan bantuan hanya merujuk kepada isi rumah sendiri. Papan pemuka ahli tidak memaparkan jumlah permohonan atau rekod milik penduduk lain.
+
+Semua peranan melihat bilangan notifikasi sendiri yang belum dibaca, pertanyaan terbuka yang dibenarkan mengikut akses, lima aktiviti akan datang atau sedang berlangsung, dan tiga hebahan terkini yang telah disiarkan. Aktiviti tamat dan siaran draf tidak dipaparkan. **Lihat dalam kalendar** memilih bulan aktiviti dan membuka butiran berkaitan. Petugas tidak melihat kad kelulusan yang dikhaskan kepada pentadbir.
+
+Ringkasan dikemas kini semasa membuka Papan pemuka atau menekan **Muat semula ringkasan**; masa kemas kini dipaparkan dalam waktu Malaysia. Untuk menaik taraf, salin juga `dashboard.js` dan `public/dashboard-ui.js` bersama fail aplikasi lain, kemudian mulakan semula pelayan. Tiada jadual data baharu diperlukan untuk papan pemuka.

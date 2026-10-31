@@ -17,6 +17,8 @@ test('Portal ahli: kelulusan perubahan, pengasingan isi rumah, bantuan sendiri, 
   let admin='';const req=(path,method='GET',data,cookie=admin)=>fetch(base+path,{method,headers:{Cookie:cookie,'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});
   const login=async username=>{const r=await req('/api/login','POST',{username,password},'');assert.equal(r.status,200,await r.clone().text());return r.headers.get('set-cookie').split(';')[0];};
   admin=await login('admin');
+  assert.equal((await req('/api/dashboard','GET',undefined,'')).status,401);
+  assert.equal((await req('/api/dashboard','GET')).status,200);
   const data={name:'Ahli Pertama',phone:'0123456789',address1:'Alamat asal',country:'Malaysia',employmentStatus:'Bekerja',household:[]};
   for(const [username,name,phone] of [['resident1',data.name,data.phone],['resident2','Ahli Kedua','0198765432']]){
    const r=await req('/api/registrations','POST',{username,password,consent:true,submissionKey:randomBytes(32).toString('hex'),data:{...data,name,phone}},'');assert.equal(r.status,201,await r.clone().text());
@@ -31,6 +33,7 @@ test('Portal ahli: kelulusan perubahan, pengasingan isi rumah, bantuan sendiri, 
   const other=await (await req('/api/portal/profile','GET',undefined,second)).json();assert.notEqual(profile.id,other.id);
   let proposal={...profile,name:'Nama Dicadangkan',address1:'Alamat baharu',household:[{name:'Anak Baharu',relationship:'Anak',employmentStatus:'Pelajar',educationLevel:'Sekolah rendah'}],expectedUpdatedAt:profile.updatedAt,memberId:other.id};
   let r=await req('/api/portal/profile','PUT',proposal,first);assert.equal(r.status,202,await r.clone().text());let requestId=(await r.json()).id;
+  const ownHome=await (await req('/api/dashboard','GET',undefined,first)).json();assert.equal(ownHome.requests.profiles.pending,1);assert.equal(ownHome.pending,undefined);assert.equal((await (await req('/api/dashboard','GET',undefined,second)).json()).requests.profiles.pending,0);
   assert.equal((await (await req('/api/portal/profile','GET',undefined,first)).json()).name,data.name);
   assert.equal((await (await req('/api/portal/profile','GET',undefined,second)).json()).name,other.name);
   assert.equal((await req('/api/portal/profile','PUT',proposal,first)).status,409);

@@ -6,6 +6,7 @@ import { enhancePasswords } from './password-tools.js';
 import { setupRegistrations } from './registrations-ui.js';
 import { setupReports } from './reports-ui.js';
 import { setupAidUI } from './aid-ui.js';
+import { setupDashboard } from './dashboard-ui.js';
 import { setupPortal } from './portal-ui.js';
 import { installFormState } from './form-state.js';
 const $ = selector => document.querySelector(selector);
@@ -29,23 +30,23 @@ function hidePassword() {
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
 function showLogin() {
-  portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
+  homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
   aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
   $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[]; currentUser=null;
   for(const id of ['users-list','audit-list','current-user']) $('#'+id).replaceChildren();
   $('#login').hidden=false;
-  for(const id of ['portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel','logout','current-user','open-password','nav-portal','nav-community','nav-questions','nav-notifications','nav-profile-review','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=true;
+  for(const id of ['home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel','logout','current-user','open-password','nav-home','nav-portal','nav-community','nav-questions','nav-notifications','nav-profile-review','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=true;
 }
-async function load() {
+async function load(openHome=false) {
   currentUser=(await api('/api/session')).user;
   const resident=currentUser.role==='ahli',adminRole=currentUser.role==='admin';
   $('#login').hidden=true;
-  for(const id of ['logout','current-user','open-password','nav-community','nav-questions','nav-notifications'])$('#'+id).hidden=false;
+  for(const id of ['nav-home','logout','current-user','open-password','nav-community','nav-questions','nav-notifications'])$('#'+id).hidden=false;
   $('#nav-portal').hidden=!resident;$('#nav-profile-review').hidden=!adminRole;
   for(const id of ['nav-members','nav-aid'])$('#'+id).hidden=resident;
   for(const id of ['nav-accounts','nav-audit','nav-reports','nav-registrations'])$('#'+id).hidden=!adminRole;
-  if(resident){await portalUI.loadMember();await portalUI.loadNotifications();showPanel('portal-panel');return;}
+  if(resident){await portalUI.loadMember();await portalUI.loadNotifications();await homeUI.load();showPanel(openHome?'home-panel':'portal-panel');return;}
   await portalUI.loadNotifications();
   let counts;[members,counts]=await Promise.all([api('/api/members'),api('/api/aid-counts')]);
   aidCounts=new Map(counts.map(row=>[row.memberId,row]));
@@ -54,7 +55,7 @@ async function load() {
   for(const id of ['backup','open-restore','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=!admin;
   for(const id of ['current-user','open-password','nav-members','nav-aid']) $('#'+id).hidden=false;
   $('#current-user').textContent=`${currentUser.fullName} · ${admin?'Pentadbir':'Petugas'}`;
-  showPanel('dashboard');
+  await homeUI.load();showPanel(openHome?'home-panel':'dashboard');
   const active=members.filter(m=>m.isActive===1);
   $('#member-count').textContent=active.length; $('#inactive-count').textContent=members.length-active.length;
   $('#family-count').textContent=active.reduce((n,m)=>n+m.household.length,0); render();
@@ -165,7 +166,7 @@ $('#toggle-password').onclick=()=>{
 $('#login-form').onsubmit=async event=>{
   event.preventDefault(); const button=event.target.querySelector('button[type="submit"]'); button.disabled=true; notice('');
   const password=event.target.elements.password.value; hidePassword();
-  try { await api('/api/login','POST',{username:event.target.elements.username.value,password}); event.target.reset(); await load(); } catch(e) { notice(e.message); } finally { button.disabled=false; }
+  try { await api('/api/login','POST',{username:event.target.elements.username.value,password}); event.target.reset(); await load(true); } catch(e) { notice(e.message); } finally { button.disabled=false; }
 };
 $('#logout').onclick=()=>{ $('#logout-error').textContent='';$('#logout-dialog').showModal(); };
 $('#logout-cancel').onclick=()=>$('#logout-dialog').close();
@@ -263,8 +264,8 @@ $('#action-form').onsubmit=async event=>{
 };
 
 function showPanel(id) {
-  for(const panel of ['portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
-  for(const [nav,panel] of [['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+  for(const panel of ['home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
+  for(const [nav,panel] of [['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
 }
 $('#nav-members').onclick=()=>showPanel('dashboard');
 async function loadUsers() {
@@ -334,6 +335,7 @@ function syncAidCounts(records) {
   }
   aidCounts=counts;render();
 }
+const homeUI=setupDashboard({api,getUser:()=>currentUser,showPanel,notice});
 const portalUI=setupPortal({api,showPanel,getUser:()=>currentUser,notice});
 const aidUI=setupAidUI({api,showPanel,getUser:()=>currentUser,notice,onRecordsChanged:syncAidCounts});
 const registrationsUI=setupRegistrations({api,showPanel,notice,refreshMembers:load});
@@ -342,4 +344,4 @@ const refreshPasswords=enhancePasswords();
 document.addEventListener('submit',refreshPasswords,true);
 document.addEventListener('form-idle',refreshPasswords,true);
 installFormState();
-try { await load(); } catch(e) { showLogin(); if(e.message !== 'Sila log masuk.') notice(e.message); }
+try { await load(true); } catch(e) { showLogin(); if(e.message !== 'Sila log masuk.') notice(e.message); }

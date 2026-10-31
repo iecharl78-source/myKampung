@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {dashboardData} from './dashboard.js';
 import {initializeAidRequests,aidRequestRoutes} from './aid-requests.js';
 import { runtimeConfig,clientAddress } from './runtime-config.js';
 const runtime=runtimeConfig();
@@ -92,7 +93,7 @@ function validate(input) {
   const inactivityReason=isActive===0 ? text(input.inactivityReason ?? '',500) : '';
   return {name, phone, address, ...addressParts, ...normalizeMemberDetails(input), birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -130,6 +131,7 @@ const server = http.createServer(async (req,res) => {
     const user=session && session.expires>Date.now() ? db.prepare('SELECT * FROM users WHERE id=? AND isActive=1').get(session.userId) : null;
     if(!user || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) { if(token) { sessions.delete(token);restorePreviews.delete(token); } return json(res,401,{error:'Sila log masuk.'}); }
     if (path === '/api/session' && req.method === 'GET') return json(res,200,{ok:true,user:publicUser(user)});
+    if(path==='/api/dashboard' && req.method==='GET')return json(res,200,dashboardData(db,user));
     if(await aidRequestRoutes({req,res,path,user,db,json,body}))return;
     if(await communityRoutes({req,res,path,user,db,json,body,validate})) return;
     if(user.role==='ahli' && !['/api/password','/api/logout'].includes(path))return json(res,403,{error:'Akaun ahli hanya boleh mengakses portal sendiri.'});
