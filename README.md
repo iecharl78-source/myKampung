@@ -25,3 +25,9 @@ Pelayan terikat pada `127.0.0.1` secara lalai. Untuk kegunaan sebenar melalui te
 Versi ini mempunyai akaun berasingan untuk Pentadbir dan Petugas, pengurusan kata laluan, sejarah tindakan, amaran rekod berganda, nyahaktif/aktifkan semula ahli, pemadaman dengan pengesahan rekod bantuan yang telah diterima serta sandaran/pemulihan ahli dan bantuan dalam format JSON. Petugas boleh melihat dan mengemas kini semua rekod komuniti; akaun, audit, sandaran, pemulihan dan pemadaman ahli utama terhad kepada Pentadbir. Pendaftaran sendiri oleh penduduk, pemulihan kata laluan melalui e-mel, permohonan/kelulusan bantuan belum disediakan. Sebelum penggunaan awam, sediakan HTTPS, sandaran berjadual dan semakan keselamatan mengikut keperluan komuniti. Ahli keluarga ialah tanggungan dalam rekod utama, bukan akaun atau ahli berdaftar yang berasingan. Menu Laporan menyediakan senarai ahli, keluarga dan bantuan, eksport CSV serta cetakan/PDF untuk Pentadbir. Rujuk PANDUAN-TEMPATAN.md untuk panduan penggunaan dan had fungsi.
 
 Gunakan checkout sedia ada dalam tugas cloud; jangan cipta Git worktree kecuali diminta.
+
+## Pemasangan dalam talian
+
+Rujuk [PANDUAN-DALAM-TALIAN.md](PANDUAN-DALAM-TALIAN.md) untuk pakej VPS/Docker Compose dengan Caddy HTTPS, volume SQLite kekal, penciptaan pentadbir pertama, pemindahan data tempatan dan sandaran penuh berjadual. Ini memerlukan VPS serta domain sebenar; menerbitkan persekitaran pembangunan sahaja tidak menerbitkan laman web awam.
+
+Mod production memerlukan `PUBLIC_ORIGIN=https://domain-anda` dan `COOKIE_SECURE=1`. `TRUST_PROXY=1` hanya digunakan apabila app di belakang proxy yang dipercayai dan port app tidak boleh dicapai terus oleh orang awam. Penggunaan tempatan melalui Node.js standalone kekal tersedia seperti panduan terdahulu.

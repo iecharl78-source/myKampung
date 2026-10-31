@@ -1,0 +1,78 @@
+services:
+  app:
+    build: .
+    image: mykampung:local
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      PUBLIC_ORIGIN: https://${DOMAIN:?Tetapkan DOMAIN dalam .env}
+      COOKIE_SECURE: "1"
+      TRUST_PROXY: "1"
+    volumes:
+      - app_data:/app/data
+    networks:
+      - backend
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 20s
+  web:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Tetapkan DOMAIN dalam .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Tetapkan ACME_EMAIL dalam .env}
+      # Upstream ini perkhidmatan setempat dalam rangkaian Compose, bukan destinasi Internet.
+      NO_PROXY: app,localhost,127.0.0.1,::1
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - backend
+      - web
+  backup:
+    image: mykampung:local
+    restart: unless-stopped
+    init: true
+    command: [node, scripts/backup-loop.js]
+    healthcheck:
+      test: [CMD, node, scripts/backup-health.js]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    environment:
+      DATA_DIR: /app/data
+      BACKUP_DIR: /backups
+      BACKUP_KEEP: "7"
+      BACKUP_INTERVAL_HOURS: "24"
+    volumes:
+      - app_data:/app/data:ro
+      - full_backups:/backups
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - backend
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+volumes:
+  app_data:
+  full_backups:
+  caddy_data:
+  caddy_config:
+networks:
+  backend:
+    internal: true
+  web:

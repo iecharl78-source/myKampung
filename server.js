@@ -1,4 +1,6 @@
 import http from 'node:http';
+import { runtimeConfig,clientAddress } from './runtime-config.js';
+const runtime=runtimeConfig();
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -89,10 +91,12 @@ const server = http.createServer(async (req,res) => {
   res.setHeader('Referrer-Policy','no-referrer');
   const path = new URL(req.url, 'http://localhost').pathname;
   try {
+    if(runtime.publicOrigin)res.setHeader('Strict-Transport-Security','max-age=31536000');
+    if(path==='/healthz' && req.method==='GET'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
     if (req.method === 'GET' && staticFiles[path]) { const [file,type] = staticFiles[path]; res.writeHead(200, {'Content-Type':`${type}; charset=utf-8`}); return res.end(readFileSync(join(root,'public',file))); }
-    if (['POST','PUT','DELETE'].includes(req.method) && req.headers.origin && req.headers.origin !== `${process.env.COOKIE_SECURE === '1' ? 'https' : 'http'}://${req.headers.host}`) return json(res,403,{error:'Asal permintaan tidak dibenarkan.'});
+    if (['POST','PUT','DELETE'].includes(req.method) && req.headers.origin && req.headers.origin !== (runtime.publicOrigin || `${process.env.COOKIE_SECURE === '1' ? 'https' : 'http'}://${req.headers.host}`)) return json(res,403,{error:'Asal permintaan tidak dibenarkan.'});
     if (path === '/api/login' && req.method === 'POST') {
-      const key = req.socket.remoteAddress, now = Date.now();
+      const key = clientAddress(req,runtime), now = Date.now();
       if (attempts.size > 10000) for (const [k,v] of attempts) if (v.until < now) attempts.delete(k);
       const rate = attempts.get(key);
       if (rate && rate.until > now && rate.count >= 5) return json(res,429,{error:'Terlalu banyak percubaan. Cuba lagi selepas 15 minit.'});
@@ -213,3 +217,5 @@ const server = http.createServer(async (req,res) => {
   } catch (e) { return json(res,400,{error:e.message === 'Format data tidak sah.' || /^(Data|Maklumat|Sila|Tarikh|Jantina|Maksimum|Lengkapkan|Format|Semakan|Kata laluan)/.test(e.message) ? e.message : 'Permintaan gagal. Sila cuba lagi.'}); }
 });
 server.listen(Number(process.env.PORT || 3000),process.env.HOST || '127.0.0.1',()=>console.log(`myKampung berjalan pada port ${server.address().port}`));
+
+for(const signal of ['SIGTERM','SIGINT']) process.on(signal,()=>{server.close(()=>{db.close();process.exit(0);});server.closeIdleConnections();setTimeout(()=>process.exit(1),15000).unref();});

@@ -1,0 +1,13 @@
+.git
+.env
+**/.env
+data
+backups
+node_modules
+test
+*.sqlite*
+*.zip
+*.log
+*.pem
+*.key
+*sandaran*.json
