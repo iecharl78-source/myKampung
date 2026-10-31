@@ -78,7 +78,7 @@ test('Bantuan: peranan, pendua, sejarah keluarga, sandaran, transaksi dan pemuli
     assert.equal((await req(`/api/members/${memberId}`,'DELETE',{expectedUpdatedAt:originalMember.updatedAt,expectedName:originalMember.name,confirmation:'PADAM',password})).status,409);
     assert.equal((await req(`/api/members/${memberId}`,'PUT',{...originalMember,household:[]})).status,200);
     assert.equal((await req(`/api/aid/${id}`,'PUT',{...aid,notes:'Keluarga asal kekal',expectedUpdatedAt:row.updatedAt},staff)).status,200);
-    const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,3);assert.equal(snapshot.aid.length,1);assert.equal(snapshot.aidTypes.length,1);
+    const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,4);assert.equal(snapshot.aid.length,1);assert.equal(snapshot.aidTypes.length,1);
     const type=(await (await req('/api/aid-types')).json())[0];
     assert.equal((await req(`/api/aid-types/${typeId}`,'PUT',{...type,title:'Nama baharu katalog',isActive:0,expectedUpdatedAt:type.updatedAt})).status,200);
     assert.equal((await (await req('/api/aid')).json())[0].title,'Bakul Katalog');

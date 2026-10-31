@@ -11,6 +11,7 @@ import { formatAddress } from './public/address.js';
 import { normalizeEducation } from './public/education.js';
 import { normalizeMemberDetails, memberDetailFields } from './public/member-details.js';
 import { memberColumns, digest, duplicateMatches, createBackup, readBackup } from './data-tools.js';
+import { initializeRegistrations,registrationRoutes,publicRegistrationRoutes,readRegistrations,registrationColumns } from './registrations.js';
 import { reportRoute } from './reports.js';
 import { initializeAid,aidRoutes,aidColumns,readAidBackup,aidTypeColumns,readAidTypes } from './aid.js';
 import { initializeAccounts, publicUser, verifyPassword, audit, withAudit, accountRoutes } from './accounts.js';
@@ -27,15 +28,17 @@ migrateMemberStatus(db);
 migrateEmployerAddress(db);
 initializeAccounts(db,process.env.ADMIN_PASSWORD);
 initializeAid(db);
+initializeRegistrations(db);
 const sessions = new Map(), attempts = new Map(), restorePreviews = new Map();
 const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)}));
 const allAid=()=>db.prepare('SELECT * FROM aid_records ORDER BY id').all();
 const allAidTypes=()=>db.prepare('SELECT * FROM aid_types ORDER BY id').all();
-const communityState=()=>({members:allMembers(),aid:allAid(),aidTypes:allAidTypes()});
+const allRegistrations=()=>db.prepare('SELECT * FROM registrations ORDER BY id').all().map(row=>({...row,data:JSON.parse(row.data)}));
+const communityState=()=>({members:allMembers(),aid:allAid(),aidTypes:allAidTypes(),registrations:allRegistrations()});
 function safetySnapshot(prefix) {
   const backupDir=join(data,'backups'); mkdirSync(backupDir,{recursive:true,mode:0o700});
   const filename=`${prefix}-${Date.now()}-${randomBytes(4).toString('hex')}.json`;
-  writeFileSync(join(backupDir,filename),JSON.stringify(createBackup(allMembers(),allAid(),allAidTypes())),{mode:0o600,flag:'wx'});
+  writeFileSync(join(backupDir,filename),JSON.stringify(createBackup(allMembers(),allAid(),allAidTypes(),allRegistrations())),{mode:0o600,flag:'wx'});
   return filename;
 }
 function revokeSessions(userId) {
@@ -84,7 +87,7 @@ function validate(input) {
   const inactivityReason=isActive===0 ? text(input.inactivityReason ?? '',500) : '';
   return {name, phone, address, ...addressParts, ...normalizeMemberDetails(input), birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -95,6 +98,7 @@ const server = http.createServer(async (req,res) => {
     if(path==='/healthz' && req.method==='GET'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
     if (req.method === 'GET' && staticFiles[path]) { const [file,type] = staticFiles[path]; res.writeHead(200, {'Content-Type':`${type}; charset=utf-8`}); return res.end(readFileSync(join(root,'public',file))); }
     if (['POST','PUT','DELETE'].includes(req.method) && req.headers.origin && req.headers.origin !== (runtime.publicOrigin || `${process.env.COOKIE_SECURE === '1' ? 'https' : 'http'}://${req.headers.host}`)) return json(res,403,{error:'Asal permintaan tidak dibenarkan.'});
+    if(await publicRegistrationRoutes({req,res,path,db,json,body,validate,clientIp:clientAddress(req,runtime)})) return;
     if (path === '/api/login' && req.method === 'POST') {
       const key = clientAddress(req,runtime), now = Date.now();
       if (attempts.size > 10000) for (const [k,v] of attempts) if (v.until < now) attempts.delete(k);
@@ -121,6 +125,7 @@ const server = http.createServer(async (req,res) => {
     const user=session && session.expires>Date.now() ? db.prepare('SELECT * FROM users WHERE id=? AND isActive=1').get(session.userId) : null;
     if(!user) { if(token) { sessions.delete(token);restorePreviews.delete(token); } return json(res,401,{error:'Sila log masuk.'}); }
     if (path === '/api/session' && req.method === 'GET') return json(res,200,{ok:true,user:publicUser(user)});
+    if(await registrationRoutes({req,res,path,user,db,json,body,validate})) return;
     if(await accountRoutes({req,res,path,user,db,json,body,revokeSessions})) return;
     const adminOnly=path==='/api/backup' || path.startsWith('/api/restore/') || req.method==='DELETE';
     if(adminOnly && user.role!=='admin') return json(res,403,{error:'Akses ini terhad kepada pentadbir.'});
@@ -130,20 +135,21 @@ const server = http.createServer(async (req,res) => {
     if (path === '/api/members' && req.method === 'GET') return json(res,200,allMembers());
     if (path === '/api/backup' && req.method === 'GET') {
       res.setHeader('Content-Disposition',`attachment; filename="myKampung-sandaran-${new Date().toISOString().replace(/[:.]/g,'-')}.json"`);
-      const backup=createBackup(allMembers(),allAid(),allAidTypes());audit(db,user,'Muat turun sandaran','sistem','');
+      const backup=createBackup(allMembers(),allAid(),allAidTypes(),allRegistrations());audit(db,user,'Muat turun sandaran','sistem','');
       return json(res,200,backup);
     }
     if (path === '/api/restore/preview' && req.method === 'POST') {
       restorePreviews.delete(token);
       for (const [key,value] of restorePreviews) if(value.expires<Date.now() || !sessions.has(key)) restorePreviews.delete(key);
       if (restorePreviews.size>=20) return json(res,429,{error:'Terlalu banyak pratonton pemulihan. Cuba lagi kemudian.'});
-      const input=await body(req,10*1024*1024), records=readBackup(input,validate), aid=readAidBackup(input,records), aidTypes=readAidTypes(input), current=allMembers();
+      const input=await body(req,10*1024*1024), records=readBackup(input,validate), aid=readAidBackup(input,records), aidTypes=readAidTypes(input),registrations=readRegistrations(input,records,validate), current=allMembers();
       if(input.version===1 && allAid().length) return json(res,409,{error:'Sandaran lama tidak mengandungi bantuan. Gunakan sandaran versi baharu supaya rekod bantuan tidak hilang.'});
       if(input.version<3 && allAidTypes().length) return json(res,409,{error:'Sandaran lama tidak mengandungi jenis bantuan. Gunakan sandaran versi terkini supaya senarai jenis bantuan tidak hilang.'});
       const typeIds=new Set(aidTypes.map(type=>type.id));
       if(aid.some(record=>record.aidTypeId!==null && !typeIds.has(record.aidTypeId))) return json(res,400,{error:'Maklumat pautan jenis bantuan dalam sandaran tidak sah.'});
+      if(input.version<4 && allRegistrations().length) return json(res,409,{error:'Sandaran lama tidak mengandungi permohonan pendaftaran. Gunakan sandaran terkini supaya permohonan tidak hilang.'});
       const previewToken=randomBytes(24).toString('hex');
-      restorePreviews.set(token,{previewToken,records,aid,aidTypes,current:digest(communityState()),expires:Date.now()+10*60000});
+      restorePreviews.set(token,{previewToken,records,aid,aidTypes,registrations,current:digest(communityState()),expires:Date.now()+10*60000});
       return json(res,200,{previewToken,createdAt:input.createdAt,records:records.length,aid:aid.length,family:records.reduce((n,m)=>n+m.household.length,0),currentRecords:current.length});
     }
     if (path === '/api/restore/confirm' && req.method === 'POST') {
@@ -158,6 +164,7 @@ const server = http.createServer(async (req,res) => {
       const safetyBackup=safetySnapshot('sebelum-pemulihan');
       db.exec('BEGIN IMMEDIATE');
       try {
+        db.exec('DELETE FROM registrations');
         db.exec('DELETE FROM aid_records');
         db.exec('DELETE FROM aid_types');
         db.exec('DELETE FROM members');
@@ -167,6 +174,8 @@ const server = http.createServer(async (req,res) => {
         for(const record of preview.aidTypes) insertType.run(...aidTypeColumns.map(key=>record[key]));
         const insertAid=db.prepare(`INSERT INTO aid_records (${aidColumns.join(',')}) VALUES (${aidColumns.map(()=>'?').join(',')})`);
         for(const record of preview.aid) insertAid.run(...aidColumns.map(key=>record[key]));
+        const insertRegistration=db.prepare(`INSERT INTO registrations (${registrationColumns.join(',')}) VALUES (${registrationColumns.map(()=>'?').join(',')})`);
+        for(const record of preview.registrations) insertRegistration.run(...registrationColumns.map(key=>key==='data'?JSON.stringify(record.data):record[key]));
         audit(db,user,'Pulihkan sandaran','sistem','',`${preview.records.length} rekod ahli`);
         db.exec('COMMIT');
       } catch(error) { db.exec('ROLLBACK'); throw error; }

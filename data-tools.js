@@ -44,15 +44,15 @@ export function duplicateMatches(member, records, excludedId) {
   }
   return matches;
 }
-export function createBackup(members,aid,aidTypes) {
-  const contents={format:'myKampung-members',version:aidTypes!==undefined?3:aid===undefined?1:2,createdAt:new Date().toISOString(),members,...(aid===undefined?{}:{aid}),...(aidTypes===undefined?{}:{aidTypes})};
+export function createBackup(members,aid,aidTypes,registrations) {
+  const contents={format:'myKampung-members',version:registrations!==undefined?4:aidTypes!==undefined?3:aid===undefined?1:2,createdAt:new Date().toISOString(),members,...(aid===undefined?{}:{aid}),...(aidTypes===undefined?{}:{aidTypes}),...(registrations===undefined?{}:{registrations})};
   const backup={...contents,checksum:digest(contents)};
-  if(members.length>20000 || (aid && aid.length>50000) || (aidTypes && aidTypes.length>20000) || Buffer.byteLength(JSON.stringify(backup))>10*1024*1024) throw Error('Data melebihi had sandaran 10 MB / 20,000 ahli / 50,000 bantuan. Sila gunakan sandaran folder data selepas menghentikan pelayan.');
+  if(members.length>20000 || (aid && aid.length>50000) || (aidTypes && aidTypes.length>20000) || (registrations && registrations.length>20000) || Buffer.byteLength(JSON.stringify(backup))>10*1024*1024) throw Error('Data melebihi had sandaran 10 MB / 20,000 ahli / 50,000 bantuan. Sila gunakan sandaran folder data selepas menghentikan pelayan.');
   return backup;
 }
 export function readBackup(input, validate) {
-  if (!input || input.format!=='myKampung-members' || ![1,2,3].includes(input.version) || (input.version>=2 && (!Array.isArray(input.aid) || input.aid.length>50000)) || (input.version===3 && (!Array.isArray(input.aidTypes) || input.aidTypes.length>20000)) || !Array.isArray(input.members) || input.members.length>20000) throw Error('Format sandaran tidak disokong atau melebihi had 20,000 ahli / 50,000 bantuan.');
-  const contents={format:input.format,version:input.version,createdAt:input.createdAt,members:input.members,...(input.version>=2?{aid:input.aid}:{}),...(input.version===3?{aidTypes:input.aidTypes}:{})};
+  if (!input || input.format!=='myKampung-members' || ![1,2,3,4].includes(input.version) || (input.version>=2 && (!Array.isArray(input.aid) || input.aid.length>50000)) || (input.version>=3 && (!Array.isArray(input.aidTypes) || input.aidTypes.length>20000)) || (input.version===4 && (!Array.isArray(input.registrations) || input.registrations.length>20000)) || !Array.isArray(input.members) || input.members.length>20000) throw Error('Format sandaran tidak disokong atau melebihi had 20,000 ahli / 50,000 bantuan.');
+  const contents={format:input.format,version:input.version,createdAt:input.createdAt,members:input.members,...(input.version>=2?{aid:input.aid}:{}),...(input.version>=3?{aidTypes:input.aidTypes}:{}),...(input.version===4?{registrations:input.registrations}:{})};
   if (input.checksum!==digest(contents)) throw Error('Semakan integriti sandaran gagal. Fail mungkin rosak atau diubah.');
   const validTime=value=>typeof value==='string' && Number.isFinite(Date.parse(value));
   if (!validTime(input.createdAt)) throw Error('Tarikh sandaran tidak sah.');

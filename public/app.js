@@ -3,6 +3,7 @@ import { addressFields, malaysiaStates, postcodeSuggestions } from './address.js
 import { employmentStatuses, educationLevels, studyLevels } from './education.js';
 import { memberDetailFields, memberEducationLevels } from './member-details.js';
 import { enhancePasswords } from './password-tools.js';
+import { setupRegistrations } from './registrations-ui.js';
 import { setupReports } from './reports-ui.js';
 import { setupAidUI } from './aid-ui.js';
 import { installFormState } from './form-state.js';
@@ -16,7 +17,7 @@ async function api(path, method='GET', data) {
   const result = await response.json();
   if (!response.ok) {
     if (response.status === 401 && path !== '/api/login') { members=[]; $('#results').replaceChildren(); $('#editor').close(); showLogin(); }
-    const error=Error(result.error || 'Permintaan gagal.'); error.details=result; throw error;
+    const error=Error(result.error || 'Permintaan gagal.'); error.details=result;error.status=response.status; throw error;
   }
   return result;
 }
@@ -27,13 +28,13 @@ function hidePassword() {
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
 function showLogin() {
-  aidCounts.clear();reportsUI.reset();
+  aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
   aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
   $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[]; currentUser=null;
   for(const id of ['users-list','audit-list','current-user']) $('#'+id).replaceChildren();
   $('#login').hidden=false;
-  for(const id of ['dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','logout','current-user','open-password','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports']) $('#'+id).hidden=true;
+  for(const id of ['dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel','logout','current-user','open-password','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=true;
 }
 async function load() {
   currentUser=(await api('/api/session')).user;
@@ -41,7 +42,7 @@ async function load() {
   aidCounts=new Map(counts.map(row=>[row.memberId,row]));
   $('#login').hidden=true; $('#dashboard').hidden=false; $('#logout').hidden=false;
   const admin=currentUser.role==='admin';
-  for(const id of ['backup','open-restore','nav-accounts','nav-audit','nav-reports']) $('#'+id).hidden=!admin;
+  for(const id of ['backup','open-restore','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=!admin;
   for(const id of ['current-user','open-password','nav-members','nav-aid']) $('#'+id).hidden=false;
   $('#current-user').textContent=`${currentUser.fullName} · ${admin?'Pentadbir':'Petugas'}`;
   showPanel('dashboard');
@@ -157,7 +158,9 @@ $('#login-form').onsubmit=async event=>{
   const password=event.target.elements.password.value; hidePassword();
   try { await api('/api/login','POST',{username:event.target.elements.username.value,password}); event.target.reset(); await load(); } catch(e) { notice(e.message); } finally { button.disabled=false; }
 };
-$('#logout').onclick=async()=>{ try { await api('/api/logout','POST'); members=[]; $('#results').replaceChildren(); showLogin(); notice('Anda telah log keluar.'); } catch(e) { notice(e.message); } };
+$('#logout').onclick=()=>{ $('#logout-error').textContent='';$('#logout-dialog').showModal(); };
+$('#logout-cancel').onclick=()=>$('#logout-dialog').close();
+$('#logout-form').onsubmit=async event=>{event.preventDefault();$('#logout-error').textContent='';try{await api('/api/logout','POST');members=[];$('#results').replaceChildren();showLogin();notice('Anda telah log keluar.');}catch(error){if(error.status===401){showLogin();notice('Sesi telah tamat. Anda telah log keluar.');}else $('#logout-error').textContent=error.message;}};
 $('#search').oninput=render; $('#add-member').onclick=()=>openEditor();
 $('#status-filter').onchange=render;
 $('#add-family').onclick=()=>{ if ($('#family-fields').children.length>=30) { $('#form-error').textContent='Maksimum 30 ahli keluarga.'; return; } familyField(); };
@@ -251,8 +254,8 @@ $('#action-form').onsubmit=async event=>{
 };
 
 function showPanel(id) {
-  for(const panel of ['dashboard','accounts-panel','audit-panel','aid-panel','reports-panel']) $('#'+panel).hidden=panel!==id;
-  for(const [nav,panel] of [['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+  for(const panel of ['dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
+  for(const [nav,panel] of [['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
 }
 $('#nav-members').onclick=()=>showPanel('dashboard');
 async function loadUsers() {
@@ -318,6 +321,7 @@ function syncAidCounts(records) {
   aidCounts=counts;render();
 }
 const aidUI=setupAidUI({api,showPanel,getUser:()=>currentUser,notice,onRecordsChanged:syncAidCounts});
+const registrationsUI=setupRegistrations({api,showPanel,notice,refreshMembers:load});
 const reportsUI=setupReports({api,showPanel,notice});
 const refreshPasswords=enhancePasswords();
 document.addEventListener('submit',refreshPasswords,true);

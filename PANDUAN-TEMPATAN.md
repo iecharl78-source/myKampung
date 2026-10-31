@@ -216,7 +216,7 @@ Pentadbir dan Petugas boleh merekod serta menyunting bantuan. Hanya Pentadbir bo
 
 ## Sandaran dan pemulihan selepas modul bantuan
 
-Butang **Sandaran** kini menghasilkan format versi 3 yang mengandungi ahli, keluarga, semua bantuan termasuk penerima asal, serta senarai jenis bantuan. Hadnya 10 MB, 20,000 ahli dan 50,000 rekod bantuan. Akaun dan sejarah tindakan masih tidak dimasukkan; gunakan salinan keseluruhan folder `data` ketika pelayan dihentikan untuk sandaran sistem penuh.
+Butang **Sandaran** kini menghasilkan format versi 4 yang mengandungi ahli, keluarga, semua bantuan termasuk penerima asal, senarai jenis bantuan serta permohonan pendaftaran. Hadnya 10 MB, 20,000 ahli dan 50,000 rekod bantuan. Akaun dan sejarah tindakan masih tidak dimasukkan; gunakan salinan keseluruhan folder `data` ketika pelayan dihentikan untuk sandaran sistem penuh.
 
 Pratonton pemulihan memaparkan bilangan bantuan. Pemulihan versi terkini menggantikan ahli/keluarga, **bantuan dan jenis bantuan** bersama-sama dalam satu transaksi; jika penulisan gagal, kedua-duanya dikekalkan pada keadaan sebelumnya. Sandaran keselamatan sebelum pemulihan juga mengandungi bantuan. Jika ahli atau bantuan berubah selepas pratonton, pilih fail semula sebelum mengesahkan.
 
@@ -261,3 +261,31 @@ Fail CSV menggunakan UTF-8 dan boleh dibuka dalam Excel. Untuk mengekalkan sifar
 Gunakan **Cetak / Simpan PDF** untuk membuka dialog cetak pelayar dan pilih pencetak atau **Save as PDF**. Cetakan hanya merangkumi hasil laporan, penapis dan masa dijana dalam waktu Malaysia, tanpa menu, borang atau butang aplikasi. Susun atur dicadangkan A4 melintang; hasil sebenar bergantung pada tetapan pelayar/pencetak.
 
 Data laporan dicapai semasa permintaan diproses. Eksport menggunakan penapis laporan terakhir pada data terkini, jadi jana semula dahulu jika rekod berubah sejak paparan disediakan. Sejarah tindakan merekodkan penjanaan laporan dan eksport CSV, tetapi cetakan tempatan melalui pelayar tidak direkodkan sebagai tindakan pelayan. Laporan dan CSV mengandungi maklumat peribadi; simpan dan kongsikan hanya kepada pihak yang dibenarkan. Akaun, kata laluan dan hash tidak dimasukkan dalam laporan.
+
+## Pendaftaran sendiri penduduk dan kelulusan
+
+Akses dalam talian ditangguhkan; kemas kini ini tidak menerbitkan laman atau mengubah tetapan rangkaian. Borang pendaftaran boleh diuji pada pemasangan sedia ada melalui pautan **Daftar sebagai penduduk / Semak permohonan** di skrin log masuk, atau laluan `/daftar` pada alamat aplikasi. Dengan HOST lalai 127.0.0.1, hanya pelayar pada komputer pelayan yang sama boleh membukanya. Capaian daripada telefon/peranti lain masih memerlukan susunan rangkaian yang sesuai, yang akan disediakan kemudian.
+
+Penduduk boleh mengisi maklumat diri, alamat, pekerjaan/pendidikan, majikan (pilihan), dan ahli keluarga tanpa log masuk. Status pekerjaan ahli dan setiap tanggungan perlu dilengkapkan. Penghantar mengesahkan ketepatan maklumat serta persetujuan semakan sebelum menekan **Hantar permohonan**. Borang dibekukan ketika permintaan berlangsung. Penghantaran belum mencipta rekod ahli atau akaun log masuk penduduk.
+
+Selepas dihantar, sistem memberikan kod rujukan rawak **MK-…** dan status **Menunggu semakan**. Simpan kod secara peribadi. Gunakan borang Semak status dengan kod tersebut untuk mengetahui keputusan dan catatan yang diberikan pentadbir. Semakan tidak memaparkan nama, telefon atau seluruh profil. Jika kod hilang, hubungi pentadbir; tiada carian awam melalui nama/telefon dan tiada pemberitahuan e-mel/SMS automatik.
+
+Pentadbir membuka **Permohonan ahli** untuk melihat permohonan menunggu, diluluskan, ditolak atau semua. Semak butiran pemohon, ahli keluarga dan persetujuan. Petugas biasa tidak boleh melihat atau memutuskan permohonan. **Lulus dan daftar ahli** memasukkan ahli/keluarga ke direktori dalam transaksi yang sama dengan keputusan dan sejarah tindakan. Permohonan yang sudah diproses tidak boleh diluluskan kali kedua.
+
+Jika nama, telefon atau ahli keluarga menyerupai rekod sedia ada, sistem memaparkan amaran. Semak identiti dahulu; pengesahan **Saya telah menyemak — lulus sebagai ahli berasingan** hanya digunakan jika ia memang individu berbeza. Untuk maklumat yang salah atau memerlukan pembetulan, tekan **Tolak permohonan** dan isi sebab. Pemohon boleh menyemak sebab melalui kod rujukan dan menghantar borang baharu. Penyuntingan permohonan oleh pemohon serta pembetulan terus dalam borang semakan belum disediakan; profil boleh dikemas kini menggunakan fungsi ahli selepas kelulusan jika sesuai.
+
+Permintaan berulang dengan kandungan dan kunci penghantaran sama tidak mencipta dua permohonan. Had lalai ialah 20 permohonan baharu sejam bagi satu IP, 30 semakan status seminit/IP, dan 5,000 permohonan menunggu. Akaun/mesin berkongsi sambungan boleh berkongsi had IP. `REGISTRATION_MAX_PER_HOUR` boleh ditetapkan antara 1–1,000 untuk keperluan tempat pendaftaran; pendaftaran terus oleh petugas melalui direktori tetap tersedia. Ini kawalan asas, bukan pengesahan telefon atau perlindungan CAPTCHA.
+
+Keputusan pendaftaran berbeza daripada status keahlian semasa. Permohonan yang pernah diluluskan kekal diluluskan walaupun ahli kemudian dinyahaktifkan. Memadam ahli tidak memadam permohonan asal; pautan ID ahli dikosongkan dan maklumat permohonan/keputusan dikekalkan sebagai sejarah. Semakan menggunakan data yang dihantar, bukan bukti identiti yang disahkan secara automatik.
+
+### Sandaran permohonan
+
+Sandaran JSON versi 4 turut mengandungi permohonan, persetujuan, kod rujukan, keputusan dan pautan ahli. Fail ini mesti dilindungi kerana mengandungi maklumat peribadi serta kod semakan. Pemulihan menyemak data dan pautan terlebih dahulu, kemudian menggantikan rekod komuniti serta permohonan dalam satu transaksi. Had fail kekal 10 MB; maksimum 20,000 permohonan dalam sandaran.
+
+Sandaran versi lama yang tiada permohonan boleh dipulihkan hanya apabila sistem semasa belum mempunyai permohonan. Jika sudah ada, gunakan sandaran versi 4 supaya permohonan tidak hilang. Sandaran penuh SQLite turut merangkumi jadual ini secara automatik. Akaun dan audit tidak digantikan melalui pemulihan JSON.
+
+## Pengesahan dan proses log keluar
+
+Butang **Log keluar** kini membuka dialog pengesahan dahulu. **Batal** mengekalkan sesi. **Ya, log keluar** menghantar permintaan, memaparkan **Sedang log keluar…**, dan mengunci butang, medan, navigasi serta penutupan dialog sementara menunggu pelayan. Klik atau penghantaran berulang diabaikan.
+
+Jika pelayan memberikan ralat, dialog memaparkan mesej dan dibuka semula untuk mencuba lagi; sistem tidak mendakwa log keluar berjaya ketika permintaan belum disahkan. Selepas berjaya, sesi dipadam, skrin log masuk dipaparkan dan pemberitahuan **Anda telah log keluar** ditunjukkan. Jika sesi sudah tamat, pengguna dimaklumkan bahawa sesi telah tamat dan telah log keluar. Simpan perubahan borang terlebih dahulu.
