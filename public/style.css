@@ -43,3 +43,5 @@ aside{overflow-y:auto}.community-card{padding:20px;margin:15px 0;overflow-wrap:a
 .head-change-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:20px}.head-change-grid>.community-card{margin:0}#head-change-request-dialog,#head-change-review-dialog{width:min(1000px,95vw)}#head-request-error,#head-review-error{color:#a43e32}#head-change-review-form>.password-control{margin:18px 0}#head-old-residence{margin:15px 0}#head-review-details details{margin:20px 0}#head-review-details .review-details{overflow-wrap:anywhere}
 
 .house-map-link{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid #c7d9ce;border-radius:6px;color:#22654e;text-decoration:none;min-height:44px}.house-map-link:hover{background:#edf6ef}.house-map-link[hidden]{display:none}
+
+.directory-map-link{display:flex;width:fit-content;margin-top:10px;font-size:11px;line-height:1.4;white-space:normal}

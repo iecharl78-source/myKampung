@@ -212,3 +212,5 @@ Bantuan terdahulu kekal dengan nama/tarikh lahir penerima asal. Nama isi rumah y
 ## Lokasi rumah di Google Maps
 
 Isi Latitud dan Longitud dalam Maklumat rumah & zon, contohnya `2.9492` dan `101.6785`. Apabila kedua-duanya sah, butang **Lihat di Google Maps** dipaparkan dan membuka lokasi dalam tab baharu. Simpan maklumat (atau hantar untuk kelulusan bagi ahli) untuk mengekalkan koordinat. Butang juga membolehkan semakan lokasi sebelum menyimpan. Pautan menghantar koordinat kepada Google Maps apabila ditekan dan memerlukan internet; tiada API key diperlukan. Koordinat ini merujuk rumah ahli, bukan rekod katalog zon/jenis rumah.
+
+Dalam **Direktori ahli**, butang **Lihat di Google Maps** turut dipaparkan di bawah alamat apabila rekod mempunyai kedua-dua koordinat yang sah. Tekan untuk membuka lokasi tanpa membuka borang ahli.
