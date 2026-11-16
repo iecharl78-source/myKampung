@@ -1,3 +1,4 @@
+import {deathLabels} from './deaths.js';
 import { audit,withAudit } from './accounts.js';
 import { duplicateMatches,digest } from './data-tools.js';
 import { memberDetailFields } from './public/member-details.js';
@@ -44,7 +45,7 @@ export async function communityRoutes({req,res,path,user,db,json,body,validate})
     if(user.role!=='ahli'){json(res,403,{error:'Portal ini untuk akaun ahli.'});return true;}
     const row=db.prepare('SELECT * FROM members WHERE id=? AND isActive=1').get(user.memberId);
     if(!row){json(res,403,{error:'Akses ahli tidak aktif atau belum dipautkan.'});return true;}
-    if(req.method==='GET'){const {identityKey,...profile}=row;json(res,200,{...profile,household:JSON.parse(row.household)});return true;}
+    if(req.method==='GET'){const {identityKey,...profile}=row;const labeled=deathLabels(db,{...profile,identityKey,household:JSON.parse(row.household)});delete labeled.identityKey;json(res,200,labeled);return true;}
     if(req.method==='PUT'){
       const input=await body(req),current=db.prepare('SELECT * FROM members WHERE id=? AND isActive=1').get(user.memberId);
       if(!current || input.expectedUpdatedAt!==current.updatedAt){json(res,409,{error:'Maklumat telah berubah. Muat semula profil sebelum menghantar.'});return true;}

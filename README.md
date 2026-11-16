@@ -69,3 +69,7 @@ Ahli keluarga mempunyai pilihan tinggal bersama ahli utama atau alamat berasinga
 Menu **Pertukaran ketua** membolehkan ahli memohon untuk isi rumah sendiri serta pentadbir/petugas menyediakan permohonan. Hanya pentadbir meluluskan dengan kata laluan semasa. Calon mesti ahli keluarga rasmi yang tinggal bersama; hubungan keluarga perlu disemak semula. Akaun ketua lama dinyahaktif dan diputuskan pautan selepas kelulusan; pentadbir menyediakan akaun berasingan untuk ketua baharu. Rekod bantuan sejarah dikekalkan.
 
 Sandaran JSON terkini ialah **versi 8**, termasuk identiti stabil individu/isi rumah. Permohonan dan sejarah pertukaran memerlukan **sandaran penuh SQLite**. Rujuk manual pengguna serta panduan naik taraf tempatan sebelum menggunakan fungsi ini.
+
+## Rekod kematian
+
+Menu **Rekod kematian** menyediakan permohonan bagi ahli utama/keluarga, semakan pentadbir, keputusan dan sejarah. Kelulusan memerlukan pengesahan serta kata laluan pentadbir semasa, menyekat akses akaun portal individu dan mengekalkan profil/bantuan. Pengganti ketua diurus berasingan melalui Pertukaran ketua. Rekod kematian memerlukan **sandaran penuh SQLite**; JSON versi 8 tidak mengeksportnya. Khairat dan pembetulan kelulusan kematian belum disediakan. Rujuk manual sebelum meluluskan rekod rasmi.

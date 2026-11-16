@@ -1,3 +1,4 @@
+import {deceasedAccount} from './deaths.js';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
 export function passwordRecord(password) {
@@ -89,6 +90,7 @@ export async function accountRoutes({req,res,path,user,db,json,body,revokeSessio
     if(!['admin','petugas','ahli'].includes(input.role)) throw Error('Sila pilih peranan akaun yang sah.');
     const member=input.role==='ahli' && Number.isSafeInteger(input.memberId)?db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(input.memberId):null;
     if(input.role==='ahli' && (!member || db.prepare('SELECT id FROM users WHERE memberId=?').get(member.id)))throw Error('Sila pilih ahli aktif yang belum mempunyai akaun.');
+    if(member&&deceasedAccount(db,member.id))throw Error('Maklumat akaun tidak boleh disediakan bagi individu yang telah meninggal dunia.');
     const username=input.username.toLowerCase();
     if(db.prepare('SELECT id FROM users WHERE username=?').get(username)) { json(res,409,{error:'Nama pengguna telah digunakan.'});return true; }
     const credentials=passwordRecord(input.password),now=new Date().toISOString();
@@ -104,8 +106,10 @@ export async function accountRoutes({req,res,path,user,db,json,body,revokeSessio
       if(target.role!=='ahli')throw Error('Pautan ini hanya untuk akaun ahli.');
       const member=Number.isSafeInteger(input.memberId)?db.prepare('SELECT id,name FROM members WHERE id=? AND isActive=1').get(input.memberId):null;
       if(!member || db.prepare('SELECT id FROM users WHERE memberId=? AND id!=?').get(member.id,target.id))throw Error('Pilih ahli aktif yang belum dipautkan kepada akaun lain.');
+      if(deceasedAccount(db,member.id))throw Error('Maklumat individu ini telah direkodkan meninggal dunia.');
       withAudit(db,user,'Pautkan akaun ahli','akaun',target.id,()=>db.prepare('UPDATE users SET memberId=?,fullName=?,updatedAt=? WHERE id=?').run(member.id,member.name,new Date().toISOString(),target.id));
     } else if(match[2]==='status') {
+      if(input.active&&target.role==='ahli'&&deceasedAccount(db,target.memberId))throw Error('Maklumat akaun individu meninggal dunia tidak boleh diaktifkan.');
       if(typeof input.active!=='boolean') throw Error('Maklumat status akaun tidak sah.');
       if(target.id===user.id && !input.active) { json(res,400,{error:'Anda tidak boleh menyahaktifkan akaun sendiri.'});return true; }
       if(!input.active && target.role==='admin' && db.prepare("SELECT count(*) AS n FROM users WHERE role='admin' AND isActive=1").get().n<=1) { json(res,400,{error:'Sekurang-kurangnya seorang pentadbir aktif diperlukan.'});return true; }

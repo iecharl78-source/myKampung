@@ -207,10 +207,26 @@ Selepas kelulusan, ketua lama berada dalam senarai keluarga. Alamat dan identiti
 
 **Akaun ketua lama dinyahaktif, pautan ahli dikosongkan dan sesi ditamatkan.** Akaun itu tidak menjadi akaun ketua baharu. Pentadbir perlu membuka **Akaun pengguna** untuk mencipta akaun berasingan atau memautkan akaun milik individu ketua baharu selepas mengesahkan identiti.
 
-Bantuan terdahulu kekal dengan nama/tarikh lahir penerima asal. Nama isi rumah yang dipaparkan boleh mengikut ketua semasa. Gunakan sandaran penuh untuk menyimpan semua permohonan, sejarah pertukaran serta akaun. Fungsi rekod kematian dan khairat akan dibuat dalam fasa berasingan.
+Bantuan terdahulu kekal dengan nama/tarikh lahir penerima asal. Nama isi rumah yang dipaparkan boleh mengikut ketua semasa. Gunakan sandaran penuh untuk menyimpan semua permohonan, sejarah pertukaran serta akaun. Rekod kematian tersedia melalui menu berasingan. Modul khairat belum disediakan.
 
 ## Lokasi rumah di Google Maps
 
 Isi Latitud dan Longitud dalam Maklumat rumah & zon, contohnya `2.9492` dan `101.6785`. Apabila kedua-duanya sah, butang **Lihat di Google Maps** dipaparkan dan membuka lokasi dalam tab baharu. Simpan maklumat (atau hantar untuk kelulusan bagi ahli) untuk mengekalkan koordinat. Butang juga membolehkan semakan lokasi sebelum menyimpan. Pautan menghantar koordinat kepada Google Maps apabila ditekan dan memerlukan internet; tiada API key diperlukan. Koordinat ini merujuk rumah ahli, bukan rekod katalog zon/jenis rumah.
 
 Dalam **Direktori ahli**, butang **Lihat di Google Maps** turut dipaparkan di bawah alamat apabila rekod mempunyai kedua-dua koordinat yang sah. Tekan untuk membuka lokasi tanpa membuka borang ahli.
+
+## Rekod kematian
+
+1. Buka **Rekod kematian**. Ahli hanya boleh menghantar dan melihat rekod isi rumah sendiri. Pentadbir/petugas memilih isi rumah daripada senarai.
+2. Tekan **Tambah rekod kematian**. Pilih ahli utama atau ahli keluarga, isi tarikh kematian serta catatan/sumber maklumat untuk semakan. Tarikh tidak boleh mendahului tarikh lahir atau berada pada masa hadapan.
+3. Tandakan pengesahan dan sahkan penghantaran. Rekod berstatus **Menunggu semakan** belum mengubah status rasmi atau akses akaun. Individu dengan permohonan menunggu atau kematian diluluskan tidak boleh dihantar sekali lagi.
+4. Pentadbir membuka **Lihat / semak**. Untuk meluluskan, semak identiti, tarikh dan sumber maklumat, tandakan pengesahan kesan kepada akaun serta masukkan kata laluan pentadbir semasa. Untuk menolak, isi sebab penolakan. Petugas dan ahli tidak boleh membuat keputusan.
+5. Gunakan penapis status dan carian untuk menyemak rekod. Permohonan ditolak boleh dihantar semula dengan maklumat yang betul. Papan pemuka pentadbir turut menyediakan bilangan rekod kematian menunggu semakan.
+
+Selesaikan permohonan profil/pertukaran ketua yang menunggu sebelum menghantar rekod kematian. Jika nama, tarikh lahir atau kedudukan individu dalam isi rumah sudah berubah semasa semakan, pentadbir perlu menolak permohonan lapuk dan meminta penghantaran semula.
+
+Selepas kelulusan, **Meninggal dunia** dipaparkan pada ahli utama dalam direktori dan pada maklumat ahli keluarga. Akaun ahli yang dipautkan kepada individu tersebut dinyahaktif dan sesinya ditamatkan. Sistem turut menghalang akaun individu itu daripada diaktifkan atau dilog masuk semula. Akaun pentadbir/petugas diurus berasingan; mereka bukan akaun portal yang dipautkan kepada rekod penduduk.
+
+Profil, ahli keluarga dan rekod bantuan tidak dipadam. Status keahlian Aktif/Tidak aktif kekal berasingan daripada status kematian; jumlah keluarga/statistik sedia ada masih mengira rekod yang dikekalkan. Jika ketua meninggal dunia, pentadbir/petugas mengurus pengganti melalui **Pertukaran ketua**. Individu yang diluluskan meninggal dunia tidak boleh dipilih sebagai ketua baharu. Status kematian ketua lama kekal apabila menjadi rekod keluarga.
+
+Kelulusan kematian tidak boleh dibatalkan atau disunting melalui borang ini; semak dengan teliti sebelum meluluskan. Fungsi pembetulan rekod rasmi dan tuntutan khairat belum disediakan. Simpan **sandaran penuh SQLite** untuk semua permohonan, keputusan dan akaun; JSON rekod komuniti tidak mengandungi rekod kematian.

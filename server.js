@@ -1,3 +1,4 @@
+import {initializeDeaths,deathRoutes,deathLabels,deceasedAccount} from './deaths.js';
 import http from 'node:http';
 import {initializeHeadChanges,headChangeRoutes,pendingHeadChange} from './household-head-changes.js';
 import {familyIdentity} from './family-identities.js';
@@ -42,7 +43,7 @@ initializeAid(db);
 initializeRegistrations(db);
 initializeCommunity(db);
 initializeAidRequests(db);
-initializeHeadChanges(db);
+initializeHeadChanges(db);initializeDeaths(db);
 const sessions = new Map(), attempts = new Map(), restorePreviews = new Map();
 const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)}));
 const allAid=()=>db.prepare('SELECT * FROM aid_records ORDER BY id').all();
@@ -104,7 +105,7 @@ function validate(input,{catalog=true,existingMember=null}={}) {
   const details=normalizeMemberDetails(input);if(catalog)checkHousing(db,details);
   return {name, phone, address, ...addressParts, ...details, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/head-changes-ui.js':['head-changes-ui.js','text/javascript'], '/ui-icons.js':['ui-icons.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/family-residence.js':['family-residence.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/deaths-ui.js':['deaths-ui.js','text/javascript'], '/head-changes-ui.js':['head-changes-ui.js','text/javascript'], '/ui-icons.js':['ui-icons.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/family-residence.js':['family-residence.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -127,7 +128,7 @@ const server = http.createServer(async (req,res) => {
       const username=typeof input.username==='string' ? input.username.trim().toLowerCase() : 'admin';
       const user=db.prepare('SELECT * FROM users WHERE username=?').get(username);
       const password = typeof input.password === 'string' && input.password.length <= 1000 ? input.password : '';
-      if (!verifyPassword(user,password) || user.isActive!==1 || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) {
+      if (!verifyPassword(user,password) || user.isActive!==1 || (user.role==='ahli' && deceasedAccount(db,user.memberId)) || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) {
         attempts.set(key,{count:rate && rate.until > now ? rate.count+1 : 1,until:rate && rate.until > now ? rate.until : now+900000});
         return json(res,401,{error:'Nama pengguna atau kata laluan tidak tepat, atau akaun tidak aktif.'});
       }
@@ -141,9 +142,10 @@ const server = http.createServer(async (req,res) => {
     const token = (req.headers.cookie || '').split(';').map(x=>x.trim()).find(x=>x.startsWith('session='))?.slice(8);
     const session=sessions.get(token);
     const user=session && session.expires>Date.now() ? db.prepare('SELECT * FROM users WHERE id=? AND isActive=1').get(session.userId) : null;
-    if(!user || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) { if(token) { sessions.delete(token);restorePreviews.delete(token); } return json(res,401,{error:'Sila log masuk.'}); }
+    if(!user || (user.role==='ahli' && deceasedAccount(db,user.memberId)) || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) { if(token) { sessions.delete(token);restorePreviews.delete(token); } return json(res,401,{error:'Sila log masuk.'}); }
     if (path === '/api/session' && req.method === 'GET') return json(res,200,{ok:true,user:publicUser(user)});
     if(await fullBackupRoute({req,res,path,user,db,json,body,dataDir:data,isSessionActive:()=>sessions.get(token)===session&&session.expires>Date.now()&&db.prepare("SELECT id FROM users WHERE id=? AND role='admin' AND isActive=1").get(user.id)}))return;
+    if(await deathRoutes({req,res,path,user,db,json,body,revokeSessions,isSessionActive:()=>sessions.get(token)===session&&session.expires>Date.now()&&db.prepare('SELECT id FROM users WHERE id=? AND isActive=1').get(user.id)}))return;
     if(await headChangeRoutes({req,res,path,user,db,json,body,validate,revokeSessions,isSessionActive:()=>sessions.get(token)===session&&session.expires>Date.now()&&db.prepare('SELECT id FROM users WHERE id=? AND isActive=1').get(user.id)}))return;
     if(user.role==='ahli'&&((path==='/api/portal/profile'&&req.method==='PUT')||(path==='/api/aid-requests'&&req.method==='POST'))&&pendingHeadChange(db,user.memberId))return json(res,409,{error:'Sila tunggu keputusan pertukaran ketua keluarga sebelum menghantar perubahan profil/bantuan.'});
     if(path==='/api/dashboard' && req.method==='GET')return json(res,200,dashboardData(db,user));
@@ -158,7 +160,7 @@ const server = http.createServer(async (req,res) => {
     if(reportRoute({req,res,path,user,db,json,members:allMembers,aid:allAid})) return;
     if(await aidRoutes({req,res,path,user,db,json,body,safetySnapshot})) return;
     if (path === '/api/logout' && req.method === 'POST') { audit(db,user,'Log keluar','akaun',user.id); sessions.delete(token); restorePreviews.delete(token); res.setHeader('Set-Cookie','session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); return json(res,200,{ok:true}); }
-    if (path === '/api/members' && req.method === 'GET') return json(res,200,allMembers());
+    if (path === '/api/members' && req.method === 'GET') return json(res,200,allMembers().map(m=>deathLabels(db,m)));
     if (path === '/api/backup' && req.method === 'GET') {
       res.setHeader('Content-Disposition',`attachment; filename="myKampung-sandaran-${new Date().toISOString().replace(/[:.]/g,'-')}.json"`);
       const backup=createBackup(allMembers(),allAid(),allAidTypes(),allRegistrations(),bulletinState(db),housingCatalog(db));audit(db,user,'Muat turun sandaran','sistem','');

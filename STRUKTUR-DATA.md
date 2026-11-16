@@ -13,6 +13,7 @@ Pangkalan data aplikasi kekal SQLite. Dump struktur myKapong digunakan sebagai r
 | `community_zones` | Kod/nama zon dan status aktif. |
 | `housing_types` | Kod/nama jenis rumah dan status aktif. |
 | `registrations` | Permohonan pendaftaran penduduk. |
+| `death_records` | Permohonan kematian individu, identiti stabil, tarikh, catatan dan keputusan pentadbir. |
 | `household_head_changes` | Permohonan pertukaran ketua, cadangan keluarga, profil asal dan keputusan pentadbir. |
 | `profile_requests` | Cadangan perubahan profil/keluarga/rumah dan keputusan semakan. |
 | `aid_requests`, `aid_records` | Permohonan maklumat bantuan dan rekod bantuan rasmi. |
@@ -57,10 +58,20 @@ Semakan pendua merangkumi nama/telefon sedia ada serta nombor pengenalan ahli ut
 
 JSON versi 8 menyimpan bentuk API ahli/keluarga, medan rumah, katalog serta `householdKey`, `identityKey` dan `personKey`. Ia tidak mengeksport ID unjuran keluarga/isi rumah secara berasingan. Pemulihan menyemak katalog, memasukkannya sebelum ahli, dan trigger membina semula hubungan rumah/keluarga. Pemulihan menggantikan rekod dalam satu transaksi dan kegagalan akan rollback.
 
-Sandaran penuh SQLite menyimpan semua jadual termasuk akaun, permohonan dan mesej. Gunakan sandaran penuh sebelum naik taraf dan untuk pemindahan lengkap. Pertukaran ketua tersedia; kematian dan khairat belum ditambah. Sejarah/permohonan pertukaran ketua tidak dieksport melalui JSON; gunakan sandaran penuh untuk pemindahan lengkap. Pemulihan JSON mengekalkan sejarah pemasangan semasa dan mengikat semula pautannya menggunakan `householdKey`.
+Sandaran penuh SQLite menyimpan semua jadual termasuk akaun, permohonan dan mesej. Gunakan sandaran penuh sebelum naik taraf dan untuk pemindahan lengkap. Pertukaran ketua dan rekod kematian tersedia; khairat belum ditambah. Sejarah/permohonan pertukaran ketua tidak dieksport melalui JSON; gunakan sandaran penuh untuk pemindahan lengkap. Pemulihan JSON mengekalkan sejarah pemasangan semasa dan mengikat semula pautannya menggunakan `householdKey`.
 
 ## Kediaman keluarga (sandaran JSON versi 7)
 
 `family_members` turut menyimpan `livesWithMember` (Ya/Tidak/kosong) dan `residenceAddress1`, `residenceAddress2`, `residenceDistrict`, `residencePostcode`, `residenceState`, `residenceCountry`. Bentuk sama digunakan dalam JSON keluarga dan permohonan profil. Migration menambah kolum pada jadual sedia ada dan menggantikan trigger dalam transaksi untuk memasukkan medan baharu.
 
 Status Ya menggunakan alamat ahli utama secara rujukan dan menyimpan medan alamat berasingan sebagai kosong, supaya tiada salinan alamat lama yang tersasar apabila alamat utama berubah. Status Tidak memerlukan Alamat 1 dan negara. Status kosong menandakan rekod lama belum disemak; tiada andaian tinggal bersama. Format JSON versi 7 menyimpan semua medan ini dan mengehadkan pemulihan kepada aplikasi yang memahaminya.
+
+## Rekod kematian
+
+`death_records` menyimpan `householdKey`, `personKey`, nama/tarikh lahir semasa permohonan, tarikh kematian, pemohon, catatan serta status pending/approved/rejected dan keputusan semakan. Indeks unik separa mengehadkan satu permohonan pending/approved bagi individu. Tiada foreign key kepada ID ahli/keluarga yang boleh dibina semula; sejarah kekal walaupun rekod sumber dipadam. Status dipaparkan apabila kunci individu masih sepadan.
+
+Status kematian rasmi dibaca daripada keputusan approved dan tidak diterima sebagai nilai yang boleh diubah melalui borang profil. Kelulusan memeriksa identiti/nama/tarikh lahir semasa serta permohonan profil/pertukaran tertangguh. Keputusan, audit, notifikasi dan nyahaktif akaun portal berlaku dalam satu transaksi. Sesi diputuskan selepas commit. Semakan log masuk turut memeriksa status kematian bagi identiti ketua semasa, termasuk selepas pemulihan JSON. Rekod bantuan tidak ditulis semula.
+
+Pertukaran ketua mengekalkan personKey individu yang meninggal dunia ketika dipindahkan ke keluarga. Calon meninggal dunia ditolak semasa permohonan dan semasa kelulusan. `isActive` kekal sebagai status keahlian/isi rumah dan tidak ditukar secara automatik, supaya pengurusan pengganti terus tersedia.
+
+JSON versi 8 tidak mengandungi jadual kematian atau keputusan. Gunakan sandaran penuh SQLite untuk pemindahan lengkap. Pemulihan JSON tidak memadam jadual ini dan tidak memautkan status berdasarkan nombor ID ahli. Rekod lama tanpa identiti stabil memerlukan semakan; pemulihan penuh ialah kaedah yang disokong untuk memelihara keseluruhan hubungan sejarah.

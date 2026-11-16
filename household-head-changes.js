@@ -1,3 +1,4 @@
+import {approvedDeath} from './deaths.js';
 import {withAudit,verifyPassword} from './accounts.js';
 import {notify} from './community.js';
 import {memberDetailFields} from './public/member-details.js';
@@ -33,7 +34,7 @@ export async function headChangeRoutes({req,res,path,user,db,json,body,validate,
  if(context&&req.method==='GET'){
   const id=Number(context[1]);if(!authorizedMember(user,id)){json(res,403,{error:'Akses terhad kepada isi rumah sendiri.'});return true;}
   const member=memberRow(db,id);if(!member){json(res,404,{error:'Isi rumah tidak ditemui.'});return true;}
-  json(res,200,{member:{id:member.id,name:member.name,personKey:member.identityKey,householdKey:member.householdKey,isActive:member.isActive,updatedAt:member.updatedAt,address:member.address},family:member.household,pending:!!pendingHeadChange(db,id),otherPending:!!otherPending(db,id)});return true;
+  json(res,200,{member:{id:member.id,name:member.name,personKey:member.identityKey,householdKey:member.householdKey,isActive:member.isActive,updatedAt:member.updatedAt,address:member.address},family:member.household.map(p=>({...p,deathDate:approvedDeath(db,p.personKey)?.deathDate||''})),pending:!!pendingHeadChange(db,id),otherPending:!!otherPending(db,id)});return true;
  }
  if(path==='/api/head-changes'&&req.method==='GET'){
   const params=new URL(req.url,'http://localhost').searchParams,memberId=Number(params.get('memberId'));
@@ -50,6 +51,7 @@ export async function headChangeRoutes({req,res,path,user,db,json,body,validate,
   if(pendingHeadChange(db,id)||otherPending(db,id)){json(res,409,{error:'Sila selesaikan permohonan profil, bantuan atau pertukaran ketua yang masih menunggu semakan terlebih dahulu.'});return true;}
   if(typeof input.reason!=='string'||!input.reason.trim()||input.reason.length>1000)throw Error('Sila nyatakan sebab pertukaran (maksimum 1,000 aksara).');
   const date=input.effectiveDate;if(typeof date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date))||new Date(date).toISOString().slice(0,10)!==date||date>todayInMalaysia())throw Error('Tarikh pertukaran mesti sah dan tidak berada pada masa hadapan.');
+  if(approvedDeath(db,input.candidateKey))throw Error('Maklumat individu yang telah meninggal dunia tidak boleh menjadi ketua baharu.');
   const proposal=compose(member,input,validate),now=new Date().toISOString();
   const result=withAudit(db,user,'Mohon pertukaran ketua keluarga','isi rumah',id,()=>{const result=db.prepare('INSERT INTO household_head_changes(householdKey,memberId,requestedBy,requesterName,baseUpdatedAt,oldIdentityKey,candidateKey,oldHeadName,newHeadName,effectiveDate,reason,proposal,beforeSnapshot,createdAt) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(member.householdKey,id,user.id,user.fullName,member.updatedAt,member.identityKey,input.candidateKey,member.name,proposal.name,date,input.reason.trim(),JSON.stringify(proposal),JSON.stringify(member),now);notify(db,{admin:true,title:'Permohonan pertukaran ketua keluarga',body:`Isi rumah #${id}`});return result;});
   json(res,202,{id:Number(result.lastInsertRowid),status:'pending'});return true;
@@ -67,6 +69,7 @@ export async function headChangeRoutes({req,res,path,user,db,json,body,validate,
    if(input.confirmAccountChange!==true||!verifyPassword(admin,input.currentPassword))throw Error('Sila sahkan kesan kepada akaun dan masukkan kata laluan pentadbir semasa yang tepat.');
    member=memberRow(db,row.memberId);if(!member||!member.isActive||member.identityKey!==row.oldIdentityKey||member.householdKey!==row.householdKey||member.updatedAt!==row.baseUpdatedAt||digest(member)!==digest(JSON.parse(row.beforeSnapshot))){json(res,409,{error:'Rekod isi rumah telah berubah. Tolak permohonan ini dan minta penghantaran semula.'});return true;}
    if(otherPending(db,member.id)){json(res,409,{error:'Sila selesaikan permohonan profil/bantuan yang masih menunggu sebelum meluluskan.'});return true;}
+   if(approvedDeath(db,row.candidateKey))throw Error('Maklumat calon ketua telah direkodkan meninggal dunia. Tolak permohonan ini.');
    const selected=member.household.find(p=>p.personKey===row.candidateKey);if(!selected||selected.livesWithMember!=='Ya')throw Error('Sila semak semula calon ketua dalam rekod rasmi.');
    proposed=validate(JSON.parse(row.proposal));
    const all=db.prepare('SELECT * FROM members').all().map(m=>({...m,household:JSON.parse(m.household)})),matches=duplicateMatches(proposed,all,member.id),confirmation=digest({id:row.id,proposed,matches});
