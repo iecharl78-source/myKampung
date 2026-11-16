@@ -208,3 +208,7 @@ Selepas kelulusan, ketua lama berada dalam senarai keluarga. Alamat dan identiti
 **Akaun ketua lama dinyahaktif, pautan ahli dikosongkan dan sesi ditamatkan.** Akaun itu tidak menjadi akaun ketua baharu. Pentadbir perlu membuka **Akaun pengguna** untuk mencipta akaun berasingan atau memautkan akaun milik individu ketua baharu selepas mengesahkan identiti.
 
 Bantuan terdahulu kekal dengan nama/tarikh lahir penerima asal. Nama isi rumah yang dipaparkan boleh mengikut ketua semasa. Gunakan sandaran penuh untuk menyimpan semua permohonan, sejarah pertukaran serta akaun. Fungsi rekod kematian dan khairat akan dibuat dalam fasa berasingan.
+
+## Lokasi rumah di Google Maps
+
+Isi Latitud dan Longitud dalam Maklumat rumah & zon, contohnya `2.9492` dan `101.6785`. Apabila kedua-duanya sah, butang **Lihat di Google Maps** dipaparkan dan membuka lokasi dalam tab baharu. Simpan maklumat (atau hantar untuk kelulusan bagi ahli) untuk mengekalkan koordinat. Butang juga membolehkan semakan lokasi sebelum menyimpan. Pautan menghantar koordinat kepada Google Maps apabila ditekan dan memerlukan internet; tiada API key diperlukan. Koordinat ini merujuk rumah ahli, bukan rekod katalog zon/jenis rumah.
