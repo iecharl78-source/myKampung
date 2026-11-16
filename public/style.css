@@ -29,3 +29,5 @@ aside{overflow-y:auto}.community-card{padding:20px;margin:15px 0;overflow-wrap:a
 .registration-account-grid{align-items:start}
 
 .phase-resident-fields{margin:25px 0;border-top:1px solid #dce6df;padding-top:15px}.family-resident-fields{grid-column:1/-1;padding:15px;background:#f6f9f6;border-radius:8px}.family-resident-fields label{min-width:0}#housing-catalog-error{color:#a43e32}
+
+.row-actions{flex-direction:row;align-items:center;gap:8px;min-width:148px}.action-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:1px solid #c6d8e9;border-radius:8px;background:#edf5ff;color:#235b8e;flex-shrink:0}.action-icon svg{pointer-events:none}.action-icon:hover{background:#dcecff;border-color:#235b8e}.action-icon.deactivate-icon{background:#fff5de;border-color:#dfc282;color:#805600}.action-icon.deactivate-icon:hover{background:#ffe8b1}.action-icon.activate-icon{background:#eaf5ed;border-color:#b8d6c0;color:#22654e}.action-icon.activate-icon:hover{background:#d5eadc}.action-icon.delete-icon{background:#fff0ed;border-color:#e3b7ae;color:#a43e32}.action-icon.delete-icon:hover{background:#ffe0d9}

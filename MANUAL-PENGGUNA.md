@@ -57,7 +57,7 @@ Jika ditolak, baca catatan dan hantar permohonan baharu yang dibetulkan. Jika ko
 
 ## 5. Pentadbir/Petugas: rekod ahli dan keluarga
 
-Buka **Ahli & isi rumah → Daftar ahli**, atau **Lihat / edit** pada rekod sedia ada.
+Buka **Ahli & isi rumah → Daftar ahli**, atau ikon pensel **Lihat / edit** pada rekod sedia ada. Tindakan direktori menggunakan ikon: pensel biru untuk lihat/edit, bulatan bergaris kuning untuk nyahaktif, tanda semak hijau untuk aktifkan semula, dan tong sampah merah untuk padam. Tuding ikon untuk keterangannya; label tindakan turut tersedia kepada pembaca skrin.
 
 - Isi nama, telefon dan tarikh lahir. Umur dikira secara automatik.
 - Alamat mempunyai Alamat 1, Alamat 2, Daerah, Poskod, Negeri dan Negara. Poskod boleh dikosongkan jika belum diketahui. Negeri/daerah sahaja tidak menentukan satu poskod yang pasti; semak cadangan sebelum menggunakannya.
