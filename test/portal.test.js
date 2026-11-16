@@ -104,7 +104,7 @@ test('Portal ahli: kelulusan perubahan, pengasingan isi rumah, bantuan sendiri, 
   const notifications=await (await req('/api/notifications','GET',undefined,first)).json();assert.ok(notifications.rows.some(n=>n.title==='Perubahan profil diluluskan'));assert.ok(notifications.rows.some(n=>n.title==='Balasan pertanyaan diterima'));
   await req('/api/notifications/read','POST',{ids:[notifications.rows[0].id]},second);assert.equal((await (await req('/api/notifications','GET',undefined,first)).json()).unread,notifications.unread);
   await req('/api/notifications/read','POST',{all:true},first);assert.equal((await (await req('/api/notifications','GET',undefined,first)).json()).unread,0);
-  const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,6);assert.equal(snapshot.community.events.length,1);assert.ok(!JSON.stringify(snapshot).includes(password));assert.ok(!JSON.stringify(snapshot).includes('Bagaimana memohon?'));
+  const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,7);assert.equal(snapshot.community.events.length,1);assert.ok(!JSON.stringify(snapshot).includes(password));assert.ok(!JSON.stringify(snapshot).includes('Bagaimana memohon?'));
   const preview=await (await req('/api/restore/preview','POST',snapshot)).json();assert.equal((await req('/api/restore/confirm','POST',{previewToken:preview.previewToken,password,confirmation:'PULIHKAN'})).status,200);
   const restored=await login('resident1');assert.equal((await (await req('/api/portal/profile','GET',undefined,restored)).json()).id,profile.id);
   assert.equal((await (await req('/api/questions/'+thread,'GET',undefined,restored)).json()).messages.length,2);

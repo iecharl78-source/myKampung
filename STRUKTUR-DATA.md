@@ -50,6 +50,12 @@ Semakan pendua merangkumi nama/telefon sedia ada serta nombor pengenalan ahli ut
 
 ## Sandaran dan pemulihan
 
-JSON versi 6 menyimpan bentuk API ahli/keluarga, medan rumah dan katalog. Ia tidak mengeksport ID unjuran keluarga/isi rumah secara berasingan. Pemulihan menyemak katalog, memasukkannya sebelum ahli, dan trigger membina semula hubungan rumah/keluarga. Pemulihan menggantikan rekod dalam satu transaksi dan kegagalan akan rollback.
+JSON versi 7 menyimpan bentuk API ahli/keluarga, medan rumah dan katalog. Ia tidak mengeksport ID unjuran keluarga/isi rumah secara berasingan. Pemulihan menyemak katalog, memasukkannya sebelum ahli, dan trigger membina semula hubungan rumah/keluarga. Pemulihan menggantikan rekod dalam satu transaksi dan kegagalan akan rollback.
 
 Sandaran penuh SQLite menyimpan semua jadual termasuk akaun, permohonan dan mesej. Gunakan sandaran penuh sebelum naik taraf dan untuk pemindahan lengkap. Kematian, pertukaran ketua keluarga dan khairat belum ditambah dalam fasa ini.
+
+## Kediaman keluarga (sandaran JSON versi 7)
+
+`family_members` turut menyimpan `livesWithMember` (Ya/Tidak/kosong) dan `residenceAddress1`, `residenceAddress2`, `residenceDistrict`, `residencePostcode`, `residenceState`, `residenceCountry`. Bentuk sama digunakan dalam JSON keluarga dan permohonan profil. Migration menambah kolum pada jadual sedia ada dan menggantikan trigger dalam transaksi untuk memasukkan medan baharu.
+
+Status Ya menggunakan alamat ahli utama secara rujukan dan menyimpan medan alamat berasingan sebagai kosong, supaya tiada salinan alamat lama yang tersasar apabila alamat utama berubah. Status Tidak memerlukan Alamat 1 dan negara. Status kosong menandakan rekod lama belum disemak; tiada andaian tinggal bersama. Format JSON versi 7 menyimpan semua medan ini dan mengehadkan pemulihan kepada aplikasi yang memahaminya.

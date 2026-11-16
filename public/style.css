@@ -37,3 +37,5 @@ aside{overflow-y:auto}.community-card{padding:20px;margin:15px 0;overflow-wrap:a
 .icon-only-button[data-ui-icon="pause"]{background:#fff5de;color:#805600;border-color:#dfc282!important}.icon-only-button[data-ui-icon="delete"]{background:#fff0ed;color:#a43e32;border-color:#e3b7ae!important}
 
 .new-user-section>summary{display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;font-size:16px;min-height:44px;list-style:none}.new-user-section>summary::-webkit-details-marker{display:none}.new-user-section>summary::after{content:"＋";margin-left:auto;font-size:22px;color:#22654e}.new-user-section[open]>summary::after{content:"−"}.new-user-section[open]>summary{margin-bottom:20px}.new-user-section>summary:focus-visible{outline:3px solid #d49a2c;outline-offset:4px}
+
+.family-residence-section{grid-column:1/-1;width:100%;padding:16px;background:#f3f7fb;border:1px solid #d3dfe9;border-radius:8px}.family-residence-section>.form-grid{margin-top:16px}.family-residence-section>label{max-width:360px}.family-residence-section .hint{margin-top:10px}

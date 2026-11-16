@@ -181,3 +181,14 @@ Semua butang tindakan kini mempunyai ikon. Tindakan berulang dalam senarai (liha
 **Semakan perubahan** memaparkan permohonan Menunggu semakan secara lalai, dengan jumlah profil/bantuan menunggu dan lencana status. Pilih **Semua status**, **Diluluskan** atau **Ditolak** untuk melihat sejarah; gunakan carian nama/ID permohonan atau nama bantuan untuk mengecilkan senarai. Kad disusun lebih padat pada komputer dan menyesuaikan diri pada telefon.
 
 **Akaun pengguna** mempunyai carian nama/ID pengguna serta penapis peranan dan status, dengan bilangan hasil. Rekod ahli turut menunjukkan pautan ID ahli. Tekan bahagian **Tambah pengguna** untuk membuka borang penciptaan akaun; borang ditutup semula selepas akaun berjaya dicipta. Tajuk di bahagian atas kini mengikut halaman yang sedang dibuka.
+
+## 17. Kediaman ahli keluarga
+
+Setiap baris keluarga mempunyai pilihan **Tinggal bersama ahli utama?**:
+
+- **Ya:** alamat kediaman merujuk alamat ahli utama. Alamat berasingan tidak perlu diisi dan butirannya dikosongkan jika pilihan ditukar kepada Ya. Apabila alamat ahli utama berubah, laporan keluarga merujuk alamat utama terkini.
+- **Tidak:** isi Alamat keluarga 1, Alamat keluarga 2, Daerah, Poskod, Negeri dan Negara. Alamat 1 serta negara wajib. Poskod Malaysia menerima 5 digit jika diisi, tetapi boleh dikosongkan jika belum diketahui. Negeri boleh dipilih atau ditaip, termasuk negeri/provinsi luar Malaysia.
+
+Pilihan ini tersedia dalam pendaftaran penduduk, borang pentadbir/petugas dan portal ahli. Borang meminta pilihan Ya/Tidak sebelum menyimpan keluarga. Rekod lama kekal **belum diisi** sehingga disemak; sistem tidak menganggap keluarga lama tinggal bersama.
+
+Perubahan oleh ahli memerlukan pengesahan penghantaran dan kelulusan pentadbir, termasuk pertukaran status kediaman atau alamat keluarga. Pentadbir boleh melihat butiran dalam semakan perubahan dan semakan pendaftaran. Laporan keluarga/CSV mempunyai status tinggal bersama, medan alamat berasingan dan alamat kediaman yang digunakan. Bilangan keluarga masih merujuk semua rekod keluarga yang dipautkan, bukan jumlah orang yang tinggal serumah sahaja.

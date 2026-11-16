@@ -1,9 +1,10 @@
+import {familyResidenceLabels,familyResidenceAddress} from './public/family-residence.js';
 import {residentLabels,housingLabels} from './public/resident-fields.js';
 import { calculateAge,todayInMalaysia } from './public/age.js';
 import { audit } from './accounts.js';
 
 const memberColumns=[['id','ID ahli'],['name','Nama ahli'],['status','Status'],['phone','Telefon'],['birthDate','Tarikh lahir'],['age','Umur'],['address1','Alamat 1'],['address2','Alamat 2'],['postcode','Poskod'],['district','Daerah'],['state','Negeri'],['country','Negara'],['employmentStatus','Status pekerjaan'],['occupation','Pekerjaan'],['familyCount','Bilangan keluarga'],['aidCount','Bilangan bantuan'],...Object.entries(residentLabels),...Object.entries(housingLabels)];
-const familyColumns=[['memberId','ID isi rumah'],['householdName','Ahli utama'],['status','Status isi rumah'],['name','Nama keluarga'],['relationship','Hubungan'],['birthDate','Tarikh lahir'],['age','Umur'],['employmentStatus','Status pekerjaan'],['educationLevel','Tahap pendidikan'],['studyLevel','Tahap pengajian'],...Object.entries(residentLabels)];
+const familyColumns=[['memberId','ID isi rumah'],['householdName','Ahli utama'],['status','Status isi rumah'],['name','Nama keluarga'],['relationship','Hubungan'],['birthDate','Tarikh lahir'],['age','Umur'],['employmentStatus','Status pekerjaan'],['educationLevel','Tahap pendidikan'],['studyLevel','Tahap pengajian'],...Object.entries(residentLabels),...Object.entries(familyResidenceLabels),['currentResidenceAddress','Alamat kediaman keluarga']];
 const aidColumns=[['id','ID bantuan'],['memberId','ID isi rumah'],['householdName','Ahli utama'],['status','Status isi rumah'],['recipientName','Penerima'],['recipientKind','Jenis penerima'],['title','Bantuan'],['category','Kategori'],['provider','Pemberi'],['receivedDate','Tarikh diterima'],['amount','Nilai RM'],['quantity','Kuantiti'],['unit','Unit'],['notes','Catatan']];
 export function reportFilters(params) {
   const get=(key,max=200)=>{const value=(params.get(key)||'').trim();if(value.length>max)throw Error('Maklumat penapis laporan terlalu panjang.');return value;};
@@ -27,7 +28,7 @@ export function buildReport(members,aid,filters,today=todayInMalaysia()) {
     rows=selected.map(m=>({...m,status:status(m),age:calculateAge(m.birthDate,today)??'',familyCount:m.household.length,aidCount:counts.get(m.id)||0}));
   } else if(filters.type==='family') {
     title='Laporan ahli keluarga';columns=familyColumns;
-    rows=selected.flatMap(m=>m.household.map(person=>({...person,memberId:m.id,householdName:m.name,status:status(m),age:calculateAge(person.birthDate,today)??''})));
+    rows=selected.flatMap(m=>m.household.map(person=>({...person,livesWithMember:person.livesWithMember||'Belum diisi',currentResidenceAddress:familyResidenceAddress(person,m),memberId:m.id,householdName:m.name,status:status(m),age:calculateAge(person.birthDate,today)??''})));
   } else {
     title='Laporan bantuan diterima';columns=aidColumns;
     const kinds={ahli:'Ahli utama',keluarga:'Ahli keluarga',isi_rumah:'Isi rumah'};

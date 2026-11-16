@@ -385,6 +385,12 @@ Hentikan aplikasi dan ambil sandaran penuh sebelum menaik taraf. Salin semua fai
 
 Jadual baharu menggunakan nama `community_zones`, `housing_types`, `households` dan `family_members`. Nama jadual `orders` tidak digunakan. Rujuk [STRUKTUR-DATA.md](STRUKTUR-DATA.md) untuk hubungan jadual dan lapisan keserasian data lama.
 
-Sandaran rekod JSON kini **versi 6**, termasuk katalog zon/jenis rumah, medan pengenalan/kebajikan, keluarga dan rujukan rumah/koordinat. Pemulihan menyemak kod rujukan sebelum menggantikan data, kemudian membina semula jadual rumah/keluarga dalam transaksi yang sama. Sandaran versi 1–5 masih boleh dipulihkan apabila katalog rumah semasa kosong dan semua syarat keserasian lama dipenuhi. Jika katalog sudah mempunyai rekod, gunakan versi 6 atau sandaran penuh supaya pilihan zon/rumah tidak hilang.
+Format **versi 6** pada fasa pertama memperkenalkan katalog zon/jenis rumah, medan pengenalan/kebajikan, keluarga dan rujukan rumah/koordinat. Pemulihan menyemak kod rujukan sebelum menggantikan data, kemudian membina semula jadual rumah/keluarga dalam transaksi yang sama. Sandaran versi 1–5 masih boleh dipulihkan apabila katalog rumah semasa kosong dan semua syarat keserasian lama dipenuhi. Jika katalog sudah mempunyai rekod, gunakan versi 6 atau lebih baharu, atau sandaran penuh, supaya pilihan zon/rumah tidak hilang.
 
 Sandaran penuh SQLite merangkumi jadual baharu, permohonan serta akaun secara automatik. Format JSON bukan pengganti sandaran penuh. Sesi pengguna selain pentadbir yang melakukan pemulihan ditamatkan seperti sebelumnya. Rekod katalog tidak dipadam melalui borang; gunakan tidak aktif untuk mengekalkan sejarah dan pautan.
+
+## Kediaman keluarga dan sandaran versi 7
+
+Sandaran JSON terkini ialah **versi 7**, yang mengekalkan status tinggal bersama dan alamat keluarga berasingan. Format versi 1–6 masih diterima mengikut syarat keserasian sedia ada; keluarga yang tiada maklumat kediaman kekal belum diketahui. Perisian lama yang hanya menyokong versi 6 tidak boleh memulihkan sandaran versi 7, bagi mengelakkan medan kediaman digugurkan secara senyap.
+
+Selepas mengambil sandaran penuh, hentikan pelayan dan salin semua fail baharu, termasuk `public/family-residence.js`, `public/phase-one-ui.js`, `housing.js`, `data-tools.js` dan `server.js`, bersama fail aplikasi lain. Mulakan semula dengan DATA_DIR yang sama dan tekan Ctrl+F5. Migrasi menambah medan kediaman kepada jadual `family_members` serta mengemas kini trigger penyegerakan dalam transaksi, tanpa menganggap status Ya pada keluarga lama.

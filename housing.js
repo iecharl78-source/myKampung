@@ -1,3 +1,4 @@
+import {familyResidenceFields} from './public/family-residence.js';
 import {residentFields,housingFields} from './public/resident-fields.js';
 import {withAudit} from './accounts.js';
 export function initializeHousing(db){
@@ -7,12 +8,13 @@ export function initializeHousing(db){
    CREATE TABLE IF NOT EXISTS housing_types(id INTEGER PRIMARY KEY,code TEXT NOT NULL UNIQUE,name TEXT NOT NULL,isActive INTEGER NOT NULL CHECK(isActive IN(0,1)),updatedAt TEXT NOT NULL);
    CREATE TABLE IF NOT EXISTS households(id INTEGER PRIMARY KEY,headMemberId INTEGER NOT NULL UNIQUE REFERENCES members(id) ON DELETE CASCADE,zoneId INTEGER REFERENCES community_zones(id),housingTypeId INTEGER REFERENCES housing_types(id),houseReference TEXT NOT NULL,latitude TEXT NOT NULL,longitude TEXT NOT NULL,address1 TEXT NOT NULL,address2 TEXT NOT NULL,district TEXT NOT NULL,postcode TEXT NOT NULL,state TEXT NOT NULL,country TEXT NOT NULL);
    CREATE TABLE IF NOT EXISTS family_members(id INTEGER PRIMARY KEY AUTOINCREMENT,householdId INTEGER NOT NULL REFERENCES households(id) ON DELETE CASCADE,position INTEGER NOT NULL,name TEXT NOT NULL,relationship TEXT NOT NULL,birthDate TEXT NOT NULL,employmentStatus TEXT NOT NULL,educationLevel TEXT NOT NULL,studyLevel TEXT NOT NULL,${residentFields.map(k=>`${k} TEXT NOT NULL DEFAULT ''`).join(',')},UNIQUE(householdId,position));`);
+  const familyExisting=new Set(db.prepare('PRAGMA table_info(family_members)').all().map(c=>c.name));for(const column of familyResidenceFields)if(!familyExisting.has(column))db.exec(`ALTER TABLE family_members ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
   const houseCols=['houseReference','latitude','longitude','address1','address2','district','postcode','state','country'];
-  const familyCols=['name','relationship','birthDate','employmentStatus','educationLevel','studyLevel',...residentFields];
+  const familyCols=['name','relationship','birthDate','employmentStatus','educationLevel','studyLevel',...residentFields,...familyResidenceFields];
   const sync=`INSERT INTO households(headMemberId,zoneId,housingTypeId,${houseCols.join(',')}) VALUES(NEW.id,(SELECT id FROM community_zones WHERE code=NEW.zoneCode),(SELECT id FROM housing_types WHERE code=NEW.housingTypeCode),${houseCols.map(k=>'NEW.'+k).join(',')}) ON CONFLICT(headMemberId) DO UPDATE SET zoneId=excluded.zoneId,housingTypeId=excluded.housingTypeId,${houseCols.map(k=>`${k}=excluded.${k}`).join(',')};
    DELETE FROM family_members WHERE householdId=(SELECT id FROM households WHERE headMemberId=NEW.id) AND NOT EXISTS(SELECT 1 FROM json_each(NEW.household) j WHERE CAST(j.key AS INTEGER)=family_members.position AND ${familyCols.map(k=>`coalesce(json_extract(j.value,'$.${k}'),'')=family_members.${k}`).join(' AND ')});
    INSERT INTO family_members(householdId,position,${familyCols.join(',')}) SELECT (SELECT id FROM households WHERE headMemberId=NEW.id),CAST(j.key AS INTEGER),${familyCols.map(k=>`coalesce(json_extract(j.value,'$.${k}'),'')`).join(',')} FROM json_each(NEW.household) j WHERE NOT EXISTS(SELECT 1 FROM family_members f WHERE f.householdId=(SELECT id FROM households WHERE headMemberId=NEW.id) AND f.position=CAST(j.key AS INTEGER));`;
-  for(const [name,event] of [['resident_insert','INSERT'],['resident_update','UPDATE OF household,zoneCode,housingTypeCode,houseReference,latitude,longitude,address1,address2,district,postcode,state,country']])db.exec(`CREATE TRIGGER IF NOT EXISTS ${name} AFTER ${event} ON members BEGIN ${sync} END;`);
+  for(const [name,event] of [['resident_insert','INSERT'],['resident_update','UPDATE OF household,zoneCode,housingTypeCode,houseReference,latitude,longitude,address1,address2,district,postcode,state,country']])db.exec(`DROP TRIGGER IF EXISTS ${name};CREATE TRIGGER ${name} AFTER ${event} ON members BEGIN ${sync} END;`);
   db.exec('UPDATE members SET household=household');db.exec('COMMIT');
  }catch(e){db.exec('ROLLBACK');throw e;}
 }

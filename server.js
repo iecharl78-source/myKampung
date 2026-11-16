@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {normalizeFamilyResidence} from './public/family-residence.js';
 import {initializeHousing,housingCatalog,housingRoutes,readHousing,checkHousing} from './housing.js';
 import {normalizeResident} from './public/resident-fields.js';
 import {fullBackupRoute} from './full-backup-route.js';
@@ -64,7 +65,7 @@ function duplicateWarning(res, member, input, excludedId) {
   return false;
 }
 const json = (res, status, body) => { res.writeHead(status, {'Content-Type':'application/json; charset=utf-8'}); res.end(JSON.stringify(body)); };
-async function body(req, limit=131072) {
+async function body(req, limit=262144) {
   const chunks=[]; let size=0;
   for await (const chunk of req) { size+=chunk.length; if (size>limit) throw Error('Data terlalu besar.'); chunks.push(chunk); }
   const raw=Buffer.concat(chunks).toString('utf8');
@@ -88,7 +89,7 @@ function validate(input,{catalog=true}={}) {
   const household = input.household.map(person => {
     const name = text(person.name), relationship = text(person.relationship, 30);
     if (!name || !['Pasangan','Anak','Ibu','Bapa','Penjaga','Lain-lain'].includes(relationship)) throw Error('Lengkapkan nama dan hubungan ahli keluarga.');
-    return {name, relationship, birthDate: date(person.birthDate), ...normalizeEducation(person),...(Object.keys(person).some(k=>['identificationNumber','nickname','email','maritalStatus','monthlyIncome','disabilityStatus','disabilityCardNumber','disabilityBenefit','disabilityIncome'].includes(k))?normalizeResident(person):{})};
+    return {name, relationship, birthDate: date(person.birthDate), ...normalizeEducation(person),...normalizeFamilyResidence(person),...(Object.keys(person).some(k=>['identificationNumber','nickname','email','maritalStatus','monthlyIncome','disabilityStatus','disabilityCardNumber','disabilityBenefit','disabilityIncome'].includes(k))?normalizeResident(person):{})};
   });
   const isActive=input.isActive ?? 1;
   if(isActive!==0 && isActive!==1) throw Error('Maklumat status ahli tidak sah.');
@@ -98,7 +99,7 @@ function validate(input,{catalog=true}={}) {
   const details=normalizeMemberDetails(input);if(catalog)checkHousing(db,details);
   return {name, phone, address, ...addressParts, ...details, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/ui-icons.js':['ui-icons.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/ui-icons.js':['ui-icons.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/family-residence.js':['family-residence.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -167,7 +168,7 @@ const server = http.createServer(async (req,res) => {
       if(aid.some(record=>record.aidTypeId!==null && !typeIds.has(record.aidTypeId))) return json(res,400,{error:'Maklumat pautan jenis bantuan dalam sandaran tidak sah.'});
       if(input.version<4 && allRegistrations().length) return json(res,409,{error:'Sandaran lama tidak mengandungi permohonan pendaftaran. Gunakan sandaran terkini supaya permohonan tidak hilang.'});
       if(input.version<5 && (bulletinState(db).announcements.length||bulletinState(db).events.length))return json(res,409,{error:'Sandaran lama tidak mengandungi pengumuman dan aktiviti. Gunakan sandaran terkini.'});
-      if(input.version<6&&(housingCatalog(db).zones.length||housingCatalog(db).housingTypes.length))return json(res,409,{error:'Sandaran lama tiada katalog zon/rumah. Gunakan sandaran versi 6.'});
+      if(input.version<6&&(housingCatalog(db).zones.length||housingCatalog(db).housingTypes.length))return json(res,409,{error:'Sandaran lama tiada katalog zon/rumah. Gunakan sandaran terkini (versi 7).'});
       const codes={zoneCode:new Set(housing.zones.map(r=>r.code)),housingTypeCode:new Set(housing.housingTypes.map(r=>r.code))};
       for(const row of [...records,...registrations.map(r=>r.data)])for(const key of Object.keys(codes))if(row[key]&&!codes[key].has(row[key]))throw Error('Maklumat zon atau jenis rumah dalam sandaran tidak sepadan dengan katalog.');
       const previewToken=randomBytes(24).toString('hex');
