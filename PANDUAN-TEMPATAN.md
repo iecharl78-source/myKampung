@@ -378,3 +378,13 @@ Log masuk menggunakan ID/kata laluan yang terdapat dalam sandaran, bukan nilai A
 Untuk kembali ke data asal, hentikan pelayan, tetapkan DATA_DIR semula ke folder data asal dan mulakan aplikasi. Jangan salin pangkalan data ke atas fail yang sedang digunakan. Latihan pemulihan boleh dibuat menggunakan data ujian dan folder baharu dahulu; ia tidak memerlukan penerbitan dalam talian.
 
 Semasa menaik taraf, salin `full-backup-route.js` dan seluruh folder `scripts` termasuk `backup-full.js` serta `restore-full.js`, bersama fail aplikasi lain.
+
+## Naik taraf fasa pertama penduduk dan isi rumah
+
+Hentikan aplikasi dan ambil sandaran penuh sebelum menaik taraf. Salin semua fail aplikasi baharu termasuk `housing.js`, `public/resident-fields.js`, `public/phase-one-ui.js` serta seluruh folder `public`/`scripts`. Mulakan semula dengan DATA_DIR asal, kemudian muat semula pelayar menggunakan Ctrl+F5. SQLite dinaik taraf secara automatik; tiada import dump myKapong diperlukan untuk fasa ini. Medan tambahan pada rekod lama kekal kosong sehingga dilengkapkan.
+
+Jadual baharu menggunakan nama `community_zones`, `housing_types`, `households` dan `family_members`. Nama jadual `orders` tidak digunakan. Rujuk [STRUKTUR-DATA.md](STRUKTUR-DATA.md) untuk hubungan jadual dan lapisan keserasian data lama.
+
+Sandaran rekod JSON kini **versi 6**, termasuk katalog zon/jenis rumah, medan pengenalan/kebajikan, keluarga dan rujukan rumah/koordinat. Pemulihan menyemak kod rujukan sebelum menggantikan data, kemudian membina semula jadual rumah/keluarga dalam transaksi yang sama. Sandaran versi 1–5 masih boleh dipulihkan apabila katalog rumah semasa kosong dan semua syarat keserasian lama dipenuhi. Jika katalog sudah mempunyai rekod, gunakan versi 6 atau sandaran penuh supaya pilihan zon/rumah tidak hilang.
+
+Sandaran penuh SQLite merangkumi jadual baharu, permohonan serta akaun secara automatik. Format JSON bukan pengganti sandaran penuh. Sesi pengguna selain pentadbir yang melakukan pemulihan ditamatkan seperti sebelumnya. Rekod katalog tidak dipadam melalui borang; gunakan tidak aktif untuk mengekalkan sejarah dan pautan.

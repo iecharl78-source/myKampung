@@ -1,9 +1,10 @@
+import {residentFields,housingFields,normalizeResident,normalizeHousing} from './resident-fields.js';
 import { employmentStatuses, educationLevels, studyLevels } from './education.js';
 import { formatAddress } from './address.js';
 
 export const memberEducationLevels = ['Tiada pendidikan formal', ...educationLevels];
 export const employerAddressFields = ['employerAddress1','employerAddress2','employerDistrict','employerPostcode','employerState','employerCountry'];
-export const memberDetailFields = ['employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone',...employerAddressFields];
+export const memberDetailFields = ['employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone',...employerAddressFields,...residentFields,...housingFields];
 
 export function normalizeMemberDetails(input) {
   const text = (value, max) => {
@@ -30,5 +31,5 @@ export function normalizeMemberDetails(input) {
   const employerAddress=[parts.employerAddress1,parts.employerAddress2,parts.employerDistrict,parts.employerPostcode,parts.employerState].some(Boolean) ? formatAddress({address1:parts.employerAddress1,address2:parts.employerAddress2,district:parts.employerDistrict,postcode:parts.employerPostcode,state:parts.employerState,country:parts.employerCountry}) : '';
   const employerPhone = text(input.employerPhone ?? '', 30);
   if (employerPhone && !/^[+\d\s()-]{7,30}$/.test(employerPhone)) throw Error('Sila masukkan nombor telefon majikan yang sah atau kosongkan.');
-  return {employmentStatus,educationLevel,studyLevel,employerName,employerAddress,employerPhone,...parts};
+  return {employmentStatus,educationLevel,studyLevel,employerName,employerAddress,employerPhone,...parts,...normalizeResident(input),...normalizeHousing(input)};
 }

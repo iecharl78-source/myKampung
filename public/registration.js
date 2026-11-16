@@ -1,3 +1,4 @@
+import {attachResidentFields,addFamilyResidentFields} from './phase-one-ui.js';
 import { employmentStatuses,educationLevels,studyLevels } from './education.js';
 import { memberEducationLevels } from './member-details.js';
 import { malaysiaStates } from './address.js';
@@ -5,6 +6,7 @@ import { ageLabel,todayInMalaysia } from './age.js';
 import { enhancePasswords } from './password-tools.js';
 import { installFormState } from './form-state.js';
 const $=s=>document.querySelector(s),form=$('#registration-form');
+const residentUI=attachResidentFields(form);residentUI.refresh().catch(e=>$('#registration-error').textContent=e.message);
 const options=values=>'<option value="">Sila pilih</option>'+values.map(value=>`<option>${value}</option>`).join('');
 form.elements.employmentStatus.innerHTML=options(employmentStatuses);form.elements.educationLevel.innerHTML=options(memberEducationLevels);form.elements.studyLevel.innerHTML=options(studyLevels);
 $('#state-options').innerHTML=malaysiaStates.map(state=>`<option>${state}</option>`).join('');
@@ -27,7 +29,7 @@ $('#add-family').onclick=()=>{
   const field=key=>row.querySelector(`[data-field="${key}"]`);
   function update(){const student=field('employmentStatus').value==='Pelajar';if(!student)field('educationLevel').value='';const university=student && field('educationLevel').value==='Universiti';row.querySelector('[data-section="education"]').hidden=!student;row.querySelector('[data-section="study"]').hidden=!university;field('educationLevel').disabled=!student;field('educationLevel').required=student;field('studyLevel').disabled=!university;field('studyLevel').required=university;if(!university)field('studyLevel').value='';}
   field('employmentStatus').onchange=field('educationLevel').onchange=update;update();field('birthDate').oninput=()=>row.querySelector('.age-display').textContent=ageLabel(field('birthDate').value);
-  row.querySelector('button').onclick=()=>{if(confirm('Padam baris ahli keluarga ini daripada permohonan?'))row.remove();};$('#family-fields').append(row);
+  row.querySelector('button').onclick=()=>{if(confirm('Padam baris ahli keluarga ini daripada permohonan?'))row.remove();};addFamilyResidentFields(row);$('#family-fields').append(row);
 };
 let previousData='',submissionKey='';
 async function request(path,method='GET',data){const response=await fetch(path,{method,headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined});const result=await response.json();if(!response.ok)throw Error(result.error||'Permintaan gagal.');return result;}

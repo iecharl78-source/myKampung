@@ -46,7 +46,7 @@ Pemohon menetapkan ID pengguna dan kata laluan semasa pendaftaran `/daftar`; aka
 
 **Aktiviti & hebahan** menyediakan pengumuman dan kalendar waktu Malaysia. Pentadbir/Petugas mengurus siaran; Ahli hanya melihat siaran diterbitkan. **Pertanyaan** membolehkan komunikasi peribadi ahli dengan Pentadbir/Petugas. **Notifikasi** memaklumkan siaran, keputusan semakan dan balasan dalam aplikasi (tiada e-mel/SMS/push).
 
-Sandaran JSON versi 5 mengandungi rekod ahli, bantuan, permohonan pendaftaran serta hebahan/aktiviti. Akaun, kata laluan, permohonan perubahan profil/bantuan, pertanyaan, mesej, notifikasi dan audit memerlukan **sandaran penuh SQLite/folder data**. Untuk memindahkan pemasangan lengkap, gunakan sandaran penuh. Rujuk panduan tempatan untuk pemautan semula akaun dan cara menguji portal tanpa penerbitan dalam talian.
+Sandaran JSON versi 6 mengandungi rekod ahli, bantuan, permohonan pendaftaran serta hebahan/aktiviti dan katalog zon/jenis rumah. Akaun, kata laluan, permohonan perubahan profil/bantuan, pertanyaan, mesej, notifikasi dan audit memerlukan **sandaran penuh SQLite/folder data**. Untuk memindahkan pemasangan lengkap, gunakan sandaran penuh. Rujuk panduan tempatan untuk pemautan semula akaun dan cara menguji portal tanpa penerbitan dalam talian.
 
 ## Papan pemuka
 
@@ -57,3 +57,7 @@ Paparan pertama selepas log masuk merangkum permohonan menunggu semakan (Pentadb
 Pentadbir boleh memuat turun sandaran SQLite lengkap melalui **Papan pemuka → Sandaran penuh sistem**, dengan pengesahan kata laluan semasa. Berbeza daripada JSON, fail ini merangkumi akaun, mesej dan semua jadual portal. Sandaran berjadual tidak diaktifkan secara automatik.
 
 Pemulihan penuh dibuat ke folder baharu yang belum wujud menggunakan `node scripts/restore-full.js --source fail.sqlite --destination folder-baharu`, kemudian aplikasi dimulakan dengan `DATA_DIR` merujuk folder itu. Skrip mengekalkan sumber serta data asal dan menyemak integriti serta kewujudan pentadbir aktif. Rujuk panduan tempatan untuk contoh Windows/Node.js standalone dan latihan pemulihan.
+
+## Fasa pertama profil dan isi rumah
+
+Profil ahli/keluarga menyokong nombor pengenalan, nama panggilan, e-mel, perkahwinan, pendapatan serta OKU. Isi rumah mempunyai zon, jenis rumah, nombor rujukan dan koordinat. Pentadbir mengurus katalog melalui **Zon & jenis rumah**. Medan baharu turut melalui semakan pentadbir untuk perubahan Ahli, laporan/CSV dan sandaran versi 6. Migrasi mengekalkan rekod lama; [STRUKTUR-DATA.md](STRUKTUR-DATA.md) menerangkan jadual bermakna dan keserasian API sedia ada.

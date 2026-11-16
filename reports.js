@@ -1,8 +1,9 @@
+import {residentLabels,housingLabels} from './public/resident-fields.js';
 import { calculateAge,todayInMalaysia } from './public/age.js';
 import { audit } from './accounts.js';
 
-const memberColumns=[['id','ID ahli'],['name','Nama ahli'],['status','Status'],['phone','Telefon'],['birthDate','Tarikh lahir'],['age','Umur'],['address1','Alamat 1'],['address2','Alamat 2'],['postcode','Poskod'],['district','Daerah'],['state','Negeri'],['country','Negara'],['employmentStatus','Status pekerjaan'],['occupation','Pekerjaan'],['familyCount','Bilangan keluarga'],['aidCount','Bilangan bantuan']];
-const familyColumns=[['memberId','ID isi rumah'],['householdName','Ahli utama'],['status','Status isi rumah'],['name','Nama keluarga'],['relationship','Hubungan'],['birthDate','Tarikh lahir'],['age','Umur'],['employmentStatus','Status pekerjaan'],['educationLevel','Tahap pendidikan'],['studyLevel','Tahap pengajian']];
+const memberColumns=[['id','ID ahli'],['name','Nama ahli'],['status','Status'],['phone','Telefon'],['birthDate','Tarikh lahir'],['age','Umur'],['address1','Alamat 1'],['address2','Alamat 2'],['postcode','Poskod'],['district','Daerah'],['state','Negeri'],['country','Negara'],['employmentStatus','Status pekerjaan'],['occupation','Pekerjaan'],['familyCount','Bilangan keluarga'],['aidCount','Bilangan bantuan'],...Object.entries(residentLabels),...Object.entries(housingLabels)];
+const familyColumns=[['memberId','ID isi rumah'],['householdName','Ahli utama'],['status','Status isi rumah'],['name','Nama keluarga'],['relationship','Hubungan'],['birthDate','Tarikh lahir'],['age','Umur'],['employmentStatus','Status pekerjaan'],['educationLevel','Tahap pendidikan'],['studyLevel','Tahap pengajian'],...Object.entries(residentLabels)];
 const aidColumns=[['id','ID bantuan'],['memberId','ID isi rumah'],['householdName','Ahli utama'],['status','Status isi rumah'],['recipientName','Penerima'],['recipientKind','Jenis penerima'],['title','Bantuan'],['category','Kategori'],['provider','Pemberi'],['receivedDate','Tarikh diterima'],['amount','Nilai RM'],['quantity','Kuantiti'],['unit','Unit'],['notes','Catatan']];
 export function reportFilters(params) {
   const get=(key,max=200)=>{const value=(params.get(key)||'').trim();if(value.length>max)throw Error('Maklumat penapis laporan terlalu panjang.');return value;};
@@ -12,11 +13,11 @@ export function reportFilters(params) {
   for(const value of [from,to])if(value && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0,10)!==value))throw Error('Tarikh penapis laporan tidak sah.');
   if(from && to && from>to)throw Error('Tarikh mula laporan mesti sebelum atau sama dengan tarikh akhir.');
   if(type!=='aid' && (from || to || get('category')))throw Error('Sila gunakan penapis tarikh dan kategori pada laporan bantuan sahaja.');
-  return {type,status,format,from,to,q:get('q'),state:get('state',100),district:get('district',100),category:get('category',50)};
+  return {type,status,format,from,to,q:get('q'),state:get('state',100),district:get('district',100),zoneCode:get('zoneCode',30),category:get('category',50)};
 }
 export function buildReport(members,aid,filters,today=todayInMalaysia()) {
   const normal=value=>String(value??'').trim().toLocaleLowerCase('ms');
-  const selected=members.filter(m=>(filters.status==='all' || m.isActive===(filters.status==='active'?1:0)) && (!filters.state || normal(m.state)===normal(filters.state)) && (!filters.district || normal(m.district).includes(normal(filters.district))));
+  const selected=members.filter(m=>(filters.status==='all' || m.isActive===(filters.status==='active'?1:0)) && (!filters.state || normal(m.state)===normal(filters.state)) && (!filters.district || normal(m.district).includes(normal(filters.district))) && (!filters.zoneCode || normal(m.zoneCode)===normal(filters.zoneCode)));
   const memberMap=new Map(selected.map(m=>[m.id,m])),counts=new Map();
   for(const row of aid)counts.set(row.memberId,(counts.get(row.memberId)||0)+1);
   const status=m=>m.isActive?'Aktif':'Tidak aktif';

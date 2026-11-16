@@ -1,6 +1,7 @@
+import {residentFields,housingFields} from './public/resident-fields.js';
 import { createHash } from 'node:crypto';
 
-export const memberColumns = ['id','name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country','employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone','employerAddress1','employerAddress2','employerDistrict','employerPostcode','employerState','employerCountry','isActive','deactivatedAt','inactivityReason','identityKey'];
+export const memberColumns = ['id','name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country','employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone','employerAddress1','employerAddress2','employerDistrict','employerPostcode','employerState','employerCountry','isActive','deactivatedAt','inactivityReason','identityKey',...residentFields,...housingFields];
 export const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const nameKey = value => value.normalize('NFKC').toLocaleLowerCase('ms').replace(/[^\p{L}\p{N}]/gu,'');
 const phoneKey = value => {
@@ -14,6 +15,7 @@ export function duplicateMatches(member, records, excludedId) {
   const matches=others.flatMap(row=>{
     const reasons=[];
     if (nameKey(row.name)===nameKey(member.name)) reasons.push('Nama sama');
+    if(member.identificationNumber&&row.identificationNumber===member.identificationNumber)reasons.push('Nombor pengenalan sama');
     if (phoneKey(row.phone)===phoneKey(member.phone)) reasons.push('Nombor telefon sama');
     return reasons.length ? [{id:row.id,name:row.name,phone:row.phone,updatedAt:row.updatedAt,isActive:row.isActive ?? 1,reasons}] : [];
   });
@@ -40,19 +42,20 @@ export function duplicateMatches(member, records, excludedId) {
     }
   }
   for(let i=0;i<candidates.length;i++) for(let j=i+1;j<candidates.length;j++) {
-    if(nameKey(candidates[i].name)===nameKey(candidates[j].name)) matches.push(familyMatch(candidates[i],candidates[j]));
+    if(nameKey(candidates[i].name)===nameKey(candidates[j].name)||(candidates[i].identificationNumber&&candidates[i].identificationNumber===candidates[j].identificationNumber)) matches.push({...familyMatch(candidates[i],candidates[j]),...(nameKey(candidates[i].name)!==nameKey(candidates[j].name)?{reasons:['Nombor pengenalan sama — semak identiti']}:{})});
   }
+  for(const candidate of candidates)if(candidate.identificationNumber)for(const row of others)for(const person of people(row))if(candidate.identificationNumber===person.identificationNumber&&nameKey(candidate.name)!==nameKey(person.name)&&(candidate.index!==-1||person.index!==-1))matches.push({...familyMatch(candidate,person,row),reasons:['Nombor pengenalan sama — semak identiti']});
   return matches;
 }
-export function createBackup(members,aid,aidTypes,registrations,community) {
-  const contents={format:'myKampung-members',version:community!==undefined?5:registrations!==undefined?4:aidTypes!==undefined?3:aid===undefined?1:2,createdAt:new Date().toISOString(),members,...(aid===undefined?{}:{aid}),...(aidTypes===undefined?{}:{aidTypes}),...(registrations===undefined?{}:{registrations}),...(community===undefined?{}:{community})};
+export function createBackup(members,aid,aidTypes,registrations,community,housing) {
+  const contents={format:'myKampung-members',version:housing!==undefined?6:community!==undefined?5:registrations!==undefined?4:aidTypes!==undefined?3:aid===undefined?1:2,createdAt:new Date().toISOString(),members,...(aid===undefined?{}:{aid}),...(aidTypes===undefined?{}:{aidTypes}),...(registrations===undefined?{}:{registrations}),...(community===undefined?{}:{community}),...(housing===undefined?{}:{housing})};
   const backup={...contents,checksum:digest(contents)};
-  if((community && (community.announcements.length>20000 || community.events.length>20000)) || members.length>20000 || (aid && aid.length>50000) || (aidTypes && aidTypes.length>20000) || (registrations && registrations.length>20000) || Buffer.byteLength(JSON.stringify(backup))>10*1024*1024) throw Error('Data melebihi had sandaran 10 MB / 20,000 ahli / 50,000 bantuan. Sila gunakan sandaran folder data selepas menghentikan pelayan.');
+  if((housing&&(housing.zones.length>20000||housing.housingTypes.length>20000)) || (community && (community.announcements.length>20000 || community.events.length>20000)) || members.length>20000 || (aid && aid.length>50000) || (aidTypes && aidTypes.length>20000) || (registrations && registrations.length>20000) || Buffer.byteLength(JSON.stringify(backup))>10*1024*1024) throw Error('Data melebihi had sandaran 10 MB / 20,000 ahli / 50,000 bantuan. Sila gunakan sandaran folder data selepas menghentikan pelayan.');
   return backup;
 }
 export function readBackup(input, validate) {
-  if (!input || input.format!=='myKampung-members' || ![1,2,3,4,5].includes(input.version) || (input.version>=2 && (!Array.isArray(input.aid) || input.aid.length>50000)) || (input.version>=3 && (!Array.isArray(input.aidTypes) || input.aidTypes.length>20000)) || (input.version>=4 && (!Array.isArray(input.registrations) || input.registrations.length>20000)) || (input.version===5 && (!input.community || !Array.isArray(input.community.announcements) || !Array.isArray(input.community.events) || input.community.announcements.length>20000 || input.community.events.length>20000)) || !Array.isArray(input.members) || input.members.length>20000) throw Error('Format sandaran tidak disokong atau melebihi had 20,000 ahli / 50,000 bantuan.');
-  const contents={format:input.format,version:input.version,createdAt:input.createdAt,members:input.members,...(input.version>=2?{aid:input.aid}:{}),...(input.version>=3?{aidTypes:input.aidTypes}:{}),...(input.version>=4?{registrations:input.registrations}:{}),...(input.version===5?{community:input.community}:{})};
+  if (!input || input.format!=='myKampung-members' || ![1,2,3,4,5,6].includes(input.version) || (input.version>=2 && (!Array.isArray(input.aid) || input.aid.length>50000)) || (input.version>=3 && (!Array.isArray(input.aidTypes) || input.aidTypes.length>20000)) || (input.version>=4 && (!Array.isArray(input.registrations) || input.registrations.length>20000)) || (input.version>=5 && (!input.community || !Array.isArray(input.community.announcements) || !Array.isArray(input.community.events) || input.community.announcements.length>20000 || input.community.events.length>20000)) || !Array.isArray(input.members) || input.members.length>20000) throw Error('Format sandaran tidak disokong atau melebihi had 20,000 ahli / 50,000 bantuan.');
+  const contents={format:input.format,version:input.version,createdAt:input.createdAt,members:input.members,...(input.version>=2?{aid:input.aid}:{}),...(input.version>=3?{aidTypes:input.aidTypes}:{}),...(input.version>=4?{registrations:input.registrations}:{}),...(input.version>=5?{community:input.community}:{}),...(input.version>=6?{housing:input.housing}:{})};
   if (input.checksum!==digest(contents)) throw Error('Semakan integriti sandaran gagal. Fail mungkin rosak atau diubah.');
   const validTime=value=>typeof value==='string' && Number.isFinite(Date.parse(value));
   if (!validTime(input.createdAt)) throw Error('Tarikh sandaran tidak sah.');

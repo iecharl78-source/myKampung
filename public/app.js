@@ -6,6 +6,7 @@ import { enhancePasswords } from './password-tools.js';
 import { setupRegistrations } from './registrations-ui.js';
 import { setupReports } from './reports-ui.js';
 import { setupAidUI } from './aid-ui.js';
+import {attachResidentFields,addFamilyResidentFields,setupHousingCatalog} from './phase-one-ui.js';
 import { setupDashboard } from './dashboard-ui.js';
 import { setupPortal } from './portal-ui.js';
 import { installFormState } from './form-state.js';
@@ -30,19 +31,20 @@ function hidePassword() {
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
 function showLogin() {
-  homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
+  housingUI.reset();homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
   aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
   $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[]; currentUser=null;
   for(const id of ['users-list','audit-list','current-user']) $('#'+id).replaceChildren();
   $('#login').hidden=false;
-  for(const id of ['home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel','logout','current-user','open-password','nav-home','nav-portal','nav-community','nav-questions','nav-notifications','nav-profile-review','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=true;
+  for(const id of ['housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel','logout','current-user','open-password','nav-housing','nav-home','nav-portal','nav-community','nav-questions','nav-notifications','nav-profile-review','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=true;
 }
 async function load(openHome=false) {
   currentUser=(await api('/api/session')).user;
   const resident=currentUser.role==='ahli',adminRole=currentUser.role==='admin';
   $('#login').hidden=true;
   for(const id of ['nav-home','logout','current-user','open-password','nav-community','nav-questions','nav-notifications'])$('#'+id).hidden=false;
+  $('#nav-housing').hidden=!adminRole;await residentUI.refresh();
   $('#nav-portal').hidden=!resident;$('#nav-profile-review').hidden=!adminRole;
   for(const id of ['nav-members','nav-aid'])$('#'+id).hidden=resident;
   for(const id of ['nav-accounts','nav-audit','nav-reports','nav-registrations'])$('#'+id).hidden=!adminRole;
@@ -103,11 +105,12 @@ function familyField(person={}) {
     const name=row.querySelector('[data-field="name"]').value.trim() || 'ahli keluarga ini';
     if(window.confirm(`Padam ${name} daripada senarai keluarga? Perubahan hanya berkuat kuasa selepas menekan Simpan maklumat.`)) { row.remove(); clearDuplicates(); }
   };
-  $('#family-fields').append(row);
+  addFamilyResidentFields(row,person);$('#family-fields').append(row);
 }
-function openEditor(member) {
+async function openEditor(member) {
   editing=member?.id ?? null; $('#member-form').reset(); $('#family-fields').replaceChildren(); $('#form-error').textContent='';
   clearDuplicates();
+  try{await residentUI.refresh(member||{});}catch(e){notice(e.message);return;}
   $('#editor-title').textContent=member ? 'Maklumat ahli & keluarga' : 'Daftar ahli baharu';
   $('#member-status-note').textContent=member?.isActive===0 ? `Ahli tidak aktif${member.deactivatedAt ? ' sejak '+new Date(member.deactivatedAt).toLocaleDateString('ms-MY',{timeZone:'Asia/Kuala_Lumpur'}) : ''}. ${member.inactivityReason || ''}` : '';
   $('#member-status-note').hidden=member?.isActive!==0;
@@ -264,8 +267,8 @@ $('#action-form').onsubmit=async event=>{
 };
 
 function showPanel(id) {
-  for(const panel of ['home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
-  for(const [nav,panel] of [['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+  for(const panel of ['housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
+  for(const [nav,panel] of [['nav-housing','housing-panel'],['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
 }
 $('#nav-members').onclick=()=>showPanel('dashboard');
 async function loadUsers() {
@@ -335,6 +338,8 @@ function syncAidCounts(records) {
   }
   aidCounts=counts;render();
 }
+const residentUI=attachResidentFields($('#member-form'));
+const housingUI=setupHousingCatalog({api,getUser:()=>currentUser,showPanel,notice});
 const homeUI=setupDashboard({api,getUser:()=>currentUser,showPanel,notice});
 const portalUI=setupPortal({api,showPanel,getUser:()=>currentUser,notice});
 const aidUI=setupAidUI({api,showPanel,getUser:()=>currentUser,notice,onRecordsChanged:syncAidCounts});

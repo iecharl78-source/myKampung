@@ -1,3 +1,4 @@
+import {residentFields,housingFields} from './public/resident-fields.js';
 export function migrateAddress(db) {
   const existing = new Set(db.prepare('PRAGMA table_info(members)').all().map(c => c.name));
   const columns = ['address1','address2','district','postcode','state','country'];
@@ -16,7 +17,7 @@ export function migrateMemberDetails(db) {
   const existing = new Set(db.prepare('PRAGMA table_info(members)').all().map(c => c.name));
   db.exec('BEGIN IMMEDIATE');
   try {
-    for (const column of ['employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone']) {
+    for (const column of ['employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone',...residentFields,...housingFields]) {
       if (!existing.has(column)) db.exec(`ALTER TABLE members ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
     }
     db.exec('COMMIT');

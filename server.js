@@ -1,4 +1,6 @@
 import http from 'node:http';
+import {initializeHousing,housingCatalog,housingRoutes,readHousing,checkHousing} from './housing.js';
+import {normalizeResident} from './public/resident-fields.js';
 import {fullBackupRoute} from './full-backup-route.js';
 import {dashboardData} from './dashboard.js';
 import {initializeAidRequests,aidRequestRoutes} from './aid-requests.js';
@@ -31,6 +33,7 @@ migrateMemberDetails(db);
 migrateMemberStatus(db);
 migrateEmployerAddress(db);
 migrateMemberIdentity(db);
+initializeHousing(db);
 initializeAccounts(db,process.env.ADMIN_PASSWORD);
 initializeAid(db);
 initializeRegistrations(db);
@@ -41,11 +44,11 @@ const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').al
 const allAid=()=>db.prepare('SELECT * FROM aid_records ORDER BY id').all();
 const allAidTypes=()=>db.prepare('SELECT * FROM aid_types ORDER BY id').all();
 const allRegistrations=()=>db.prepare('SELECT * FROM registrations ORDER BY id').all().map(row=>({...row,data:JSON.parse(row.data)}));
-const communityState=()=>({members:allMembers(),aid:allAid(),aidTypes:allAidTypes(),registrations:allRegistrations(),community:bulletinState(db)});
+const communityState=()=>({members:allMembers(),aid:allAid(),aidTypes:allAidTypes(),registrations:allRegistrations(),community:bulletinState(db),housing:housingCatalog(db)});
 function safetySnapshot(prefix) {
   const backupDir=join(data,'backups'); mkdirSync(backupDir,{recursive:true,mode:0o700});
   const filename=`${prefix}-${Date.now()}-${randomBytes(4).toString('hex')}.json`;
-  writeFileSync(join(backupDir,filename),JSON.stringify(createBackup(allMembers(),allAid(),allAidTypes(),allRegistrations(),bulletinState(db))),{mode:0o600,flag:'wx'});
+  writeFileSync(join(backupDir,filename),JSON.stringify(createBackup(allMembers(),allAid(),allAidTypes(),allRegistrations(),bulletinState(db),housingCatalog(db))),{mode:0o600,flag:'wx'});
   return filename;
 }
 function revokeSessions(userId) {
@@ -61,13 +64,13 @@ function duplicateWarning(res, member, input, excludedId) {
   return false;
 }
 const json = (res, status, body) => { res.writeHead(status, {'Content-Type':'application/json; charset=utf-8'}); res.end(JSON.stringify(body)); };
-async function body(req, limit=65536) {
+async function body(req, limit=131072) {
   const chunks=[]; let size=0;
   for await (const chunk of req) { size+=chunk.length; if (size>limit) throw Error('Data terlalu besar.'); chunks.push(chunk); }
   const raw=Buffer.concat(chunks).toString('utf8');
   try { return JSON.parse(raw); } catch { throw Error('Format data tidak sah.'); }
 }
-function validate(input) {
+function validate(input,{catalog=true}={}) {
   const text = (v, max = 200) => { if (typeof v !== 'string' || v.length > max) throw Error('Maklumat tidak sah atau terlalu panjang.'); return v.trim(); };
   const name = text(input.name), phone = text(input.phone, 30);
   const addressParts = {
@@ -85,16 +88,17 @@ function validate(input) {
   const household = input.household.map(person => {
     const name = text(person.name), relationship = text(person.relationship, 30);
     if (!name || !['Pasangan','Anak','Ibu','Bapa','Penjaga','Lain-lain'].includes(relationship)) throw Error('Lengkapkan nama dan hubungan ahli keluarga.');
-    return {name, relationship, birthDate: date(person.birthDate), ...normalizeEducation(person)};
+    return {name, relationship, birthDate: date(person.birthDate), ...normalizeEducation(person),...(Object.keys(person).some(k=>['identificationNumber','nickname','email','maritalStatus','monthlyIncome','disabilityStatus','disabilityCardNumber','disabilityBenefit','disabilityIncome'].includes(k))?normalizeResident(person):{})};
   });
   const isActive=input.isActive ?? 1;
   if(isActive!==0 && isActive!==1) throw Error('Maklumat status ahli tidak sah.');
   const deactivatedAt=isActive===0 ? text(input.deactivatedAt ?? '',50) : '';
   if(deactivatedAt && !Number.isFinite(Date.parse(deactivatedAt))) throw Error('Tarikh nyahaktif tidak sah.');
   const inactivityReason=isActive===0 ? text(input.inactivityReason ?? '',500) : '';
-  return {name, phone, address, ...addressParts, ...normalizeMemberDetails(input), birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
+  const details=normalizeMemberDetails(input);if(catalog)checkHousing(db,details);
+  return {name, phone, address, ...addressParts, ...details, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -105,6 +109,7 @@ const server = http.createServer(async (req,res) => {
     if(path==='/healthz' && req.method==='GET'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
     if (req.method === 'GET' && staticFiles[path]) { const [file,type] = staticFiles[path]; res.writeHead(200, {'Content-Type':`${type}; charset=utf-8`}); return res.end(readFileSync(join(root,'public',file))); }
     if (['POST','PUT','DELETE'].includes(req.method) && req.headers.origin && req.headers.origin !== (runtime.publicOrigin || `${process.env.COOKIE_SECURE === '1' ? 'https' : 'http'}://${req.headers.host}`)) return json(res,403,{error:'Asal permintaan tidak dibenarkan.'});
+    if(path==='/api/housing/catalog'&&req.method==='GET')return json(res,200,housingCatalog(db));
     if(await publicRegistrationRoutes({req,res,path,db,json,body,validate,clientIp:clientAddress(req,runtime)})) return;
     if (path === '/api/login' && req.method === 'POST') {
       const key = clientAddress(req,runtime), now = Date.now();
@@ -134,6 +139,7 @@ const server = http.createServer(async (req,res) => {
     if (path === '/api/session' && req.method === 'GET') return json(res,200,{ok:true,user:publicUser(user)});
     if(await fullBackupRoute({req,res,path,user,db,json,body,dataDir:data,isSessionActive:()=>sessions.get(token)===session&&session.expires>Date.now()&&db.prepare("SELECT id FROM users WHERE id=? AND role='admin' AND isActive=1").get(user.id)}))return;
     if(path==='/api/dashboard' && req.method==='GET')return json(res,200,dashboardData(db,user));
+    if(await housingRoutes({req,res,path,user,db,json,body}))return;
     if(await aidRequestRoutes({req,res,path,user,db,json,body}))return;
     if(await communityRoutes({req,res,path,user,db,json,body,validate})) return;
     if(user.role==='ahli' && !['/api/password','/api/logout'].includes(path))return json(res,403,{error:'Akaun ahli hanya boleh mengakses portal sendiri.'});
@@ -147,22 +153,25 @@ const server = http.createServer(async (req,res) => {
     if (path === '/api/members' && req.method === 'GET') return json(res,200,allMembers());
     if (path === '/api/backup' && req.method === 'GET') {
       res.setHeader('Content-Disposition',`attachment; filename="myKampung-sandaran-${new Date().toISOString().replace(/[:.]/g,'-')}.json"`);
-      const backup=createBackup(allMembers(),allAid(),allAidTypes(),allRegistrations(),bulletinState(db));audit(db,user,'Muat turun sandaran','sistem','');
+      const backup=createBackup(allMembers(),allAid(),allAidTypes(),allRegistrations(),bulletinState(db),housingCatalog(db));audit(db,user,'Muat turun sandaran','sistem','');
       return json(res,200,backup);
     }
     if (path === '/api/restore/preview' && req.method === 'POST') {
       restorePreviews.delete(token);
       for (const [key,value] of restorePreviews) if(value.expires<Date.now() || !sessions.has(key)) restorePreviews.delete(key);
       if (restorePreviews.size>=20) return json(res,429,{error:'Terlalu banyak pratonton pemulihan. Cuba lagi kemudian.'});
-      const input=await body(req,10*1024*1024), records=readBackup(input,validate), aid=readAidBackup(input,records), aidTypes=readAidTypes(input),registrations=readRegistrations(input,records,validate),community=readCommunity(input), current=allMembers();
+      const input=await body(req,10*1024*1024), records=readBackup(input,row=>validate(row,{catalog:false})), aid=readAidBackup(input,records), aidTypes=readAidTypes(input),registrations=readRegistrations(input,records,row=>validate(row,{catalog:false})),community=readCommunity(input),housing=readHousing(input), current=allMembers();
       if(input.version===1 && allAid().length) return json(res,409,{error:'Sandaran lama tidak mengandungi bantuan. Gunakan sandaran versi baharu supaya rekod bantuan tidak hilang.'});
       if(input.version<3 && allAidTypes().length) return json(res,409,{error:'Sandaran lama tidak mengandungi jenis bantuan. Gunakan sandaran versi terkini supaya senarai jenis bantuan tidak hilang.'});
       const typeIds=new Set(aidTypes.map(type=>type.id));
       if(aid.some(record=>record.aidTypeId!==null && !typeIds.has(record.aidTypeId))) return json(res,400,{error:'Maklumat pautan jenis bantuan dalam sandaran tidak sah.'});
       if(input.version<4 && allRegistrations().length) return json(res,409,{error:'Sandaran lama tidak mengandungi permohonan pendaftaran. Gunakan sandaran terkini supaya permohonan tidak hilang.'});
       if(input.version<5 && (bulletinState(db).announcements.length||bulletinState(db).events.length))return json(res,409,{error:'Sandaran lama tidak mengandungi pengumuman dan aktiviti. Gunakan sandaran terkini.'});
+      if(input.version<6&&(housingCatalog(db).zones.length||housingCatalog(db).housingTypes.length))return json(res,409,{error:'Sandaran lama tiada katalog zon/rumah. Gunakan sandaran versi 6.'});
+      const codes={zoneCode:new Set(housing.zones.map(r=>r.code)),housingTypeCode:new Set(housing.housingTypes.map(r=>r.code))};
+      for(const row of [...records,...registrations.map(r=>r.data)])for(const key of Object.keys(codes))if(row[key]&&!codes[key].has(row[key]))throw Error('Maklumat zon atau jenis rumah dalam sandaran tidak sepadan dengan katalog.');
       const previewToken=randomBytes(24).toString('hex');
-      restorePreviews.set(token,{previewToken,records,aid,aidTypes,registrations,community,current:digest(communityState()),expires:Date.now()+10*60000});
+      restorePreviews.set(token,{previewToken,records,aid,aidTypes,registrations,community,housing,current:digest(communityState()),expires:Date.now()+10*60000});
       return json(res,200,{previewToken,createdAt:input.createdAt,records:records.length,aid:aid.length,family:records.reduce((n,m)=>n+m.household.length,0),currentRecords:current.length});
     }
     if (path === '/api/restore/confirm' && req.method === 'POST') {
@@ -182,6 +191,8 @@ const server = http.createServer(async (req,res) => {
         db.exec('DELETE FROM aid_records');
         db.exec('DELETE FROM aid_types');
         db.exec('DELETE FROM members');
+        db.exec('DELETE FROM community_zones; DELETE FROM housing_types');
+        for(const [key,table] of [['zones','community_zones'],['housingTypes','housing_types']])for(const row of preview.housing[key])db.prepare(`INSERT INTO ${table}(id,code,name,isActive,updatedAt) VALUES(?,?,?,?,?)`).run(row.id,row.code,row.name,row.isActive,row.updatedAt);
         const insert=db.prepare(`INSERT INTO members (${memberColumns.join(',')}) VALUES (${memberColumns.map(()=>'?').join(',')})`);
         for(const member of preview.records) insert.run(...memberColumns.map(key=>key==='household'?JSON.stringify(member.household):member[key]));
         for(const link of links){const restored=db.prepare('SELECT id FROM members WHERE identityKey=?').get(link.identityKey);if(restored)db.prepare('UPDATE users SET memberId=? WHERE id=?').run(restored.id,link.id);}

@@ -27,3 +27,5 @@ aside{overflow-y:auto}.community-card{padding:20px;margin:15px 0;overflow-wrap:a
 #full-backup-form>.password-control{margin:18px 0}#full-backup-error{color:#a43e32}#full-backup-result{color:#22654e;font-weight:600}
 
 .registration-account-grid{align-items:start}
+
+.phase-resident-fields{margin:25px 0;border-top:1px solid #dce6df;padding-top:15px}.family-resident-fields{grid-column:1/-1;padding:15px;background:#f6f9f6;border-radius:8px}.family-resident-fields label{min-width:0}#housing-catalog-error{color:#a43e32}

@@ -14,6 +14,7 @@ Manual ini meliputi fungsi semasa untuk Pentadbir, Petugas dan Ahli. Untuk memas
 | Aktiviti dan hebahan | Cipta, sunting, siar/nyahsiar | Cipta, sunting, siar/nyahsiar | Lihat siaran diterbitkan |
 | Pertanyaan | Lihat/balas semua, urus status | Lihat/balas semua, urus status | Hantar/lihat/balas pertanyaan sendiri |
 | Notifikasi | Milik sendiri | Milik sendiri | Milik sendiri |
+| Katalog zon dan jenis rumah | Urus | Pilih pada profil | Pilih pada profil sendiri |
 | Akaun pengguna, laporan, audit dan sandaran | Ya | Tidak | Tidak |
 | Padam rekod ahli utama/bantuan rasmi | Ya, dengan pengesahan | Tidak | Tidak |
 | Tukar kata laluan sendiri | Ya | Ya | Ya |
@@ -154,3 +155,21 @@ Simpan sandaran penuh yang selesai dimuat turun pada pemacu lain. Sandaran manua
 Apabila **Sedang menyimpan…**, **Sedang menghantar…** atau mesej proses lain dipaparkan, tunggu sehingga selesai. Medan, butang dan navigasi dikunci untuk mengelakkan penghantaran berulang. Jika ralat dipaparkan, baca sebab dan cuba semula selepas membetulkan maklumat. Bezakan penghantaran berjaya daripada kelulusan pentadbir: status menunggu semakan belum mengubah rekod rasmi.
 
 Jika tidak boleh membuka sistem tempatan, pastikan pelayan Node.js masih berjalan pada komputer yang sama. Gunakan [jadual penyelesaian masalah pemasangan](PANDUAN-RAKAN-LOCAL.md#10-penyelesaian-masalah-ringkas) sebelum mengubah data.
+
+## 15. Fasa pertama: pengenalan, kebajikan, rumah dan zon
+
+Pentadbir membuka **Zon & jenis rumah** untuk mencipta katalog komuniti. Pilih kategori, isi kod unik (contoh `ZON_A` atau `TERES`), nama dan status. Kod menggunakan huruf besar/nombor/garis bawah/sengkang. Nama/status boleh dikemas kini; kod kekal selepas dicipta. Nyahaktif pilihan yang tidak digunakan. Katalog bermula kosong supaya pentadbir boleh menggunakan zon dan jenis rumah sebenar komuniti, tanpa data contoh dimasukkan secara automatik.
+
+Borang ahli utama dan pendaftaran penduduk mempunyai **Maklumat pengenalan & kebajikan** dan **Maklumat rumah & zon**, sebelum bahagian pekerjaan/majikan. Medan tambahan adalah pilihan supaya rekod lama boleh dilengkapkan secara berperingkat:
+
+- No. pengenalan MyKad/pasport, nama panggilan, e-mel dan status perkahwinan. Nombor pengenalan disimpan sebagai teks supaya sifar awal kekal; ruang/sengkang dibuang dan huruf dijadikan huruf besar.
+- Pendapatan bulanan: kosong untuk belum diketahui, `0` jika tiada pendapatan. Nilai RM menerima maksimum dua tempat perpuluhan dan tidak menerima nilai negatif.
+- Status OKU: pilih Ya untuk memaparkan nombor kad, manfaat/bantuan dan nilai bantuan bulanan. Jika status bukan Ya, butiran berkaitan dikosongkan.
+- Zon, jenis rumah dan nombor rujukan rumah/peta. Pilihan katalog tidak aktif dikekalkan pada rekod lama tetapi tidak ditawarkan sebagai pilihan baharu dalam borang.
+- Latitud dan longitud mesti diisi bersama-sama atau dikosongkan kedua-duanya. Julat latitud −90 hingga 90 dan longitud −180 hingga 180. Koordinat tidak ditentukan secara automatik daripada alamat.
+
+Ahli keluarga turut mempunyai medan pengenalan, nama panggilan, e-mel, status perkahwinan, pendapatan dan OKU masing-masing. Rumah/zon merujuk isi rumah ahli utama. Semakan rekod berganda kini turut membandingkan nombor pengenalan, termasuk nama berbeza dan padanan ahli utama dengan ahli keluarga. Semak identiti sebelum menggunakan pengesahan rekod berasingan.
+
+Ahli menggunakan **Profil saya → Kemaskini → Hantar untuk kelulusan** seperti biasa. Pentadbir dapat membandingkan medan baharu dengan rekod rasmi sebelum meluluskan. Perubahan keluarga, rumah atau pendapatan daripada portal tidak terus menggantikan rekod rasmi.
+
+Laporan ahli/keluarga dan CSV menyertakan medan tambahan; laporan ahli juga mengandungi kod zon/jenis rumah, rujukan rumah dan koordinat. Penapis **Kod zon** menggunakan kod tepat dan boleh digunakan untuk laporan ahli, keluarga atau bantuan berdasarkan isi rumah. Import nombor pengenalan sebagai Text dalam Excel untuk mengekalkan sifar awal.
