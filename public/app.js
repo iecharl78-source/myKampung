@@ -1,3 +1,4 @@
+import {installButtonIcons} from './ui-icons.js';
 import { ageLabel, todayInMalaysia } from './age.js';
 import { addressFields, malaysiaStates, postcodeSuggestions } from './address.js';
 import { employmentStatuses, educationLevels, studyLevels } from './education.js';
@@ -31,10 +32,10 @@ function hidePassword() {
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
 function showLogin() {
-  housingUI.reset();homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
+  housingUI.reset();$('#new-user-section').open=false;document.querySelector('header>span>b').textContent='Selamat datang';homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
   aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
-  $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[]; currentUser=null;
+  $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[];$('#user-search').value='';$('#user-role-filter').value='all';$('#user-status-filter').value='all';$('#user-filter-count').textContent=''; currentUser=null;
   for(const id of ['users-list','audit-list','current-user']) $('#'+id).replaceChildren();
   $('#login').hidden=false;
   for(const id of ['housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel','logout','current-user','open-password','nav-housing','nav-home','nav-portal','nav-community','nav-questions','nav-notifications','nav-profile-review','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=true;
@@ -271,26 +272,32 @@ $('#action-form').onsubmit=async event=>{
 };
 
 function showPanel(id) {
+  const titles={'home-panel':'Papan pemuka',dashboard:'Ahli & isi rumah','portal-panel':'Profil saya','community-panel':'Aktiviti & hebahan','questions-panel':'Pertanyaan','notifications-panel':'Notifikasi','profile-review-panel':'Semakan perubahan','aid-panel':'Bantuan','reports-panel':'Laporan','registrations-panel':'Permohonan ahli','accounts-panel':'Akaun pengguna','audit-panel':'Sejarah tindakan','housing-panel':'Zon & jenis rumah'};document.querySelector('header>span>b').textContent=titles[id]||'myKampung';
   for(const panel of ['housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
   for(const [nav,panel] of [['nav-housing','housing-panel'],['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
 }
 $('#nav-members').onclick=()=>showPanel('dashboard');
 async function loadUsers() {
   users=await api('/api/users');
-  updateMemberOptions();
-  $('#users-list').innerHTML=`<div class="table-wrap"><table><thead><tr><th>PENGGUNA</th><th>PERANAN</th><th>STATUS</th><th>TINDAKAN</th></tr></thead><tbody>${users.map(user=>`<tr><td><b>${esc(user.fullName)}</b><br>${esc(user.username)}</td><td>${({admin:'Pentadbir',petugas:'Petugas',ahli:'Ahli'})[user.role]}</td><td>${user.isActive?'Aktif':'Tidak aktif'}</td><td>${user.id===currentUser.id ? 'Akaun anda' : `<button class="quiet user-status" data-id="${user.id}">${user.isActive?'Nyahaktif':'Aktifkan'}</button>${user.role==='ahli'?`<button class="quiet user-link" data-id="${user.id}">Pautkan ahli (#${user.memberId??'belum dipautkan'})</button>`:''}<button class="quiet user-reset" data-id="${user.id}">Tetap semula kata laluan</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+  updateMemberOptions();renderUsers();
+}
+function renderUsers(){
+  const query=$('#user-search').value.trim().toLowerCase(),role=$('#user-role-filter').value,status=$('#user-status-filter').value,visible=users.filter(u=>(role==='all'||u.role===role)&&(status==='all'||u.isActive===(status==='active'?1:0))&&[u.fullName,u.username].join(' ').toLowerCase().includes(query));
+  $('#user-filter-count').textContent=`${visible.length} daripada ${users.length} pengguna`;
+  $('#users-list').innerHTML=visible.length?`<div class="table-wrap"><table><thead><tr><th>PENGGUNA</th><th>PERANAN</th><th>STATUS</th><th>TINDAKAN</th></tr></thead><tbody>${visible.map(user=>`<tr><td><b>${esc(user.fullName)}</b><br>${esc(user.username)}${user.role==='ahli'?`<small class="user-member-note">${user.memberId?'Ahli #'+user.memberId:'Belum dipautkan kepada ahli'}</small>`:''}</td><td>${({admin:'Pentadbir',petugas:'Petugas',ahli:'Ahli'})[user.role]}</td><td><span class="status-pill" data-state="${user.isActive?'approved':'inactive'}">${user.isActive?'Aktif':'Tidak aktif'}</span></td><td>${user.id===currentUser.id ? '<span class="badge">Akaun anda</span>' : `<div class="user-actions"><button type="button" class="quiet user-status" data-id="${user.id}">${user.isActive?'Nyahaktif':'Aktifkan'}</button>${user.role==='ahli'?`<button class="quiet user-link" data-id="${user.id}">Pautkan ahli (#${user.memberId??'belum dipautkan'})</button>`:''}<button class="quiet user-reset" data-id="${user.id}">Tetap semula kata laluan</button></div>`}</td></tr>`).join('')}</tbody></table></div>`:'<p class="review-empty">Tiada pengguna sepadan. Cuba carian lain atau pilih Semua peranan/status.</p>';
   document.querySelectorAll('.user-status').forEach(button=>button.onclick=()=>openUserAction('status',Number(button.dataset.id)));
   document.querySelectorAll('.user-link').forEach(button=>button.onclick=()=>openUserAction('member',Number(button.dataset.id)));
   document.querySelectorAll('.user-reset').forEach(button=>button.onclick=()=>openUserAction('password',Number(button.dataset.id)));
 }
 function updateMemberOptions(){const f=$('#new-user-form'),resident=f.elements.newRole.value==='ahli';$('#user-member-section').hidden=!resident;f.elements.memberId.required=resident;f.elements.memberId.innerHTML='<option value="">Pilih ahli</option>'+members.filter(m=>m.isActive&&!users.some(u=>u.memberId===m.id)).map(m=>`<option value="${m.id}">${esc(m.name)} (#${m.id})</option>`).join('');}
 $('#new-user-form').elements.newRole.onchange=updateMemberOptions;
+for(const id of ['user-search','user-role-filter','user-status-filter'])$('#'+id).addEventListener(id==='user-search'?'input':'change',renderUsers);
 $('#nav-accounts').onclick=async()=>{ try { await loadUsers();showPanel('accounts-panel'); } catch(error) { notice(error.message); } };
 $('#new-user-form').onsubmit=async event=>{
   event.preventDefault(); const form=event.target,button=form.querySelector('button[type="submit"]');button.disabled=true;$('#new-user-error').textContent='';
   try {
     await api('/api/users','POST',{username:form.elements.newUsername.value,fullName:form.elements.newFullName.value,role:form.elements.newRole.value,password:form.elements.newPassword.value,memberId:Number(form.elements.memberId.value)});
-    form.reset();await loadUsers();notice('Akaun pengguna berjaya dicipta.');
+    form.reset();await loadUsers();$('#new-user-section').open=false;notice('Akaun pengguna berjaya dicipta.');
   } catch(error) { $('#new-user-error').textContent=error.message; } finally { form.elements.newPassword.value='';button.disabled=false; }
 };
 function openUserAction(type,id) {
@@ -352,5 +359,5 @@ const reportsUI=setupReports({api,showPanel,notice});
 const refreshPasswords=enhancePasswords();
 document.addEventListener('submit',refreshPasswords,true);
 document.addEventListener('form-idle',refreshPasswords,true);
-installFormState();
+installFormState();installButtonIcons();
 try { await load(true); } catch(e) { showLogin(); if(e.message !== 'Sila log masuk.') notice(e.message); }

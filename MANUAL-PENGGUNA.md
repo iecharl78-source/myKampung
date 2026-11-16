@@ -173,3 +173,11 @@ Ahli keluarga turut mempunyai medan pengenalan, nama panggilan, e-mel, status pe
 Ahli menggunakan **Profil saya → Kemaskini → Hantar untuk kelulusan** seperti biasa. Pentadbir dapat membandingkan medan baharu dengan rekod rasmi sebelum meluluskan. Perubahan keluarga, rumah atau pendapatan daripada portal tidak terus menggantikan rekod rasmi.
 
 Laporan ahli/keluarga dan CSV menyertakan medan tambahan; laporan ahli juga mengandungi kod zon/jenis rumah, rujukan rumah dan koordinat. Penapis **Kod zon** menggunakan kod tepat dan boleh digunakan untuk laporan ahli, keluarga atau bantuan berdasarkan isi rumah. Import nombor pengenalan sebagai Text dalam Excel untuk mengekalkan sifar awal.
+
+## 16. Butang ikon dan carian yang lebih mudah
+
+Semua butang tindakan kini mempunyai ikon. Tindakan berulang dalam senarai (lihat/semak, sunting, nyahaktif, pautkan ahli dan tetap semula kata laluan) menggunakan butang ikon ringkas dengan keterangan apabila dituding serta label pembaca skrin. Tindakan penting seperti Simpan, Hantar dan Luluskan menggunakan ikon bersama teks supaya tujuan tindakan jelas. Label proses dan ikon dikemas kini semasa borang sedang diproses; pengesahan dan kunci borang dikekalkan.
+
+**Semakan perubahan** memaparkan permohonan Menunggu semakan secara lalai, dengan jumlah profil/bantuan menunggu dan lencana status. Pilih **Semua status**, **Diluluskan** atau **Ditolak** untuk melihat sejarah; gunakan carian nama/ID permohonan atau nama bantuan untuk mengecilkan senarai. Kad disusun lebih padat pada komputer dan menyesuaikan diri pada telefon.
+
+**Akaun pengguna** mempunyai carian nama/ID pengguna serta penapis peranan dan status, dengan bilangan hasil. Rekod ahli turut menunjukkan pautan ID ahli. Tekan bahagian **Tambah pengguna** untuk membuka borang penciptaan akaun; borang ditutup semula selepas akaun berjaya dicipta. Tajuk di bahagian atas kini mengikut halaman yang sedang dibuka.

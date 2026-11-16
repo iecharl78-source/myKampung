@@ -1,3 +1,4 @@
+import {installButtonIcons} from './ui-icons.js';
 import {attachResidentFields,addFamilyResidentFields} from './phase-one-ui.js';
 import { employmentStatuses,educationLevels,studyLevels } from './education.js';
 import { memberEducationLevels } from './member-details.js';
@@ -48,4 +49,4 @@ $('#registration-status-form').onsubmit=async event=>{
   try{const result=await request('/api/registration-status?reference='+encodeURIComponent(event.target.elements.reference.value.trim()));output.textContent={pending:'Menunggu semakan pentadbir',approved:'Permohonan diluluskan',rejected:'Permohonan ditolak'}[result.status]+(result.reviewNote?' — '+result.reviewNote:'');}
   catch(error){output.textContent=error.message;}
 };
-$('#registration-new').onclick=()=>location.reload();updateEducation();const refresh=enhancePasswords();document.addEventListener('submit',refresh,true);document.addEventListener('form-idle',refresh,true);installFormState();
+$('#registration-new').onclick=()=>location.reload();updateEducation();const refresh=enhancePasswords();document.addEventListener('submit',refresh,true);document.addEventListener('form-idle',refresh,true);installFormState();installButtonIcons();
