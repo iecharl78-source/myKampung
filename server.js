@@ -1,4 +1,6 @@
 import http from 'node:http';
+import {initializeHeadChanges,headChangeRoutes,pendingHeadChange} from './household-head-changes.js';
+import {familyIdentity} from './family-identities.js';
 import {normalizeFamilyResidence} from './public/family-residence.js';
 import {initializeHousing,housingCatalog,housingRoutes,readHousing,checkHousing} from './housing.js';
 import {normalizeResident} from './public/resident-fields.js';
@@ -40,6 +42,7 @@ initializeAid(db);
 initializeRegistrations(db);
 initializeCommunity(db);
 initializeAidRequests(db);
+initializeHeadChanges(db);
 const sessions = new Map(), attempts = new Map(), restorePreviews = new Map();
 const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)}));
 const allAid=()=>db.prepare('SELECT * FROM aid_records ORDER BY id').all();
@@ -71,7 +74,7 @@ async function body(req, limit=262144) {
   const raw=Buffer.concat(chunks).toString('utf8');
   try { return JSON.parse(raw); } catch { throw Error('Format data tidak sah.'); }
 }
-function validate(input,{catalog=true}={}) {
+function validate(input,{catalog=true,existingMember=null}={}) {
   const text = (v, max = 200) => { if (typeof v !== 'string' || v.length > max) throw Error('Maklumat tidak sah atau terlalu panjang.'); return v.trim(); };
   const name = text(input.name), phone = text(input.phone, 30);
   const addressParts = {
@@ -86,11 +89,13 @@ function validate(input,{catalog=true}={}) {
   const gender = text(input.gender || '', 20);
   if (!['','Lelaki','Perempuan'].includes(gender)) throw Error('Jantina tidak sah.');
   if (!Array.isArray(input.household) || input.household.length > 30) throw Error('Maksimum 30 ahli keluarga.');
+  const existingFamily=existingMember?JSON.parse(existingMember.household):[];
   const household = input.household.map(person => {
     const name = text(person.name), relationship = text(person.relationship, 30);
     if (!name || !['Pasangan','Anak','Ibu','Bapa','Penjaga','Lain-lain'].includes(relationship)) throw Error('Lengkapkan nama dan hubungan ahli keluarga.');
-    return {name, relationship, birthDate: date(person.birthDate), ...normalizeEducation(person),...normalizeFamilyResidence(person),...(Object.keys(person).some(k=>['identificationNumber','nickname','email','maritalStatus','monthlyIncome','disabilityStatus','disabilityCardNumber','disabilityBenefit','disabilityIncome'].includes(k))?normalizeResident(person):{})};
+    return {name, relationship,...familyIdentity(person,existingFamily), birthDate: date(person.birthDate), ...normalizeEducation(person),...normalizeFamilyResidence(person),...(Object.keys(person).some(k=>['identificationNumber','nickname','email','maritalStatus','monthlyIncome','disabilityStatus','disabilityCardNumber','disabilityBenefit','disabilityIncome'].includes(k))?normalizeResident(person):{})};
   });
+  const keys=household.map(p=>p.personKey).filter(Boolean);if(new Set(keys).size!==keys.length)throw Error('Maklumat identiti keluarga berulang dalam borang.');
   const isActive=input.isActive ?? 1;
   if(isActive!==0 && isActive!==1) throw Error('Maklumat status ahli tidak sah.');
   const deactivatedAt=isActive===0 ? text(input.deactivatedAt ?? '',50) : '';
@@ -99,7 +104,7 @@ function validate(input,{catalog=true}={}) {
   const details=normalizeMemberDetails(input);if(catalog)checkHousing(db,details);
   return {name, phone, address, ...addressParts, ...details, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/ui-icons.js':['ui-icons.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/family-residence.js':['family-residence.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/head-changes-ui.js':['head-changes-ui.js','text/javascript'], '/ui-icons.js':['ui-icons.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/family-residence.js':['family-residence.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -139,6 +144,8 @@ const server = http.createServer(async (req,res) => {
     if(!user || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) { if(token) { sessions.delete(token);restorePreviews.delete(token); } return json(res,401,{error:'Sila log masuk.'}); }
     if (path === '/api/session' && req.method === 'GET') return json(res,200,{ok:true,user:publicUser(user)});
     if(await fullBackupRoute({req,res,path,user,db,json,body,dataDir:data,isSessionActive:()=>sessions.get(token)===session&&session.expires>Date.now()&&db.prepare("SELECT id FROM users WHERE id=? AND role='admin' AND isActive=1").get(user.id)}))return;
+    if(await headChangeRoutes({req,res,path,user,db,json,body,validate,revokeSessions,isSessionActive:()=>sessions.get(token)===session&&session.expires>Date.now()&&db.prepare('SELECT id FROM users WHERE id=? AND isActive=1').get(user.id)}))return;
+    if(user.role==='ahli'&&((path==='/api/portal/profile'&&req.method==='PUT')||(path==='/api/aid-requests'&&req.method==='POST'))&&pendingHeadChange(db,user.memberId))return json(res,409,{error:'Sila tunggu keputusan pertukaran ketua keluarga sebelum menghantar perubahan profil/bantuan.'});
     if(path==='/api/dashboard' && req.method==='GET')return json(res,200,dashboardData(db,user));
     if(await housingRoutes({req,res,path,user,db,json,body}))return;
     if(await aidRequestRoutes({req,res,path,user,db,json,body}))return;
@@ -199,6 +206,7 @@ const server = http.createServer(async (req,res) => {
         for(const link of links){const restored=db.prepare('SELECT id FROM members WHERE identityKey=?').get(link.identityKey);if(restored)db.prepare('UPDATE users SET memberId=? WHERE id=?').run(restored.id,link.id);}
         db.prepare('UPDATE profile_requests SET memberId=(SELECT id FROM members WHERE members.identityKey=profile_requests.identityKey)').run();
         db.prepare('UPDATE aid_requests SET memberId=(SELECT id FROM members WHERE members.identityKey=aid_requests.identityKey)').run();
+        db.prepare('UPDATE household_head_changes SET memberId=(SELECT id FROM members WHERE members.householdKey=household_head_changes.householdKey)').run();
         for(const kind of ['announcements','events']){db.exec(`DELETE FROM ${kind}`);for(const record of preview.community[kind]){const keys=Object.keys(record);db.prepare(`INSERT INTO ${kind} (${keys.join(',')}) VALUES (${keys.map(()=>'?').join(',')})`).run(...keys.map(key=>record[key]));}}
         const insertType=db.prepare(`INSERT INTO aid_types (${aidTypeColumns.join(',')}) VALUES (${aidTypeColumns.map(()=>'?').join(',')})`);
         for(const record of preview.aidTypes) insertType.run(...aidTypeColumns.map(key=>record[key]));
@@ -244,7 +252,7 @@ const server = http.createServer(async (req,res) => {
       return json(res,200,{ok:true,safetyBackup});
     }
     if (match && req.method === 'PUT') {
-      const input=await body(req), m = validate(input);
+      const input=await body(req), previous=db.prepare('SELECT * FROM members WHERE id=?').get(Number(match[1])), m = validate(input,{existingMember:previous});
       if(!db.prepare('SELECT id FROM members WHERE id=?').get(Number(match[1]))) return json(res,404,{error:'Rekod tidak ditemui.'});
       if(duplicateWarning(res,m,input,Number(match[1]))) return;
       const columns = ['name','phone','birthDate','gender','occupation','address','household','updatedAt','address1','address2','district','postcode','state','country',...memberDetailFields];

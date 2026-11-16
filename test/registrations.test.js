@@ -49,7 +49,7 @@ test('Pendaftaran awam menunggu kelulusan, keputusan hanya pentadbir, pendua dan
     assert.equal((await req(`/api/registrations/${duplicate.id}/review`,'POST',{decision:'reject',reviewNote:'',expectedUpdatedAt:duplicate.updatedAt})).status,400);
     assert.equal((await req(`/api/registrations/${duplicate.id}/review`,'POST',{decision:'reject',reviewNote:'Sudah berdaftar. Hubungi pentadbir.',expectedUpdatedAt:duplicate.updatedAt})).status,200);
     status=await (await req('/api/registration-status?reference='+duplicate.reference,'GET',undefined,'')).json();assert.equal(status.status,'rejected');assert.match(status.reviewNote,/Sudah berdaftar/);
-    const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,7);assert.equal(snapshot.registrations.length,2);
+    const snapshot=await (await req('/api/backup')).json();assert.equal(snapshot.version,8);assert.equal(snapshot.registrations.length,2);
     assert.equal((await req('/api/restore/preview','POST',createBackup(snapshot.members,snapshot.aid,snapshot.aidTypes))).status,409);
     const preview=await (await req('/api/restore/preview','POST',snapshot)).json();
     assert.equal((await req('/api/restore/confirm','POST',{previewToken:preview.previewToken,password,confirmation:'PULIHKAN'})).status,200);

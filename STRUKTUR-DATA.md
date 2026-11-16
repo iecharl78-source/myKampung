@@ -1,4 +1,4 @@
-# Struktur data myKampung — fasa pertama
+# Struktur data myKampung — penduduk dan isi rumah
 
 Pangkalan data aplikasi kekal SQLite. Dump struktur myKapong digunakan sebagai rujukan fungsi, bukan diimport sebagai skema aplikasi. Jadual jualan, produk, penghantaran dan nama `orders` tidak digunakan.
 
@@ -13,6 +13,7 @@ Pangkalan data aplikasi kekal SQLite. Dump struktur myKapong digunakan sebagai r
 | `community_zones` | Kod/nama zon dan status aktif. |
 | `housing_types` | Kod/nama jenis rumah dan status aktif. |
 | `registrations` | Permohonan pendaftaran penduduk. |
+| `household_head_changes` | Permohonan pertukaran ketua, cadangan keluarga, profil asal dan keputusan pentadbir. |
 | `profile_requests` | Cadangan perubahan profil/keluarga/rumah dan keputusan semakan. |
 | `aid_requests`, `aid_records` | Permohonan maklumat bantuan dan rekod bantuan rasmi. |
 
@@ -33,7 +34,11 @@ API dan sandaran lama menggunakan `members.household` sebagai array keluarga dal
 
 Semua penulisan rasmi berlaku melalui laluan aplikasi yang mengesahkan `members` dan JSON keluarga. Trigger SQLite membina/menyegerakkan `households` dan `family_members` dalam transaksi yang sama. Kedua-dua jadual menyediakan bentuk relasi untuk pertanyaan dan pembangunan seterusnya. Jangan menyunting jadual unjuran ini secara berasingan melalui SQL kerana API masih membaca bentuk keserasian pada `members`; ubah melalui aplikasi atau lapisan penulisan yang disokong.
 
-Migrasi dijalankan semula dengan selamat ketika mula aplikasi. Rekod keluarga yang tidak berubah mengekalkan ID semasa penyegerakan. Apabila kandungan atau susunan rekod keluarga berubah, baris unjuran berkenaan boleh dibina semula dengan ID baharu. ID ini belum dijadikan rujukan bagi sejarah kematian atau pertukaran ketua keluarga; identiti individu yang stabil untuk hubungan sejarah tersebut perlu diperincikan pada fasa berkenaan. Jangan membina integrasi luar yang bergantung pada ID baris unjuran keluarga buat masa ini.
+Migrasi dijalankan semula dengan selamat ketika mula aplikasi. `householdKey` ialah identiti isi rumah yang kekal pada `members` dan `households`. `identityKey` mengenal pasti individu ketua semasa, manakala setiap keluarga mempunyai `personKey` stabil. Baris unjuran `family_members.id` boleh dibina semula apabila susunan atau kandungan berubah; gunakan `personKey` untuk identiti individu, bukan ID baris unjuran.
+
+Apabila pertukaran diluluskan, `members.id` dan `householdKey` dikekalkan untuk hubungan isi rumah/bantuan. `identityKey` ditukar kepada `personKey` ketua baharu. Ketua lama menjadi keluarga dengan `personKey` daripada identiti lamanya. Hubungan keluarga disemak semula terhadap ketua baharu dalam transaksi yang sama. Akaun ahli ketua lama dinyahaktif dan pautannya dikosongkan; sesi ditamatkan. Akaun tidak dipindahkan antara individu.
+
+`household_head_changes` menyimpan identiti isi rumah, ketua asal/calon, tarikh, sebab, cadangan, salinan profil asal dan keputusan. Salinan profil asal hanya didedahkan kepada pentadbir. Kelulusan memeriksa semula keadaan rekod asal untuk menolak cadangan lapuk. Nama/tarikh lahir penerima dalam bantuan sejarah tidak ditulis semula apabila ketua bertukar.
 
 Memadam ahli utama akan menghapuskan unjuran rumah dan keluarga melalui cascade; sekatan bantuan rasmi sedia ada masih dikuatkuasakan oleh aplikasi. Nyahaktif ahli tidak memadam data tersebut.
 
@@ -50,9 +55,9 @@ Semakan pendua merangkumi nama/telefon sedia ada serta nombor pengenalan ahli ut
 
 ## Sandaran dan pemulihan
 
-JSON versi 7 menyimpan bentuk API ahli/keluarga, medan rumah dan katalog. Ia tidak mengeksport ID unjuran keluarga/isi rumah secara berasingan. Pemulihan menyemak katalog, memasukkannya sebelum ahli, dan trigger membina semula hubungan rumah/keluarga. Pemulihan menggantikan rekod dalam satu transaksi dan kegagalan akan rollback.
+JSON versi 8 menyimpan bentuk API ahli/keluarga, medan rumah, katalog serta `householdKey`, `identityKey` dan `personKey`. Ia tidak mengeksport ID unjuran keluarga/isi rumah secara berasingan. Pemulihan menyemak katalog, memasukkannya sebelum ahli, dan trigger membina semula hubungan rumah/keluarga. Pemulihan menggantikan rekod dalam satu transaksi dan kegagalan akan rollback.
 
-Sandaran penuh SQLite menyimpan semua jadual termasuk akaun, permohonan dan mesej. Gunakan sandaran penuh sebelum naik taraf dan untuk pemindahan lengkap. Kematian, pertukaran ketua keluarga dan khairat belum ditambah dalam fasa ini.
+Sandaran penuh SQLite menyimpan semua jadual termasuk akaun, permohonan dan mesej. Gunakan sandaran penuh sebelum naik taraf dan untuk pemindahan lengkap. Pertukaran ketua tersedia; kematian dan khairat belum ditambah. Sejarah/permohonan pertukaran ketua tidak dieksport melalui JSON; gunakan sandaran penuh untuk pemindahan lengkap. Pemulihan JSON mengekalkan sejarah pemasangan semasa dan mengikat semula pautannya menggunakan `householdKey`.
 
 ## Kediaman keluarga (sandaran JSON versi 7)
 

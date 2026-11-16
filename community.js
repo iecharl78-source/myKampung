@@ -48,7 +48,7 @@ export async function communityRoutes({req,res,path,user,db,json,body,validate})
     if(req.method==='PUT'){
       const input=await body(req),current=db.prepare('SELECT * FROM members WHERE id=? AND isActive=1').get(user.memberId);
       if(!current || input.expectedUpdatedAt!==current.updatedAt){json(res,409,{error:'Maklumat telah berubah. Muat semula profil sebelum menghantar.'});return true;}
-      const data=validate(input),now=new Date().toISOString();
+      const data=validate(input,{existingMember:current}),now=new Date().toISOString();
       if(!data.employmentStatus || data.household.some(p=>!p.employmentStatus))throw Error('Sila lengkapkan status pekerjaan ahli dan keluarga.');
       if(db.prepare("SELECT id FROM profile_requests WHERE userId=? AND status='pending'").get(user.id)){json(res,409,{error:'Permohonan anda masih menunggu semakan pentadbir.'});return true;}
       const result=withAudit(db,user,'Hantar permohonan perubahan profil','ahli',current.id,()=>{

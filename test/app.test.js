@@ -46,7 +46,7 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     result=await request('/api/members','POST',member);assert.equal(result.status,201);const {id}=await result.json();
     const duplicate=await request('/api/members','POST',{...member,phone:'+60 12 3456789'});assert.equal(duplicate.status,409);
     assert.equal((await duplicate.json()).code,'DUPLICATE');
-    let rows=await (await request('/api/members')).json();assert.equal(rows.length,1);assert.deepEqual(rows[0].household,member.household.map(person=>({...person,employmentStatus:'',educationLevel:'',studyLevel:''})));
+    let rows=await (await request('/api/members')).json();assert.equal(rows.length,1);assert.deepEqual(rows[0].household.map(({personKey,...p})=>p),member.household.map(person=>({...person,employmentStatus:'',educationLevel:'',studyLevel:''})));
     assert.equal(rows[0].address1,member.address);
     assert.equal(rows[0].employmentStatus,'');assert.equal(rows[0].employerName,'');
     assert.equal((await request(`/api/members/${id}`,'PUT',{...member,occupation:'Pesara'})).status,200);
@@ -65,14 +65,14 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     await stop();base=await start();
     assert.equal((await request('/api/members')).status,401);
     result=await request('/api/login','POST',{password});cookie=result.headers.get('set-cookie').split(';')[0];
-    rows=await (await request('/api/members')).json();assert.equal(rows[0].occupation,'Pesara');assert.deepEqual(rows[0].household,structured.household);
+    rows=await (await request('/api/members')).json();assert.equal(rows[0].occupation,'Pesara');assert.deepEqual(rows[0].household.map(({personKey,...p})=>p),structured.household.map(({personKey,...p})=>p));
     for (const field of ['address1','address2','postcode','district','state','country']) assert.equal(rows[0][field],structured[field]);
     for (const field of ['employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone','employerAddress1','employerAddress2','employerDistrict','employerPostcode','employerState','employerCountry']) assert.equal(rows[0][field],structured[field]);
     assert.match(rows[0].address,/05000 Kota Setar/);
     const working={...structured,household:[{...structured.household[0],employmentStatus:'Bekerja'}]};
     assert.equal((await request(`/api/members/${id}`,'PUT',working)).status,200);
     rows=await (await request('/api/members')).json();
-    assert.deepEqual(rows[0].household,[{...working.household[0],educationLevel:'',studyLevel:''}]);
+    assert.deepEqual(rows[0].household.map(({personKey,...p})=>p),working.household.map(({personKey,...p})=>({...p,educationLevel:'',studyLevel:''})));
     const student={...structured,name:'Pelajar Ujian',employmentStatus:'Pelajar',studyLevel:'Diploma',employerName:'',employerAddress:'',employerPhone:''};
     const warning=await request('/api/members','POST',student);assert.equal(warning.status,409);
     const acknowledgement=(await warning.json()).confirmation;

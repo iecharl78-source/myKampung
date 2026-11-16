@@ -1,7 +1,7 @@
 import {residentFields,housingFields} from './public/resident-fields.js';
 import { createHash } from 'node:crypto';
 
-export const memberColumns = ['id','name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country','employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone','employerAddress1','employerAddress2','employerDistrict','employerPostcode','employerState','employerCountry','isActive','deactivatedAt','inactivityReason','identityKey',...residentFields,...housingFields];
+export const memberColumns = ['id','name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country','employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone','employerAddress1','employerAddress2','employerDistrict','employerPostcode','employerState','employerCountry','isActive','deactivatedAt','inactivityReason','identityKey','householdKey',...residentFields,...housingFields];
 export const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const nameKey = value => value.normalize('NFKC').toLocaleLowerCase('ms').replace(/[^\p{L}\p{N}]/gu,'');
 const phoneKey = value => {
@@ -48,22 +48,25 @@ export function duplicateMatches(member, records, excludedId) {
   return matches;
 }
 export function createBackup(members,aid,aidTypes,registrations,community,housing) {
-  const contents={format:'myKampung-members',version:housing!==undefined?7:community!==undefined?5:registrations!==undefined?4:aidTypes!==undefined?3:aid===undefined?1:2,createdAt:new Date().toISOString(),members,...(aid===undefined?{}:{aid}),...(aidTypes===undefined?{}:{aidTypes}),...(registrations===undefined?{}:{registrations}),...(community===undefined?{}:{community}),...(housing===undefined?{}:{housing})};
+  const contents={format:'myKampung-members',version:housing!==undefined?8:community!==undefined?5:registrations!==undefined?4:aidTypes!==undefined?3:aid===undefined?1:2,createdAt:new Date().toISOString(),members,...(aid===undefined?{}:{aid}),...(aidTypes===undefined?{}:{aidTypes}),...(registrations===undefined?{}:{registrations}),...(community===undefined?{}:{community}),...(housing===undefined?{}:{housing})};
   const backup={...contents,checksum:digest(contents)};
   if((housing&&(housing.zones.length>20000||housing.housingTypes.length>20000)) || (community && (community.announcements.length>20000 || community.events.length>20000)) || members.length>20000 || (aid && aid.length>50000) || (aidTypes && aidTypes.length>20000) || (registrations && registrations.length>20000) || Buffer.byteLength(JSON.stringify(backup))>10*1024*1024) throw Error('Data melebihi had sandaran 10 MB / 20,000 ahli / 50,000 bantuan. Sila gunakan sandaran folder data selepas menghentikan pelayan.');
   return backup;
 }
 export function readBackup(input, validate) {
-  if (!input || input.format!=='myKampung-members' || ![1,2,3,4,5,6,7].includes(input.version) || (input.version>=2 && (!Array.isArray(input.aid) || input.aid.length>50000)) || (input.version>=3 && (!Array.isArray(input.aidTypes) || input.aidTypes.length>20000)) || (input.version>=4 && (!Array.isArray(input.registrations) || input.registrations.length>20000)) || (input.version>=5 && (!input.community || !Array.isArray(input.community.announcements) || !Array.isArray(input.community.events) || input.community.announcements.length>20000 || input.community.events.length>20000)) || !Array.isArray(input.members) || input.members.length>20000) throw Error('Format sandaran tidak disokong atau melebihi had 20,000 ahli / 50,000 bantuan.');
+  if (!input || input.format!=='myKampung-members' || ![1,2,3,4,5,6,7,8].includes(input.version) || (input.version>=2 && (!Array.isArray(input.aid) || input.aid.length>50000)) || (input.version>=3 && (!Array.isArray(input.aidTypes) || input.aidTypes.length>20000)) || (input.version>=4 && (!Array.isArray(input.registrations) || input.registrations.length>20000)) || (input.version>=5 && (!input.community || !Array.isArray(input.community.announcements) || !Array.isArray(input.community.events) || input.community.announcements.length>20000 || input.community.events.length>20000)) || !Array.isArray(input.members) || input.members.length>20000) throw Error('Format sandaran tidak disokong atau melebihi had 20,000 ahli / 50,000 bantuan.');
   const contents={format:input.format,version:input.version,createdAt:input.createdAt,members:input.members,...(input.version>=2?{aid:input.aid}:{}),...(input.version>=3?{aidTypes:input.aidTypes}:{}),...(input.version>=4?{registrations:input.registrations}:{}),...(input.version>=5?{community:input.community}:{}),...(input.version>=6?{housing:input.housing}:{})};
   if (input.checksum!==digest(contents)) throw Error('Semakan integriti sandaran gagal. Fail mungkin rosak atau diubah.');
   const validTime=value=>typeof value==='string' && Number.isFinite(Date.parse(value));
   if (!validTime(input.createdAt)) throw Error('Tarikh sandaran tidak sah.');
-  const ids=new Set();
+  const ids=new Set(),houseKeys=new Set(),personKeys=new Set();
   return input.members.map(row=>{
     if (!row || !Number.isSafeInteger(row.id) || row.id<=0 || ids.has(row.id) || !validTime(row.createdAt) || !validTime(row.updatedAt)) throw Error('Maklumat ID atau tarikh rekod sandaran tidak sah.');
     ids.add(row.id);
     if(row.identityKey!==undefined && !/^[a-f0-9]{32}$/.test(row.identityKey))throw Error('Maklumat identiti sandaran ahli tidak sah.');
-    return {...validate(row),identityKey:row.identityKey??'',id:row.id,createdAt:row.createdAt,updatedAt:row.updatedAt};
+    if(row.identityKey){if(personKeys.has(row.identityKey))throw Error('Maklumat identiti ahli berganda dalam sandaran.');personKeys.add(row.identityKey);}
+    if(row.householdKey){if(houseKeys.has(row.householdKey))throw Error('Maklumat identiti isi rumah berganda dalam sandaran.');houseKeys.add(row.householdKey);}
+    if(row.householdKey!==undefined&&!/^[a-f0-9]{32}$/.test(row.householdKey))throw Error('Maklumat identiti isi rumah dalam sandaran tidak sah.');
+    return {...validate(row),identityKey:row.identityKey??'',householdKey:row.householdKey??'',id:row.id,createdAt:row.createdAt,updatedAt:row.updatedAt};
   });
 }

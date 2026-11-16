@@ -4,6 +4,7 @@ export function installFormState(root=document) {
   root.addEventListener('click',event=>{ if(busy) { event.preventDefault();event.stopImmediatePropagation(); } },true);
   root.addEventListener('cancel',event=>{ if(busy) event.preventDefault(); },true);
   const messages={
+    'head-change-request-form':'Sedang menghantar permohonan pertukaran…','head-change-review-form':'Sedang menyimpan keputusan pertukaran…',
     'housing-catalog-form':'Sedang menyimpan katalog rumah…',
     'full-backup-form':'Sedang menyediakan sandaran penuh…',
     'portal-aid-form':'Sedang menghantar permohonan bantuan…','aid-review-form':'Sedang menyimpan keputusan bantuan…','portal-profile-form':'Sedang menghantar permohonan…','profile-review-form':'Sedang menyimpan keputusan…','community-post-form':'Sedang menyimpan siaran…','question-form':'Sedang menghantar pertanyaan…','question-reply-form':'Sedang menghantar balasan…','question-status-form':'Sedang menyimpan status…','notification-form':'Sedang menyimpan…',

@@ -192,3 +192,19 @@ Setiap baris keluarga mempunyai pilihan **Tinggal bersama ahli utama?**:
 Pilihan ini tersedia dalam pendaftaran penduduk, borang pentadbir/petugas dan portal ahli. Borang meminta pilihan Ya/Tidak sebelum menyimpan keluarga. Rekod lama kekal **belum diisi** sehingga disemak; sistem tidak menganggap keluarga lama tinggal bersama.
 
 Perubahan oleh ahli memerlukan pengesahan penghantaran dan kelulusan pentadbir, termasuk pertukaran status kediaman atau alamat keluarga. Pentadbir boleh melihat butiran dalam semakan perubahan dan semakan pendaftaran. Laporan keluarga/CSV mempunyai status tinggal bersama, medan alamat berasingan dan alamat kediaman yang digunakan. Bilangan keluarga masih merujuk semua rekod keluarga yang dipautkan, bukan jumlah orang yang tinggal serumah sahaja.
+
+## Pertukaran ketua isi rumah
+
+1. Buka **Pertukaran ketua**. Ahli hanya melihat isi rumah sendiri; pentadbir/petugas boleh memilih ahli. Gunakan penapis status dan carian untuk menyemak sejarah.
+2. Lengkapkan maklumat calon melalui profil dahulu jika perlu. Calon mesti ahli keluarga rasmi dengan status **tinggal bersama: Ya** dan status pekerjaan diisi. Perubahan profil itu perlu diluluskan sebelum memohon pertukaran.
+3. Tekan **Permohonan baharu**, pilih calon, isi nombor telefon ketua baharu, tarikh berkuat kuasa dan sebab. Tarikh masa hadapan tidak diterima; sistem tidak menjadualkan pertukaran automatik.
+4. Tentukan sama ada ketua lama masih tinggal bersama. Jika Tidak, isi alamat berasingan. Semak hubungan setiap ahli keluarga terhadap ketua baharu, termasuk ketua lama. Sahkan penghantaran. Rekod rasmi kekal sehingga diluluskan.
+5. Pentadbir membuka permohonan untuk menyemak cadangan dan profil asal. Untuk meluluskan, tandakan pengesahan kesan akaun dan masukkan kata laluan pentadbir semasa. Untuk menolak, isi sebab penolakan. Petugas dan ahli tidak boleh meluluskan. Jika rekod asal telah berubah, tolak permohonan lapuk dan hantar semula selepas semakan.
+
+Permohonan pertukaran tidak boleh bertindih dengan permohonan profil/bantuan yang masih menunggu untuk isi rumah sama. Selesaikan permohonan itu dahulu. Semasa pertukaran menunggu, ahli tidak boleh menghantar perubahan profil atau bantuan baharu.
+
+Selepas kelulusan, ketua lama berada dalam senarai keluarga. Alamat dan identiti isi rumah dikekalkan. Nombor telefon ketua baharu dimasukkan sendiri; maklumat majikan ketua lama tidak diwariskan kepada calon. Maklumat yang tidak tersedia dalam borang keluarga, seperti majikan ketua lama, kekal dalam salinan profil asal yang boleh dirujuk pentadbir melalui sejarah permohonan. Lengkapkan maklumat pekerjaan ketua baharu selepas pertukaran jika diperlukan.
+
+**Akaun ketua lama dinyahaktif, pautan ahli dikosongkan dan sesi ditamatkan.** Akaun itu tidak menjadi akaun ketua baharu. Pentadbir perlu membuka **Akaun pengguna** untuk mencipta akaun berasingan atau memautkan akaun milik individu ketua baharu selepas mengesahkan identiti.
+
+Bantuan terdahulu kekal dengan nama/tarikh lahir penerima asal. Nama isi rumah yang dipaparkan boleh mengikut ketua semasa. Gunakan sandaran penuh untuk menyimpan semua permohonan, sejarah pertukaran serta akaun. Fungsi rekod kematian dan khairat akan dibuat dalam fasa berasingan.

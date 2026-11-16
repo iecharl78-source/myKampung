@@ -46,7 +46,7 @@ Pemohon menetapkan ID pengguna dan kata laluan semasa pendaftaran `/daftar`; aka
 
 **Aktiviti & hebahan** menyediakan pengumuman dan kalendar waktu Malaysia. Pentadbir/Petugas mengurus siaran; Ahli hanya melihat siaran diterbitkan. **Pertanyaan** membolehkan komunikasi peribadi ahli dengan Pentadbir/Petugas. **Notifikasi** memaklumkan siaran, keputusan semakan dan balasan dalam aplikasi (tiada e-mel/SMS/push).
 
-Sandaran JSON versi 7 mengandungi rekod ahli, bantuan, permohonan pendaftaran serta hebahan/aktiviti dan katalog zon/jenis rumah. Akaun, kata laluan, permohonan perubahan profil/bantuan, pertanyaan, mesej, notifikasi dan audit memerlukan **sandaran penuh SQLite/folder data**. Untuk memindahkan pemasangan lengkap, gunakan sandaran penuh. Rujuk panduan tempatan untuk pemautan semula akaun dan cara menguji portal tanpa penerbitan dalam talian.
+Sandaran JSON versi 8 mengandungi rekod ahli, bantuan, permohonan pendaftaran serta hebahan/aktiviti dan katalog zon/jenis rumah. Akaun, kata laluan, permohonan perubahan profil/bantuan, pertanyaan, mesej, notifikasi dan audit memerlukan **sandaran penuh SQLite/folder data**. Untuk memindahkan pemasangan lengkap, gunakan sandaran penuh. Rujuk panduan tempatan untuk pemautan semula akaun dan cara menguji portal tanpa penerbitan dalam talian.
 
 ## Papan pemuka
 
@@ -63,3 +63,9 @@ Pemulihan penuh dibuat ke folder baharu yang belum wujud menggunakan `node scrip
 Profil ahli/keluarga menyokong nombor pengenalan, nama panggilan, e-mel, perkahwinan, pendapatan serta OKU. Isi rumah mempunyai zon, jenis rumah, nombor rujukan dan koordinat. Pentadbir mengurus katalog melalui **Zon & jenis rumah**. Medan baharu turut melalui semakan pentadbir untuk perubahan Ahli, laporan/CSV dan sandaran versi 7. Migrasi mengekalkan rekod lama; [STRUKTUR-DATA.md](STRUKTUR-DATA.md) menerangkan jadual bermakna dan keserasian API sedia ada.
 
 Ahli keluarga mempunyai pilihan tinggal bersama ahli utama atau alamat berasingan. Jika tidak tinggal bersama, Alamat 1 dan negara wajib; status/alamat turut melalui kelulusan portal, laporan keluarga serta sandaran JSON versi 7. Rekod lama kekal belum diisi sehingga disemak.
+
+## Pertukaran ketua isi rumah
+
+Menu **Pertukaran ketua** membolehkan ahli memohon untuk isi rumah sendiri serta pentadbir/petugas menyediakan permohonan. Hanya pentadbir meluluskan dengan kata laluan semasa. Calon mesti ahli keluarga rasmi yang tinggal bersama; hubungan keluarga perlu disemak semula. Akaun ketua lama dinyahaktif dan diputuskan pautan selepas kelulusan; pentadbir menyediakan akaun berasingan untuk ketua baharu. Rekod bantuan sejarah dikekalkan.
+
+Sandaran JSON terkini ialah **versi 8**, termasuk identiti stabil individu/isi rumah. Permohonan dan sejarah pertukaran memerlukan **sandaran penuh SQLite**. Rujuk manual pengguna serta panduan naik taraf tempatan sebelum menggunakan fungsi ini.

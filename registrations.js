@@ -98,7 +98,7 @@ export async function registrationRoutes({req,res,path,user,db,json,body,validat
     let memberId=null;
     withAudit(db,user,input.decision==='approve'?'Lulus permohonan ahli':'Tolak permohonan ahli','permohonan',row.id,()=>{
       if(input.decision==='approve') {
-        const columns=memberColumns.filter(key=>!['id','identityKey'].includes(key)),record={...data,household:JSON.stringify(data.household),createdAt:now,updatedAt:now};
+        const columns=memberColumns.filter(key=>!['id','identityKey','householdKey'].includes(key)),record={...data,household:JSON.stringify(data.household),createdAt:now,updatedAt:now};
         memberId=Number(db.prepare(`INSERT INTO members (${columns.join(',')}) VALUES (${columns.map(()=>'?').join(',')})`).run(...columns.map(key=>record[key])).lastInsertRowid);
         if(row.requestedUsername){
           const account=db.prepare("SELECT * FROM users WHERE username=? AND registrationReference=? AND role='ahli' AND memberId IS NULL").get(row.requestedUsername,row.reference);

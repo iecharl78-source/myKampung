@@ -391,6 +391,16 @@ Sandaran penuh SQLite merangkumi jadual baharu, permohonan serta akaun secara au
 
 ## Kediaman keluarga dan sandaran versi 7
 
-Sandaran JSON terkini ialah **versi 7**, yang mengekalkan status tinggal bersama dan alamat keluarga berasingan. Format versi 1–6 masih diterima mengikut syarat keserasian sedia ada; keluarga yang tiada maklumat kediaman kekal belum diketahui. Perisian lama yang hanya menyokong versi 6 tidak boleh memulihkan sandaran versi 7, bagi mengelakkan medan kediaman digugurkan secara senyap.
+Sandaran JSON pada fasa kediaman ialah **versi 7**, yang mengekalkan status tinggal bersama dan alamat keluarga berasingan. Format versi 1–6 masih diterima mengikut syarat keserasian sedia ada; keluarga yang tiada maklumat kediaman kekal belum diketahui. Perisian lama yang hanya menyokong versi 6 tidak boleh memulihkan sandaran versi 7, bagi mengelakkan medan kediaman digugurkan secara senyap.
 
 Selepas mengambil sandaran penuh, hentikan pelayan dan salin semua fail baharu, termasuk `public/family-residence.js`, `public/phase-one-ui.js`, `housing.js`, `data-tools.js` dan `server.js`, bersama fail aplikasi lain. Mulakan semula dengan DATA_DIR yang sama dan tekan Ctrl+F5. Migrasi menambah medan kediaman kepada jadual `family_members` serta mengemas kini trigger penyegerakan dalam transaksi, tanpa menganggap status Ya pada keluarga lama.
+
+## Naik taraf fasa pertukaran ketua isi rumah
+
+Ambil **sandaran penuh SQLite** dan pastikan fail selesai dimuat turun sebelum menaik taraf. Hentikan pelayan dengan Ctrl+C. Salin semua fail aplikasi terkini, termasuk `family-identities.js`, `household-head-changes.js`, `housing.js`, `data-tools.js`, `server.js` dan seluruh folder `public` (termasuk `head-changes-ui.js`). Kekalkan folder data asal; jangan menimpanya dengan data percubaan. Mulakan semula menggunakan DATA_DIR yang sama dan tekan Ctrl+F5 dalam pelayar.
+
+Migrasi menambah identiti stabil isi rumah/individu serta jadual `household_head_changes` secara automatik. Rekod lama dikekalkan; tiada pertukaran ketua dilakukan semasa migrasi. Lengkapkan status tinggal bersama dan pekerjaan calon melalui profil sebelum membuat permohonan. Rujuk bahagian Pertukaran ketua isi rumah dalam manual pengguna untuk langkah permohonan dan kelulusan.
+
+Sandaran JSON terkini ialah **versi 8**, yang menyimpan `householdKey`, `identityKey` dan `personKey`. Versi 1–7 masih diterima mengikut syarat katalog/keserasian sedia ada. Versi lama tanpa identiti isi rumah akan menerima kunci baharu; sejarah tidak dipautkan berdasarkan nombor ID semata-mata. JSON tidak mengeksport permohonan/sejarah pertukaran ketua atau akaun. Sejarah pada pemasangan semasa dikekalkan ketika pemulihan JSON, tetapi pemindahan semua sejarah/akaun ke komputer lain memerlukan **sandaran penuh SQLite**.
+
+Selepas pertukaran diluluskan, akaun ketua lama dinyahaktif dan tidak dipindahkan kepada ketua baharu. Cipta atau pautkan akaun berasingan milik individu ketua baharu melalui Akaun pengguna. Jika memulihkan sandaran sebelum pertukaran, pautan akaun yang tidak sepadan boleh dikosongkan demi mengelakkan akses kepada individu lain. Semak identiti, pautan dan status aktif secara manual sebelum mengaktifkan/memautkan semula akaun; jangan menggunakan semula akaun orang lain. Semak juga permohonan menunggu selepas pemulihan dan tolak permohonan lapuk sebelum memohon semula.
