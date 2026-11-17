@@ -207,7 +207,7 @@ Selepas kelulusan, ketua lama berada dalam senarai keluarga. Alamat dan identiti
 
 **Akaun ketua lama dinyahaktif, pautan ahli dikosongkan dan sesi ditamatkan.** Akaun itu tidak menjadi akaun ketua baharu. Pentadbir perlu membuka **Akaun pengguna** untuk mencipta akaun berasingan atau memautkan akaun milik individu ketua baharu selepas mengesahkan identiti.
 
-Bantuan terdahulu kekal dengan nama/tarikh lahir penerima asal. Nama isi rumah yang dipaparkan boleh mengikut ketua semasa. Gunakan sandaran penuh untuk menyimpan semua permohonan, sejarah pertukaran serta akaun. Rekod kematian tersedia melalui menu berasingan. Modul khairat belum disediakan.
+Bantuan terdahulu kekal dengan nama/tarikh lahir penerima asal. Nama isi rumah yang dipaparkan boleh mengikut ketua semasa. Gunakan sandaran penuh untuk menyimpan semua permohonan, sejarah pertukaran serta akaun. Rekod kematian tersedia melalui menu berasingan. Tuntutan khairat diurus melalui menu Khairat kematian.
 
 ## Lokasi rumah di Google Maps
 
@@ -229,4 +229,34 @@ Selepas kelulusan, **Meninggal dunia** dipaparkan pada ahli utama dalam direktor
 
 Profil, ahli keluarga dan rekod bantuan tidak dipadam. Status keahlian Aktif/Tidak aktif kekal berasingan daripada status kematian; jumlah keluarga/statistik sedia ada masih mengira rekod yang dikekalkan. Jika ketua meninggal dunia, pentadbir/petugas mengurus pengganti melalui **Pertukaran ketua**. Individu yang diluluskan meninggal dunia tidak boleh dipilih sebagai ketua baharu. Status kematian ketua lama kekal apabila menjadi rekod keluarga.
 
-Kelulusan kematian tidak boleh dibatalkan atau disunting melalui borang ini; semak dengan teliti sebelum meluluskan. Fungsi pembetulan rekod rasmi dan tuntutan khairat belum disediakan. Simpan **sandaran penuh SQLite** untuk semua permohonan, keputusan dan akaun; JSON rekod komuniti tidak mengandungi rekod kematian.
+Kelulusan kematian tidak boleh dibatalkan atau disunting melalui borang ini; semak dengan teliti sebelum meluluskan. Fungsi pembetulan rekod kematian rasmi belum disediakan. Tuntutan khairat tersedia melalui menu berasingan. Simpan **sandaran penuh SQLite** untuk semua permohonan, keputusan dan akaun; JSON rekod komuniti tidak mengandungi rekod kematian.
+
+## Khairat kematian
+
+Menu **Khairat kematian** mengurus tuntutan dan rekod bayaran. Kadar belum ditetapkan secara automatik; pentadbir memasukkan jumlah bagi setiap tuntutan selepas menyemak kelayakan komuniti.
+
+### Menghantar tuntutan
+
+1. Pastikan rekod kematian telah **Diluluskan** melalui menu Rekod kematian. Rekod yang masih menunggu/ditolak tidak boleh digunakan.
+2. Buka **Khairat kematian → Tuntutan baharu**, pilih rekod kematian, kemudian isi nama penuh waris/penerima bayaran, hubungan dengan si mati, telefon dan catatan tuntutan.
+3. Tandakan pengesahan dan sahkan penghantaran. Ahli hanya boleh melihat/memohon untuk isi rumah sendiri; pentadbir/petugas boleh membantu menyediakan tuntutan.
+4. Satu rekod kematian hanya boleh mempunyai satu tuntutan menunggu, diluluskan atau dibayar. Jika ditolak, baca catatan dan hantar tuntutan baharu dengan maklumat yang betul. Tuntutan yang dihantar tidak boleh disunting terus.
+
+Jika ketua meninggal dunia dan akaunnya disekat, pentadbir/petugas boleh menyediakan tuntutan bagi waris. Selepas pengganti dilantik dan akaun disediakan, ketua baharu boleh melihat tuntutan isi rumah yang sama. Akaun orang yang meninggal dunia tidak perlu diaktifkan semula.
+
+### Semakan pentadbir
+
+Buka kad **Tuntutan khairat menunggu semakan** pada papan pemuka, atau buka menu Khairat kematian dan pilih status Menunggu semakan. Tekan ikon **Lihat / semak** untuk menyemak si mati, waris dan catatan.
+
+Untuk meluluskan, masukkan **Jumlah diluluskan (RM)** dengan maksimum dua tempat perpuluhan, tandakan pengesahan dan isi kata laluan pentadbir semasa. Untuk menolak, nyatakan sebab penolakan. Hanya pentadbir boleh membuat keputusan. Status **Diluluskan · Belum dibayar** tidak bermaksud wang telah diserahkan.
+
+### Merekod bayaran
+
+1. Buat bayaran di luar sistem kepada waris/penerima yang dinyatakan, mengikut jumlah diluluskan. Aplikasi ini tidak memindahkan wang.
+2. Pentadbir membuka tuntutan berstatus **Diluluskan · Belum dibayar**, kemudian mengisi tarikh bayaran, kaedah (Tunai/Pindahan bank/Cek), nombor rujukan transaksi/resit dan catatan jika perlu.
+3. Tandakan pengesahan bahawa bayaran penuh telah dibuat dan masukkan kata laluan pentadbir semasa. Sahkan tindakan. Jumlah bayaran menggunakan jumlah diluluskan dan tidak boleh diubah pada borang bayaran.
+4. Status bertukar kepada **Dibayar**. Tarikh, kaedah, rujukan dan pentadbir yang merekodkan bayaran dipaparkan dalam sejarah. Sistem menyekat rekod bayaran kedua untuk tuntutan sama.
+
+Gunakan carian nama si mati/waris/ID dan penapis status. Ringkasan jumlah **Diluluskan belum dibayar** serta **Dibayar** mengikut rekod yang sedang ditapis. Rekod khairat diasingkan daripada bantuan biasa dan tidak menambah bilangan bantuan dalam direktori.
+
+Fasa ini menyokong satu bayaran penuh bagi tuntutan, tanpa ansuran, pembatalan, suntingan kelulusan/bayaran, muat naik dokumen atau pengiraan baki tabung/yuran ahli. Semak jumlah, waris dan rujukan sebelum mengesahkan. Semua borang dikunci semasa permintaan diproses. Gunakan **sandaran penuh SQLite** untuk memindahkan tuntutan, keputusan, bayaran dan akaun; JSON versi 8 tidak mengandungi jadual khairat.

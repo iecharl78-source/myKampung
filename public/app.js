@@ -1,3 +1,4 @@
+import {setupKhairat} from './khairat-ui.js';
 import {setupDeaths} from './deaths-ui.js';
 import {setupHeadChanges} from './head-changes-ui.js';
 import {installButtonIcons} from './ui-icons.js';
@@ -34,19 +35,19 @@ function hidePassword() {
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
 function showLogin() {
-  deathsUI.reset();housingUI.reset();headChangesUI.reset();$('#new-user-section').open=false;document.querySelector('header>span>b').textContent='Selamat datang';homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
+  khairatUI.reset();deathsUI.reset();housingUI.reset();headChangesUI.reset();$('#new-user-section').open=false;document.querySelector('header>span>b').textContent='Selamat datang';homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
   aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
   $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[];$('#user-search').value='';$('#user-role-filter').value='all';$('#user-status-filter').value='all';$('#user-filter-count').textContent=''; currentUser=null;
   for(const id of ['users-list','audit-list','current-user']) $('#'+id).replaceChildren();
   $('#login').hidden=false;
-  for(const id of ['deaths-panel','head-changes-panel','housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel','logout','current-user','open-password','nav-deaths','nav-head-changes','nav-housing','nav-home','nav-portal','nav-community','nav-questions','nav-notifications','nav-profile-review','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=true;
+  for(const id of ['khairat-panel','deaths-panel','head-changes-panel','housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel','logout','current-user','open-password','nav-khairat','nav-deaths','nav-head-changes','nav-housing','nav-home','nav-portal','nav-community','nav-questions','nav-notifications','nav-profile-review','nav-members','nav-aid','nav-accounts','nav-audit','nav-reports','nav-registrations']) $('#'+id).hidden=true;
 }
 async function load(openHome=false) {
   currentUser=(await api('/api/session')).user;
   const resident=currentUser.role==='ahli',adminRole=currentUser.role==='admin';
   $('#login').hidden=true;
-  for(const id of ['nav-deaths','nav-head-changes','nav-home','logout','current-user','open-password','nav-community','nav-questions','nav-notifications'])$('#'+id).hidden=false;
+  for(const id of ['nav-khairat','nav-deaths','nav-head-changes','nav-home','logout','current-user','open-password','nav-community','nav-questions','nav-notifications'])$('#'+id).hidden=false;
   $('#nav-housing').hidden=!adminRole;await residentUI.refresh();
   $('#nav-portal').hidden=!resident;$('#nav-profile-review').hidden=!adminRole;
   for(const id of ['nav-members','nav-aid'])$('#'+id).hidden=resident;
@@ -274,9 +275,9 @@ $('#action-form').onsubmit=async event=>{
 };
 
 function showPanel(id) {
-  const titles={'deaths-panel':'Rekod kematian','head-changes-panel':'Pertukaran ketua keluarga','home-panel':'Papan pemuka',dashboard:'Ahli & isi rumah','portal-panel':'Profil saya','community-panel':'Aktiviti & hebahan','questions-panel':'Pertanyaan','notifications-panel':'Notifikasi','profile-review-panel':'Semakan perubahan','aid-panel':'Bantuan','reports-panel':'Laporan','registrations-panel':'Permohonan ahli','accounts-panel':'Akaun pengguna','audit-panel':'Sejarah tindakan','housing-panel':'Zon & jenis rumah'};document.querySelector('header>span>b').textContent=titles[id]||'myKampung';
-  for(const panel of ['deaths-panel','head-changes-panel','housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
-  for(const [nav,panel] of [['nav-deaths','deaths-panel'],['nav-head-changes','head-changes-panel'],['nav-housing','housing-panel'],['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+  const titles={'khairat-panel':'Khairat kematian','deaths-panel':'Rekod kematian','head-changes-panel':'Pertukaran ketua keluarga','home-panel':'Papan pemuka',dashboard:'Ahli & isi rumah','portal-panel':'Profil saya','community-panel':'Aktiviti & hebahan','questions-panel':'Pertanyaan','notifications-panel':'Notifikasi','profile-review-panel':'Semakan perubahan','aid-panel':'Bantuan','reports-panel':'Laporan','registrations-panel':'Permohonan ahli','accounts-panel':'Akaun pengguna','audit-panel':'Sejarah tindakan','housing-panel':'Zon & jenis rumah'};document.querySelector('header>span>b').textContent=titles[id]||'myKampung';
+  for(const panel of ['khairat-panel','deaths-panel','head-changes-panel','housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
+  for(const [nav,panel] of [['nav-khairat','khairat-panel'],['nav-deaths','deaths-panel'],['nav-head-changes','head-changes-panel'],['nav-housing','housing-panel'],['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
 }
 $('#nav-members').onclick=()=>showPanel('dashboard');
 async function loadUsers() {
@@ -352,6 +353,7 @@ function syncAidCounts(records) {
   aidCounts=counts;render();
 }
 const deathsUI=setupDeaths({api,getUser:()=>currentUser,showPanel,notice,onChanged:load});
+const khairatUI=setupKhairat({api,getUser:()=>currentUser,showPanel,notice,onChanged:load});
 const headChangesUI=setupHeadChanges({api,getUser:()=>currentUser,showPanel,notice,onChanged:load});
 const residentUI=attachResidentFields($('#member-form'));
 const housingUI=setupHousingCatalog({api,getUser:()=>currentUser,showPanel,notice});

@@ -412,3 +412,11 @@ Ambil sandaran penuh SQLite, hentikan aplikasi dengan Ctrl+C dan salin semua fai
 Uji menggunakan data rekaan dahulu: hantar rekod keluarga, tolak dengan catatan, hantar semula dan luluskan sebagai pentadbir. Semak bahawa status keluarga dipaparkan dan rekod asal/bantuan kekal. Untuk kematian ketua, semak akaun portal tidak lagi boleh log masuk dan urus pertukaran ketua secara berasingan.
 
 Format JSON kekal versi 8 dan **tidak mengeksport rekod kematian**. Sejarah kematian pemasangan semasa dikekalkan semasa pemulihan JSON; padanan menggunakan identiti individu stabil, bukan ID baris. Pemulihan JSON lama tanpa identiti stabil tidak menjamin pautan status kematian. Untuk pemindahan atau pemulihan lengkap, gunakan sandaran penuh SQLite dan semak status/akaun selepas pemulihan. Jangan memulihkan sandaran sebelum kematian ke pemasangan utama tanpa menyemak semula keputusan dan akses akaun selepasnya. Kelulusan kematian belum mempunyai fungsi pembetulan dalam aplikasi; semak sebelum meluluskan.
+
+## Naik taraf fasa khairat kematian
+
+Ambil sandaran penuh SQLite dan pastikan muat turun selesai. Hentikan aplikasi dengan Ctrl+C, salin semua fail aplikasi baharu termasuk `khairat.js`, `public/khairat-ui.js`, `server.js`, `dashboard.js` dan seluruh folder `public`. Kekalkan DATA_DIR/folder data asal. Mulakan semula dan tekan Ctrl+F5. Jadual `khairat_claims` ditambah secara automatik; tiada tuntutan atau bayaran dicipta daripada rekod kematian lama.
+
+Uji dengan data rekaan: luluskan rekod kematian keluarga, hantar tuntutan waris, tolak dan hantar semula, kemudian luluskan dengan jumlah ujian. Semak status Diluluskan · Belum dibayar sebelum merekodkan bayaran ujian. Pastikan jumlah kekal, rujukan muncul dan tuntutan tidak boleh dibayar dua kali. Tiada transaksi bank berlaku melalui aplikasi.
+
+JSON kekal versi 8 dan tidak mengeksport tuntutan/keputusan/bayaran khairat. Pemulihan JSON mengekalkan jadual khairat pada pemasangan semasa; ia tidak memulihkan kewangan ke keadaan lama. Gunakan **sandaran penuh SQLite** untuk pemindahan/pemulihan lengkap dan semak transaksi sebenar selepas pemulihan. Memulihkan sandaran penuh lama boleh menghilangkan rekod bayaran yang dibuat selepas tarikh sandaran; semak resit/penyata sebelum merekodkan atau membuat bayaran. Fasa ini belum menyediakan pembetulan atau pembatalan bayaran dalam aplikasi.

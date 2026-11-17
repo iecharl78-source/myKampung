@@ -4,6 +4,7 @@ export function installFormState(root=document) {
   root.addEventListener('click',event=>{ if(busy) { event.preventDefault();event.stopImmediatePropagation(); } },true);
   root.addEventListener('cancel',event=>{ if(busy) event.preventDefault(); },true);
   const messages={
+    'khairat-request-form':'Sedang menghantar tuntutan khairat…','khairat-review-form':'Sedang menyimpan keputusan khairat…','khairat-payment-form':'Sedang merekod bayaran khairat…',
     'death-request-form':'Sedang menghantar rekod kematian…','death-review-form':'Sedang menyimpan keputusan kematian…',
     'head-change-request-form':'Sedang menghantar permohonan pertukaran…','head-change-review-form':'Sedang menyimpan keputusan pertukaran…',
     'housing-catalog-form':'Sedang menyimpan katalog rumah…',

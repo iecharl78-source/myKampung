@@ -13,6 +13,7 @@ Pangkalan data aplikasi kekal SQLite. Dump struktur myKapong digunakan sebagai r
 | `community_zones` | Kod/nama zon dan status aktif. |
 | `housing_types` | Kod/nama jenis rumah dan status aktif. |
 | `registrations` | Permohonan pendaftaran penduduk. |
+| `khairat_claims` | Tuntutan waris, jumlah diluluskan dan rekod satu bayaran penuh berdasarkan rekod kematian rasmi. |
 | `death_records` | Permohonan kematian individu, identiti stabil, tarikh, catatan dan keputusan pentadbir. |
 | `household_head_changes` | Permohonan pertukaran ketua, cadangan keluarga, profil asal dan keputusan pentadbir. |
 | `profile_requests` | Cadangan perubahan profil/keluarga/rumah dan keputusan semakan. |
@@ -58,7 +59,7 @@ Semakan pendua merangkumi nama/telefon sedia ada serta nombor pengenalan ahli ut
 
 JSON versi 8 menyimpan bentuk API ahli/keluarga, medan rumah, katalog serta `householdKey`, `identityKey` dan `personKey`. Ia tidak mengeksport ID unjuran keluarga/isi rumah secara berasingan. Pemulihan menyemak katalog, memasukkannya sebelum ahli, dan trigger membina semula hubungan rumah/keluarga. Pemulihan menggantikan rekod dalam satu transaksi dan kegagalan akan rollback.
 
-Sandaran penuh SQLite menyimpan semua jadual termasuk akaun, permohonan dan mesej. Gunakan sandaran penuh sebelum naik taraf dan untuk pemindahan lengkap. Pertukaran ketua dan rekod kematian tersedia; khairat belum ditambah. Sejarah/permohonan pertukaran ketua tidak dieksport melalui JSON; gunakan sandaran penuh untuk pemindahan lengkap. Pemulihan JSON mengekalkan sejarah pemasangan semasa dan mengikat semula pautannya menggunakan `householdKey`.
+Sandaran penuh SQLite menyimpan semua jadual termasuk akaun, permohonan dan mesej. Gunakan sandaran penuh sebelum naik taraf dan untuk pemindahan lengkap. Pertukaran ketua, rekod kematian dan tuntutan khairat tersedia. Sejarah/permohonan pertukaran ketua tidak dieksport melalui JSON; gunakan sandaran penuh untuk pemindahan lengkap. Pemulihan JSON mengekalkan sejarah pemasangan semasa dan mengikat semula pautannya menggunakan `householdKey`.
 
 ## Kediaman keluarga (sandaran JSON versi 7)
 
@@ -75,3 +76,13 @@ Status kematian rasmi dibaca daripada keputusan approved dan tidak diterima seba
 Pertukaran ketua mengekalkan personKey individu yang meninggal dunia ketika dipindahkan ke keluarga. Calon meninggal dunia ditolak semasa permohonan dan semasa kelulusan. `isActive` kekal sebagai status keahlian/isi rumah dan tidak ditukar secara automatik, supaya pengurusan pengganti terus tersedia.
 
 JSON versi 8 tidak mengandungi jadual kematian atau keputusan. Gunakan sandaran penuh SQLite untuk pemindahan lengkap. Pemulihan JSON tidak memadam jadual ini dan tidak memautkan status berdasarkan nombor ID ahli. Rekod lama tanpa identiti stabil memerlukan semakan; pemulihan penuh ialah kaedah yang disokong untuk memelihara keseluruhan hubungan sejarah.
+
+## Tuntutan dan bayaran khairat
+
+`khairat_claims.deathRecordId` merujuk `death_records.id` dengan ON DELETE RESTRICT. Nama/tarikh kematian dibaca daripada rekod kematian rasmi yang kekal. `householdKey` menyimpan pemilikan isi rumah yang stabil supaya akses kekal selepas pertukaran ketua. Tuntutan menyimpan maklumat waris, pemohon, catatan, keputusan dan butiran bayaran; tiada akaun bank atau pemindahan wang dilaksanakan.
+
+Status bergerak pending → approved → paid atau pending → rejected. Indeks unik separa membenarkan hanya satu tuntutan pending/approved/paid bagi satu rekod kematian; tuntutan ditolak boleh dihantar semula sebagai rekod baharu. `amountCents` ialah integer sen positif yang ditetapkan pentadbir semasa kelulusan. Bayaran menggunakan jumlah sama, dengan tarikh/kaedah/rujukan, dan tidak menyokong ansuran atau bayaran berulang. Keputusan/bayaran memeriksa `expectedUpdatedAt`, status semasa dan peranan. Kelulusan serta bayaran memerlukan kata laluan pentadbir dan pengesahan. Penulisan status, audit dan notifikasi adalah atomik.
+
+Jadual ini diasingkan daripada `aid_records`, supaya bantuan biasa dan khairat tidak dijumlahkan dua kali. Ringkasan UI mengira tuntutan diluluskan belum dibayar dan tuntutan dibayar secara berasingan, menggunakan integer sen. Tiada kadar automatik atau baki tabung dalam fasa ini.
+
+Sandaran penuh SQLite merangkumi jadual khairat bersama rekod kematian/akaun. JSON versi 8 tidak mengeksportnya dan tidak menggantikannya semasa pemulihan. Jangan menggunakan pemulihan JSON untuk membatalkan rekod bayaran. Pemulihan penuh ke tarikh lama memerlukan penyelarasan dengan rekod transaksi sebenar bagi mengelakkan bayaran berganda di luar sistem.

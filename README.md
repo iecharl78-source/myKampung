@@ -72,4 +72,8 @@ Sandaran JSON terkini ialah **versi 8**, termasuk identiti stabil individu/isi r
 
 ## Rekod kematian
 
-Menu **Rekod kematian** menyediakan permohonan bagi ahli utama/keluarga, semakan pentadbir, keputusan dan sejarah. Kelulusan memerlukan pengesahan serta kata laluan pentadbir semasa, menyekat akses akaun portal individu dan mengekalkan profil/bantuan. Pengganti ketua diurus berasingan melalui Pertukaran ketua. Rekod kematian memerlukan **sandaran penuh SQLite**; JSON versi 8 tidak mengeksportnya. Khairat dan pembetulan kelulusan kematian belum disediakan. Rujuk manual sebelum meluluskan rekod rasmi.
+Menu **Rekod kematian** menyediakan permohonan bagi ahli utama/keluarga, semakan pentadbir, keputusan dan sejarah. Kelulusan memerlukan pengesahan serta kata laluan pentadbir semasa, menyekat akses akaun portal individu dan mengekalkan profil/bantuan. Pengganti ketua diurus berasingan melalui Pertukaran ketua. Rekod kematian memerlukan **sandaran penuh SQLite**; JSON versi 8 tidak mengeksportnya. Pembetulan kelulusan kematian belum disediakan. Khairat diurus melalui menu berasingan. Rujuk manual sebelum meluluskan rekod rasmi.
+
+## Khairat kematian
+
+Tuntutan berdasarkan kematian diluluskan, maklumat waris, kelulusan/penolakan pentadbir dan rekod satu bayaran penuh disediakan melalui **Khairat kematian**. Jumlah diisi pentadbir bagi setiap tuntutan, tanpa kadar automatik. Status diluluskan dan dibayar diasingkan. Fungsi bayaran merekodkan transaksi di luar sistem; aplikasi tidak memindahkan wang. Khairat diasingkan daripada bantuan biasa dan memerlukan **sandaran penuh SQLite**. Ansuran, pembatalan/suntingan bayaran dan baki tabung belum disediakan. Rujuk manual untuk langkah dan batasan.
