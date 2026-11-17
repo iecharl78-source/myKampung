@@ -430,3 +430,11 @@ Migrasi menambah katalog khairat, lampiran dan tetapan akses, tanpa mengubah kep
 Sijil disimpan sebagai BLOB dalam SQLite, bukan fail berasingan dalam folder awam. Oleh itu **sandaran penuh SQLite merangkumi sijil, katalog, tuntutan dan tetapan akses**. JSON versi 8 kekal untuk rekod komuniti dan tidak memindahkan data tambahan ini. Simpan sandaran penuh selepas menambah dokumen/tetapan dan pastikan kapasiti storan mencukupi (setiap sijil maksimum 5 MB). Dokumen dan sandaran mengandungi maklumat peribadi; kongsi kod aplikasi sahaja ketika menyediakan salinan percubaan untuk rakan.
 
 Selepas naik taraf, uji dengan fail rekaan: cipta jenis khairat, hantar tuntutan dengan sijil, muat turun sebagai pentadbir/isi rumah sendiri, dan pastikan akaun isi rumah lain ditolak. Ubah kadar katalog dan semak tuntutan lama mengekalkan kadar asal. Nyahaktif beberapa modul Ahli, muat semula pelayar ahli dan semak menu/API disekat. Aktifkan semula selepas percubaan jika dikehendaki.
+
+## Naik taraf tetapan akses Petugas
+
+Ambil sandaran penuh, hentikan pelayan, salin semua fail aplikasi terkini (termasuk `access-settings.js`, `server.js`, `dashboard.js` dan seluruh folder `public`), kemudian mulakan semula dengan DATA_DIR yang sama dan tekan Ctrl+F5. Jadual `staff_module_access` ditambah secara automatik dengan semua modul Petugas sedia ada dibenarkan. Tetapan Ahli yang telah disimpan tidak diubah.
+
+Pentadbir membuka Tetapan sistem, memilih peranan Petugas dalam Akses modul pengguna dan menyimpan pilihan menggunakan kata laluan semasa. Semak dengan akaun Petugas berasingan: modul dimatikan disekat pada API serta disembunyikan selepas pelayar dimuat semula. Uji juga bantuan tanpa direktori dan direktori tanpa bantuan jika menggunakan kombinasi tersebut. Akses pentadbir dan had kelulusan asal tidak berubah.
+
+Tetapan Petugas disimpan dalam SQLite dan termasuk dalam sandaran penuh. JSON versi 8 tidak mengeksport atau menggantikannya semasa pemulihan.

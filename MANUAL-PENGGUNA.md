@@ -275,12 +275,16 @@ Pentadbir membuka **Tetapan sistem → Jenis & kadar khairat**, mengisi kod unik
 
 Tekan ikon Kemaskini untuk mengubah nama, kadar atau status. Kod kekal; nyahaktif jenis yang tidak lagi digunakan. Tuntutan baharu hanya menerima jenis aktif. Perubahan katalog tidak menukar nama/kadar yang telah disalin pada tuntutan sedia ada, termasuk yang masih menunggu. Pentadbir meluluskan mengikut kadar yang dipaparkan pada tuntutan itu. Satu rekod kematian masih terhad kepada satu tuntutan menunggu/diluluskan/dibayar, walaupun terdapat beberapa jenis khairat.
 
-## Pengurusan akses modul ahli
+## Pengurusan akses modul Ahli dan Petugas
 
-Buka **Tetapan sistem → Akses modul ahli**, atau **Akaun pengguna → Tetapan akses modul ahli**. Tandakan modul yang dibenarkan, masukkan kata laluan pentadbir semasa dan sahkan penyimpanan.
+Buka **Tetapan sistem → Akses modul pengguna**, atau **Akaun pengguna → Tetapan akses modul pengguna**. Pilih peranan **Ahli** atau **Petugas**, tandakan modul yang dibenarkan, masukkan kata laluan pentadbir semasa dan sahkan penyimpanan.
 
-Pilihan ini digunakan untuk **semua akaun berperanan Ahli**, bukan tetapan berasingan bagi setiap individu. Modul yang boleh ditetapkan ialah Profil/keluarga/bantuan sendiri, Aktiviti & hebahan, Pertanyaan, Notifikasi, Pertukaran ketua, Rekod kematian dan Khairat kematian. Profil, keluarga dan bantuan sendiri ialah satu pilihan kerana dikendalikan dalam portal yang sama.
+Pilihan ini digunakan untuk **semua akaun dalam peranan yang dipilih**, bukan tetapan berasingan bagi setiap individu. Tetapan Ahli dan Petugas disimpan berasingan; mengubah satu peranan tidak mengubah peranan lain. Modul yang boleh ditetapkan ialah Profil/keluarga/bantuan sendiri, Aktiviti & hebahan, Pertanyaan, Notifikasi, Pertukaran ketua, Rekod kematian dan Khairat kematian. Profil, keluarga dan bantuan sendiri ialah satu pilihan kerana dikendalikan dalam portal yang sama.
 
-Pentadbir dan petugas mengekalkan kuasa peranan sedia ada; tetapan ini tidak memberi kuasa pentadbir kepada ahli. Papan pemuka, tukar kata laluan dan log keluar sentiasa tersedia. Penyekatan modul berkuat kuasa pada permintaan seterusnya termasuk API dan dokumen. Ahli perlu memuat semula pelayar untuk mengemas kini menu. Bahagian papan pemuka yang berkaitan turut disembunyikan. Rekod/permohonan tidak dipadam apabila akses dimatikan dan boleh dilihat semula selepas dibenarkan.
+Bagi **Petugas**, pilihan ialah Ahli & keluarga komuniti, Bantuan komuniti, Aktiviti & hebahan, Pertanyaan, Notifikasi, Pertukaran ketua, Rekod kematian dan Khairat. Direktori ahli dan bantuan boleh dibenarkan secara berasingan. Modul bantuan/pertukaran ketua/kematian masih menyediakan maklumat rujukan individu yang diperlukan untuk tugasan berkenaan walaupun direktori penuh disekat.
+
+Pentadbir mengekalkan akses penuh; tetapan modul tidak memberi kuasa kelulusan, akaun pengguna, laporan, sandaran atau tetapan sistem kepada Petugas. Papan pemuka, tukar kata laluan dan log keluar sentiasa tersedia. Penyekatan modul berkuat kuasa pada permintaan seterusnya termasuk API dan dokumen. Ahli/Petugas perlu memuat semula pelayar untuk mengemas kini menu. Bahagian papan pemuka yang berkaitan turut disembunyikan. Rekod/permohonan tidak dipadam apabila akses dimatikan dan boleh dilihat semula selepas dibenarkan.
 
 Jenis khairat, salinan kadar tuntutan, sijil dan tetapan akses memerlukan **sandaran penuh SQLite** untuk pemindahan lengkap. Sandaran JSON versi 8 tidak mengandungi data ini.
+
+Akses Petugas sedia ada dikekalkan semasa naik taraf sehingga pentadbir mengubah pilihan. Jika modul bantuan dimatikan tetapi direktori dibenarkan, bilangan bantuan dan bahagian bantuan dalam borang ahli disembunyikan. Jika direktori dimatikan, ringkasan jumlah ahli pada papan pemuka turut disembunyikan. Notifikasi dan aktiviti yang dimatikan tidak dipaparkan melalui ringkasan papan pemuka.

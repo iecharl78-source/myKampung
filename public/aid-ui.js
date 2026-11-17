@@ -7,7 +7,7 @@ export function setupAidUI({api,showPanel,getUser,notice,onRecordsChanged=()=>{}
   const kinds={ahli:'Ahli utama',isi_rumah:'Isi rumah',keluarga:'Ahli keluarga'};
   let records=[],members=[],types=[],editingType=null,profileMember=null,editing=null,confirmation='',deleting=null;
   async function load() {
-    [records,members,types]=await Promise.all([api('/api/aid'),api('/api/members'),api('/api/aid-types')]);
+    [records,members,types]=await Promise.all([api('/api/aid'),api(getUser()?.role==='petugas'?'/api/module-households?module=aid':'/api/members'),api('/api/aid-types')]);
     onRecordsChanged(records);
     const selected=$('#aid-member-filter').value;
     $('#aid-member-filter').innerHTML='<option value="">Semua isi rumah</option>'+members.map(m=>`<option value="${m.id}">${esc(m.name)} (#${m.id})</option>`).join('');

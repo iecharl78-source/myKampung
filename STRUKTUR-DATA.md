@@ -16,6 +16,7 @@ Pangkalan data aplikasi kekal SQLite. Dump struktur myKapong digunakan sebagai r
 | `khairat_types` | Katalog kod/nama, jumlah bayaran dalam sen dan status aktif. |
 | `khairat_documents` | Sijil kematian BLOB, metadata fail, SHA-256, pemuat naik dan tarikh; satu bagi tuntutan. |
 | `member_module_access` | Tetapan akses modul untuk semua akaun berperanan Ahli. |
+| `staff_module_access` | Tetapan akses modul Petugas yang berasingan daripada Ahli. |
 | `khairat_claims` | Tuntutan waris, jumlah diluluskan dan rekod satu bayaran penuh berdasarkan rekod kematian rasmi. |
 | `death_records` | Permohonan kematian individu, identiti stabil, tarikh, catatan dan keputusan pentadbir. |
 | `household_head_changes` | Permohonan pertukaran ketua, cadangan keluarga, profil asal dan keputusan pentadbir. |
@@ -96,6 +97,14 @@ Sandaran penuh SQLite merangkumi jadual khairat bersama rekod kematian/akaun. JS
 
 `khairat_documents.claimId` ialah primary key serta foreign key kepada tuntutan. Sijil disimpan secara atomik bersama tuntutan baharu; kegagalan menyimpan dokumen membatalkan tuntutan. Rekod lama yang masih pending boleh menerima satu lampiran tambahan, dengan pemeriksaan status/versi terkini. Jenis fail disemak melalui MIME, sambungan, tandatangan awal kandungan dan base64/saiz sah; ini tidak mengesahkan keaslian sijil. Maksimum 5 MB bagi PDF/JPEG/PNG. Fail dimuat turun sebagai attachment selepas autentikasi, akses modul dan skop isi rumah diperiksa, tanpa laluan fail awam atau HTML pratonton. Metadata sahaja dihantar dalam senarai tuntutan.
 
-`member_module_access` menyimpan satu konfigurasi boolean bagi modul Ahli. Semua pilihan asal dibenarkan semasa migrasi. Peranan pentadbir/petugas kekal dikuatkuasakan oleh laluan sedia ada. API memeriksa pilihan modul pada setiap permintaan Ahli dan papan pemuka menapis maklumat modul yang disekat. Tetapan hanya boleh ditukar pentadbir dengan kata laluan dan expectedUpdatedAt; penulisan diaudit. Profil/keluarga/bantuan dikumpulkan sebagai satu modul. Tiada pengecualian individu dalam versi ini.
+`member_module_access` menyimpan satu konfigurasi boolean bagi modul Ahli. Semua pilihan asal dibenarkan semasa migrasi. Had kuasa peranan kekal dikuatkuasakan oleh laluan sedia ada; pilihan modul tidak boleh menambah kuasa kelulusan pentadbir. API memeriksa pilihan modul pada setiap permintaan Ahli dan papan pemuka menapis maklumat modul yang disekat. Tetapan hanya boleh ditukar pentadbir dengan kata laluan dan expectedUpdatedAt; penulisan diaudit. Profil/keluarga/bantuan dikumpulkan sebagai satu modul. Tiada pengecualian individu dalam versi ini.
 
 Katalog, dokumen, snapshot kadar dan konfigurasi akses memerlukan sandaran penuh SQLite. JSON versi 8 tidak mengeksport atau menggantikan jadual ini semasa pemulihan. Fail BLOB ikut disalin oleh backup SQLite dan tidak memerlukan folder lampiran berasingan.
+
+## Akses Petugas
+
+`staff_module_access` mempunyai konfigurasi/versi berasingan daripada `member_module_access`. Pilihan Petugas ialah members, aid, community, questions, notifications, headChanges, deaths dan khairat. Migrasi mengekalkan akses asal dengan default true dan tidak menulis semula tetapan Ahli. GET/PUT `/api/access-settings?role=petugas` hanya untuk pentadbir; role=ahli atau parameter tiada mengekalkan kontrak sebelumnya. Perubahan memerlukan kata laluan dan expectedUpdatedAt serta diaudit.
+
+Semakan modul pada pelayan meliputi GET dan mutasi untuk Petugas serta Ahli, termasuk dokumen. `/api/members` dan laluan bantuan mempunyai pilihan berasingan. `/api/module-households?module=aid|headChanges|deaths` menyediakan hanya rujukan minimum bagi modul yang dibenarkan kepada Petugas/pentadbir: id/nama/status, serta nama/tarikh lahir keluarga untuk bantuan. Ia tidak membuka direktori penuh jika members=false. Konteks pertukaran ketua/kematian terus mempunyai pengesahan modul masing-masing. Endpoint kelulusan dan pentadbiran kekal memeriksa role=admin.
+
+Papan pemuka menapis ringkasan ahli, notifikasi, pertanyaan dan aktiviti mengikut pilihan Petugas. Semua konfigurasi termasuk dalam backup SQLite; JSON versi 8 tidak mengandungi konfigurasi ini.
