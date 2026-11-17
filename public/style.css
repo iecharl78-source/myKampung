@@ -49,3 +49,5 @@ aside{overflow-y:auto}.community-card{padding:20px;margin:15px 0;overflow-wrap:a
 .death-badge{display:block;color:#7a3d24;font-size:12px;margin:5px 0;font-weight:600}.death-error{color:#a43e32}#death-request-dialog,#death-review-dialog{width:min(680px,95vw)}#death-request-form>label,#death-review-form>label{margin:16px 0}#death-list .card{margin-top:16px}
 
 .khairat-error{color:#a43e32}#khairat-request-dialog,#khairat-review-dialog{width:min(720px,95vw)}#khairat-request-form>label,#khairat-review-form>label,#khairat-payment-form>label{margin:16px 0}#khairat-details{overflow-wrap:anywhere}#khairat-summary{line-height:1.7}
+
+#khairat-type-error,#module-access-error{color:#a43e32}#module-access-form>label{margin:18px 0}#khairat-certificate-form{margin-top:20px;padding-top:16px;border-top:1px solid #dce6df}.certificate-download{display:inline-flex;padding:10px 14px;min-height:44px;border:1px solid #c7d9ce;border-radius:6px;color:#22654e;text-decoration:none}

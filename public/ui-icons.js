@@ -32,7 +32,7 @@ const paths={
 export function iconSvg(kind,cls='ui-icon'){return `<svg class="${cls}" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths[kind]||paths.cursor}</svg>`;}
 function choose(button,label){
  const id=button.id,cls=button.classList;
- const nav={'nav-khairat':'gift','nav-deaths':'report','nav-head-changes':'users','nav-home':'home','nav-members':'users','nav-portal':'users','nav-community':'calendar','nav-questions':'message','nav-notifications':'bell','nav-profile-review':'check','nav-aid':'gift','nav-reports':'report','nav-registrations':'users','nav-accounts':'users','nav-audit':'report','nav-housing':'home'};
+ const nav={'nav-administration':'users','nav-khairat':'gift','nav-deaths':'report','nav-head-changes':'users','nav-home':'home','nav-members':'users','nav-portal':'users','nav-community':'calendar','nav-questions':'message','nav-notifications':'bell','nav-profile-review':'check','nav-aid':'gift','nav-reports':'report','nav-registrations':'users','nav-accounts':'users','nav-audit':'report','nav-housing':'home'};
  if(nav[id])return nav[id];
  if(cls.contains('user-link'))return 'link';if(cls.contains('user-reset'))return 'key';
  if(/Sedang/i.test(label))return 'refresh';if(/bulan sebelum|sebelumnya|halaman sebelum/i.test(label)||/-(prev)$/.test(id))return 'left';if(/bulan selepas|seterusnya|halaman selepas/i.test(label)||/-(next)$/.test(id))return 'right';
@@ -41,7 +41,7 @@ function choose(button,label){
  if(/lulus|sahkan|tandakan|keputusan/i.test(label)&&!/hantar/i.test(label))return 'check';if(/hantar|balasan/i.test(label))return 'send';if(/muat semula|segar/i.test(label))return 'refresh';if(/pulih/i.test(label))return 'upload';if(/sandaran|muat turun|eksport/i.test(label))return 'download';
  if(/cetak/i.test(label))return 'print';if(/simpan/i.test(label))return 'save';if(/tambah|daftar|cipta|baharu/i.test(label))return 'add';if(/kemaskini|kemas kini|edit|sunting/i.test(label))return 'edit';if(/kalendar|aktiviti/i.test(label))return 'calendar';if(/semak status|cari/i.test(label))return 'search';if(/laporan/i.test(label))return 'report';if(/pertanyaan|balas/i.test(label))return 'message';if(/bantuan/i.test(label))return 'gift';if(/direktori|profil|keluarga|pengguna|akaun/i.test(label))return 'users';if(/lihat|baca/i.test(label))return 'view';return 'cursor';
 }
-const compact='.khairat-view,.death-view,.head-change-view,.user-status,.user-reset,.user-link,.review-profile,.aid-request-view,.registration-view,.question-view,.portal-edit-aid,.post-edit,.catalog-edit,.remove-family,.aid-edit,.aid-delete,.password-visibility';
+const compact='.khairat-type-edit,.khairat-view,.death-view,.head-change-view,.user-status,.user-reset,.user-link,.review-profile,.aid-request-view,.registration-view,.question-view,.portal-edit-aid,.post-edit,.catalog-edit,.remove-family,.aid-edit,.aid-delete,.password-visibility';
 export function installButtonIcons(root=document){
  function enhance(button){
   if(button.matches('.action-icon')&&!button.dataset.uiIcon)return; // Ikon direktori sedia ada mempunyai label peribadi.

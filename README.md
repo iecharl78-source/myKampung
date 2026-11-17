@@ -76,4 +76,8 @@ Menu **Rekod kematian** menyediakan permohonan bagi ahli utama/keluarga, semakan
 
 ## Khairat kematian
 
-Tuntutan berdasarkan kematian diluluskan, maklumat waris, kelulusan/penolakan pentadbir dan rekod satu bayaran penuh disediakan melalui **Khairat kematian**. Jumlah diisi pentadbir bagi setiap tuntutan, tanpa kadar automatik. Status diluluskan dan dibayar diasingkan. Fungsi bayaran merekodkan transaksi di luar sistem; aplikasi tidak memindahkan wang. Khairat diasingkan daripada bantuan biasa dan memerlukan **sandaran penuh SQLite**. Ansuran, pembatalan/suntingan bayaran dan baki tabung belum disediakan. Rujuk manual untuk langkah dan batasan.
+Tuntutan berdasarkan kematian diluluskan, maklumat waris, kelulusan/penolakan pentadbir dan rekod satu bayaran penuh disediakan melalui **Khairat kematian**. Tuntutan baharu memilih jenis khairat dan kadar daripada katalog pentadbir serta melampirkan sijil kematian. Rekod lama tanpa jenis mengekalkan jumlah manual. Status diluluskan dan dibayar diasingkan. Fungsi bayaran merekodkan transaksi di luar sistem; aplikasi tidak memindahkan wang. Khairat diasingkan daripada bantuan biasa dan memerlukan **sandaran penuh SQLite**. Ansuran, pembatalan/suntingan bayaran dan baki tabung belum disediakan. Rujuk manual untuk langkah dan batasan.
+
+## Tetapan pentadbir dan sijil kematian
+
+**Tetapan sistem** menyediakan jenis/kadar khairat serta akses modul untuk semua akaun Ahli. Sijil kematian wajib bagi tuntutan baharu (PDF/JPG/PNG sehingga 5 MB), disimpan dalam SQLite dan dimuat turun hanya selepas semakan akses. Tuntutan mengekalkan kadar asal walaupun katalog berubah. Tuntutan lama menunggu boleh ditambah sijil sebelum kelulusan. Ambil sandaran penuh SQLite untuk memindahkan lampiran, katalog dan tetapan; JSON versi 8 tidak mengandunginya. Rujuk manual dan panduan naik taraf sebelum digunakan.

@@ -10,5 +10,6 @@ export function dashboardData(db,user,now=new Date()){
  }else result.community={active:count('SELECT count(*) n FROM members WHERE isActive=1'),inactive:count('SELECT count(*) n FROM members WHERE isActive=0'),family:db.prepare('SELECT coalesce(sum(json_array_length(household)),0) n FROM members WHERE isActive=1').get().n};
  result.events=db.prepare("SELECT id,title,location,startsAt,endsAt FROM events WHERE published=1 AND CASE WHEN endsAt='' THEN startsAt ELSE endsAt END>=? ORDER BY startsAt,id LIMIT 5").all(time);
  result.announcements=db.prepare('SELECT id,title,body,createdAt FROM announcements WHERE published=1 ORDER BY createdAt DESC,id DESC LIMIT 3').all();
+ if(resident&&user.modules){const m=user.modules;if(!m.profile){result.household=null;result.requests={};result.decisions=[];}if(!m.community){result.events=[];result.announcements=[];}if(!m.questions)result.openQuestions=0;if(!m.notifications)result.unread=0;}
  return result;
 }

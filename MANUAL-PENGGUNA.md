@@ -233,12 +233,12 @@ Kelulusan kematian tidak boleh dibatalkan atau disunting melalui borang ini; sem
 
 ## Khairat kematian
 
-Menu **Khairat kematian** mengurus tuntutan dan rekod bayaran. Kadar belum ditetapkan secara automatik; pentadbir memasukkan jumlah bagi setiap tuntutan selepas menyemak kelayakan komuniti.
+Menu **Khairat kematian** mengurus tuntutan dan rekod bayaran. Jenis khairat dan jumlah disediakan pentadbir melalui **Tetapan sistem → Jenis & kadar khairat**. Pemohon memilih jenis yang berkenaan; kadar semasa disalin ke tuntutan.
 
 ### Menghantar tuntutan
 
 1. Pastikan rekod kematian telah **Diluluskan** melalui menu Rekod kematian. Rekod yang masih menunggu/ditolak tidak boleh digunakan.
-2. Buka **Khairat kematian → Tuntutan baharu**, pilih rekod kematian, kemudian isi nama penuh waris/penerima bayaran, hubungan dengan si mati, telefon dan catatan tuntutan.
+2. Buka **Khairat kematian → Tuntutan baharu**, pilih rekod kematian dan jenis khairat, lampirkan sijil kematian (PDF/JPG/PNG maksimum 5 MB), kemudian isi nama penuh waris/penerima bayaran, hubungan dengan si mati, telefon dan catatan tuntutan.
 3. Tandakan pengesahan dan sahkan penghantaran. Ahli hanya boleh melihat/memohon untuk isi rumah sendiri; pentadbir/petugas boleh membantu menyediakan tuntutan.
 4. Satu rekod kematian hanya boleh mempunyai satu tuntutan menunggu, diluluskan atau dibayar. Jika ditolak, baca catatan dan hantar tuntutan baharu dengan maklumat yang betul. Tuntutan yang dihantar tidak boleh disunting terus.
 
@@ -248,7 +248,7 @@ Jika ketua meninggal dunia dan akaunnya disekat, pentadbir/petugas boleh menyedi
 
 Buka kad **Tuntutan khairat menunggu semakan** pada papan pemuka, atau buka menu Khairat kematian dan pilih status Menunggu semakan. Tekan ikon **Lihat / semak** untuk menyemak si mati, waris dan catatan.
 
-Untuk meluluskan, masukkan **Jumlah diluluskan (RM)** dengan maksimum dua tempat perpuluhan, tandakan pengesahan dan isi kata laluan pentadbir semasa. Untuk menolak, nyatakan sebab penolakan. Hanya pentadbir boleh membuat keputusan. Status **Diluluskan · Belum dibayar** tidak bermaksud wang telah diserahkan.
+Untuk meluluskan, muat turun dan semak sijil kematian serta kadar pada tuntutan. **Jumlah diluluskan (RM)** diisi mengikut kadar jenis khairat ketika tuntutan dihantar dan dikunci. Tandakan pengesahan dan isi kata laluan pentadbir semasa. Bagi rekod lama tanpa jenis, pentadbir masih memasukkan jumlah dengan maksimum dua tempat perpuluhan. Untuk menolak, nyatakan sebab penolakan. Hanya pentadbir boleh membuat keputusan. Status **Diluluskan · Belum dibayar** tidak bermaksud wang telah diserahkan.
 
 ### Merekod bayaran
 
@@ -259,4 +259,28 @@ Untuk meluluskan, masukkan **Jumlah diluluskan (RM)** dengan maksimum dua tempat
 
 Gunakan carian nama si mati/waris/ID dan penapis status. Ringkasan jumlah **Diluluskan belum dibayar** serta **Dibayar** mengikut rekod yang sedang ditapis. Rekod khairat diasingkan daripada bantuan biasa dan tidak menambah bilangan bantuan dalam direktori.
 
-Fasa ini menyokong satu bayaran penuh bagi tuntutan, tanpa ansuran, pembatalan, suntingan kelulusan/bayaran, muat naik dokumen atau pengiraan baki tabung/yuran ahli. Semak jumlah, waris dan rujukan sebelum mengesahkan. Semua borang dikunci semasa permintaan diproses. Gunakan **sandaran penuh SQLite** untuk memindahkan tuntutan, keputusan, bayaran dan akaun; JSON versi 8 tidak mengandungi jadual khairat.
+Fasa ini menyokong satu bayaran penuh bagi tuntutan, tanpa ansuran, pembatalan, suntingan kelulusan/bayaran atau pengiraan baki tabung/yuran ahli. Semak jumlah, waris dan rujukan sebelum mengesahkan. Semua borang dikunci semasa permintaan diproses. Gunakan **sandaran penuh SQLite** untuk memindahkan tuntutan, keputusan, bayaran dan akaun; JSON versi 8 tidak mengandungi jadual khairat.
+
+## Sijil kematian sebagai dokumen sokongan
+
+Tuntutan khairat baharu wajib mempunyai sijil kematian dalam format **PDF, JPG/JPEG atau PNG**, maksimum **5 MB**. Semak fail yang dipilih sebelum menghantar. Sistem menyemak format/saiz fail; pentadbir tetap perlu menyemak kandungan dan kesahihan sijil.
+
+Buka tuntutan melalui ikon Lihat / semak dan tekan **Muat turun sijil kematian**. Dokumen hanya boleh dimuat turun oleh pentadbir, petugas serta ahli daripada isi rumah tuntutan yang mempunyai akses Khairat. Dokumen tidak disediakan melalui pautan awam. Muat turun dicatat dalam sejarah tindakan.
+
+Tuntutan lama yang masih menunggu dan belum mempunyai sijil menyediakan borang **Lampirkan sijil kematian** dalam paparan tuntutan. Sijil wajib dilampirkan sebelum kelulusan. Lampiran yang telah dihantar tidak boleh diganti melalui borang ini; jika tersilap semasa menunggu, pentadbir menolak dengan catatan dan pemohon menghantar tuntutan baharu. Rekod lama yang sudah diluluskan/dibayar dikekalkan tanpa mengubah keputusan atau mewajibkan penghantaran semula.
+
+## Pengurusan jenis dan kadar khairat
+
+Pentadbir membuka **Tetapan sistem → Jenis & kadar khairat**, mengisi kod unik, nama, jumlah bayaran RM dan status Aktif. Contoh: kod `ASAS`, nama `Khairat kematian asas`; jumlah mengikut keputusan komuniti. Tiada jenis atau kadar sebenar dicipta secara automatik.
+
+Tekan ikon Kemaskini untuk mengubah nama, kadar atau status. Kod kekal; nyahaktif jenis yang tidak lagi digunakan. Tuntutan baharu hanya menerima jenis aktif. Perubahan katalog tidak menukar nama/kadar yang telah disalin pada tuntutan sedia ada, termasuk yang masih menunggu. Pentadbir meluluskan mengikut kadar yang dipaparkan pada tuntutan itu. Satu rekod kematian masih terhad kepada satu tuntutan menunggu/diluluskan/dibayar, walaupun terdapat beberapa jenis khairat.
+
+## Pengurusan akses modul ahli
+
+Buka **Tetapan sistem → Akses modul ahli**, atau **Akaun pengguna → Tetapan akses modul ahli**. Tandakan modul yang dibenarkan, masukkan kata laluan pentadbir semasa dan sahkan penyimpanan.
+
+Pilihan ini digunakan untuk **semua akaun berperanan Ahli**, bukan tetapan berasingan bagi setiap individu. Modul yang boleh ditetapkan ialah Profil/keluarga/bantuan sendiri, Aktiviti & hebahan, Pertanyaan, Notifikasi, Pertukaran ketua, Rekod kematian dan Khairat kematian. Profil, keluarga dan bantuan sendiri ialah satu pilihan kerana dikendalikan dalam portal yang sama.
+
+Pentadbir dan petugas mengekalkan kuasa peranan sedia ada; tetapan ini tidak memberi kuasa pentadbir kepada ahli. Papan pemuka, tukar kata laluan dan log keluar sentiasa tersedia. Penyekatan modul berkuat kuasa pada permintaan seterusnya termasuk API dan dokumen. Ahli perlu memuat semula pelayar untuk mengemas kini menu. Bahagian papan pemuka yang berkaitan turut disembunyikan. Rekod/permohonan tidak dipadam apabila akses dimatikan dan boleh dilihat semula selepas dibenarkan.
+
+Jenis khairat, salinan kadar tuntutan, sijil dan tetapan akses memerlukan **sandaran penuh SQLite** untuk pemindahan lengkap. Sandaran JSON versi 8 tidak mengandungi data ini.

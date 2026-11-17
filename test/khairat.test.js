@@ -21,6 +21,8 @@ test('Khairat: kematian diluluskan, peranan, tuntutan semula, jumlah, bayaran se
  try{
  let base=await start(),admin='';const req=(path,method='GET',data,cookie=admin)=>fetch(base+path,{method,headers:{Cookie:cookie,'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});
  const login=async username=>{const r=await req('/api/login','POST',{username,password},'');assert.equal(r.status,200,await r.clone().text());return r.headers.get('set-cookie').split(';')[0];};admin=await login('admin');
+ const certificate={fileName:'sijil.pdf',mimeType:'application/pdf',base64:Buffer.from('%PDF-1.4\nDokumen ujian\n%%EOF').toString('base64')};
+ assert.equal((await req('/api/khairat/types','POST',{code:'ASAS',name:'Khairat asas',amount:'1000.01',isActive:1})).status,200);const typeId=(await (await req('/api/khairat/types')).json())[0].id;
  const profile={name:'Ketua Tuntutan',phone:'0121112222',address1:'Rumah ujian',employmentStatus:'Bekerja',household:[{name:'Si Mati',relationship:'Ibu',birthDate:'1960-01-01',employmentStatus:'Pesara',livesWithMember:'Ya'},{name:'Belum Diluluskan',relationship:'Bapa',birthDate:'1950-01-01',employmentStatus:'Pesara',livesWithMember:'Ya'}]};
  let r=await req('/api/members','POST',profile);assert.equal(r.status,201);const id=(await r.json()).id;
  r=await req('/api/members','POST',{name:'Isi rumah lain',phone:'0193334444',address1:'Lain',household:[]});const otherId=(await r.json()).id;
@@ -29,7 +31,7 @@ test('Khairat: kematian diluluskan, peranan, tuntutan semula, jumlah, bayaran se
  const context=await (await req('/api/deaths/context/'+id)).json();
  let deathIds=[];for(const p of context.people.slice(1)){r=await req('/api/deaths','POST',{memberId:id,personKey:p.personKey,deathDate:'2026-01-01',note:'Disahkan keluarga',confirm:true});assert.equal(r.status,202);deathIds.push((await r.json()).id);}
  const approveDeath={decision:'approve',reviewNote:'Disemak',confirm:true,currentPassword:password};assert.equal((await req(`/api/deaths/${deathIds[0]}/review`,'POST',approveDeath)).status,200);
- const before=await (await req('/api/backup')).json(),input={deathRecordId:deathIds[0],claimantName:'Waris Ujian',claimantRelationship:'Anak',claimantPhone:'0125556666',note:'Permohonan keluarga',confirm:true,amount:'99999'};
+ const before=await (await req('/api/backup')).json(),input={typeId,certificate,deathRecordId:deathIds[0],claimantName:'Waris Ujian',claimantRelationship:'Anak',claimantPhone:'0125556666',note:'Permohonan keluarga',confirm:true,amount:'99999'};
  assert.equal((await req('/api/khairat','GET',undefined,'')).status,401);assert.equal((await (await req('/api/khairat/options','GET',undefined,owner)).json()).length,1);assert.equal((await (await req('/api/khairat/options','GET',undefined,other)).json()).length,0);
  assert.equal((await req('/api/khairat','POST',input,other)).status,403);assert.equal((await req('/api/khairat','POST',{...input,deathRecordId:deathIds[1]},owner)).status,400);assert.equal((await req('/api/khairat','POST',{...input,confirm:false},owner)).status,400);
  r=await req('/api/khairat','POST',input,owner);assert.equal(r.status,202);let claimId=(await r.json()).id;

@@ -420,3 +420,13 @@ Ambil sandaran penuh SQLite dan pastikan muat turun selesai. Hentikan aplikasi d
 Uji dengan data rekaan: luluskan rekod kematian keluarga, hantar tuntutan waris, tolak dan hantar semula, kemudian luluskan dengan jumlah ujian. Semak status Diluluskan · Belum dibayar sebelum merekodkan bayaran ujian. Pastikan jumlah kekal, rujukan muncul dan tuntutan tidak boleh dibayar dua kali. Tiada transaksi bank berlaku melalui aplikasi.
 
 JSON kekal versi 8 dan tidak mengeksport tuntutan/keputusan/bayaran khairat. Pemulihan JSON mengekalkan jadual khairat pada pemasangan semasa; ia tidak memulihkan kewangan ke keadaan lama. Gunakan **sandaran penuh SQLite** untuk pemindahan/pemulihan lengkap dan semak transaksi sebenar selepas pemulihan. Memulihkan sandaran penuh lama boleh menghilangkan rekod bayaran yang dibuat selepas tarikh sandaran; semak resit/penyata sebelum merekodkan atau membuat bayaran. Fasa ini belum menyediakan pembetulan atau pembatalan bayaran dalam aplikasi.
+
+## Naik taraf sijil, katalog khairat dan akses modul
+
+Ambil sandaran penuh SQLite sebelum naik taraf. Hentikan pelayan, salin semua fail aplikasi terkini termasuk `khairat-support.js`, `access-settings.js`, `khairat.js`, `server.js`, `dashboard.js` serta seluruh folder `public` (termasuk `administration-ui.js`). Kekalkan DATA_DIR/folder data asal. Mulakan semula dan tekan Ctrl+F5.
+
+Migrasi menambah katalog khairat, lampiran dan tetapan akses, tanpa mengubah keputusan/jumlah tuntutan lama. Pentadbir perlu menambah sekurang-kurangnya satu jenis khairat aktif sebelum tuntutan baharu. Akaun Ahli mengekalkan semua akses asal sehingga pentadbir mengubah tetapan. Tuntutan lama yang masih menunggu mesti dilengkapkan dengan sijil sebelum diluluskan; tuntutan lama tanpa jenis mengekalkan jumlah manual. Keputusan/bayaran lama tidak ditukar.
+
+Sijil disimpan sebagai BLOB dalam SQLite, bukan fail berasingan dalam folder awam. Oleh itu **sandaran penuh SQLite merangkumi sijil, katalog, tuntutan dan tetapan akses**. JSON versi 8 kekal untuk rekod komuniti dan tidak memindahkan data tambahan ini. Simpan sandaran penuh selepas menambah dokumen/tetapan dan pastikan kapasiti storan mencukupi (setiap sijil maksimum 5 MB). Dokumen dan sandaran mengandungi maklumat peribadi; kongsi kod aplikasi sahaja ketika menyediakan salinan percubaan untuk rakan.
+
+Selepas naik taraf, uji dengan fail rekaan: cipta jenis khairat, hantar tuntutan dengan sijil, muat turun sebagai pentadbir/isi rumah sendiri, dan pastikan akaun isi rumah lain ditolak. Ubah kadar katalog dan semak tuntutan lama mengekalkan kadar asal. Nyahaktif beberapa modul Ahli, muat semula pelayar ahli dan semak menu/API disekat. Aktifkan semula selepas percubaan jika dikehendaki.

@@ -13,6 +13,9 @@ Pangkalan data aplikasi kekal SQLite. Dump struktur myKapong digunakan sebagai r
 | `community_zones` | Kod/nama zon dan status aktif. |
 | `housing_types` | Kod/nama jenis rumah dan status aktif. |
 | `registrations` | Permohonan pendaftaran penduduk. |
+| `khairat_types` | Katalog kod/nama, jumlah bayaran dalam sen dan status aktif. |
+| `khairat_documents` | Sijil kematian BLOB, metadata fail, SHA-256, pemuat naik dan tarikh; satu bagi tuntutan. |
+| `member_module_access` | Tetapan akses modul untuk semua akaun berperanan Ahli. |
 | `khairat_claims` | Tuntutan waris, jumlah diluluskan dan rekod satu bayaran penuh berdasarkan rekod kematian rasmi. |
 | `death_records` | Permohonan kematian individu, identiti stabil, tarikh, catatan dan keputusan pentadbir. |
 | `household_head_changes` | Permohonan pertukaran ketua, cadangan keluarga, profil asal dan keputusan pentadbir. |
@@ -81,8 +84,18 @@ JSON versi 8 tidak mengandungi jadual kematian atau keputusan. Gunakan sandaran 
 
 `khairat_claims.deathRecordId` merujuk `death_records.id` dengan ON DELETE RESTRICT. Nama/tarikh kematian dibaca daripada rekod kematian rasmi yang kekal. `householdKey` menyimpan pemilikan isi rumah yang stabil supaya akses kekal selepas pertukaran ketua. Tuntutan menyimpan maklumat waris, pemohon, catatan, keputusan dan butiran bayaran; tiada akaun bank atau pemindahan wang dilaksanakan.
 
-Status bergerak pending → approved → paid atau pending → rejected. Indeks unik separa membenarkan hanya satu tuntutan pending/approved/paid bagi satu rekod kematian; tuntutan ditolak boleh dihantar semula sebagai rekod baharu. `amountCents` ialah integer sen positif yang ditetapkan pentadbir semasa kelulusan. Bayaran menggunakan jumlah sama, dengan tarikh/kaedah/rujukan, dan tidak menyokong ansuran atau bayaran berulang. Keputusan/bayaran memeriksa `expectedUpdatedAt`, status semasa dan peranan. Kelulusan serta bayaran memerlukan kata laluan pentadbir dan pengesahan. Penulisan status, audit dan notifikasi adalah atomik.
+Status bergerak pending → approved → paid atau pending → rejected. Indeks unik separa membenarkan hanya satu tuntutan pending/approved/paid bagi satu rekod kematian; tuntutan ditolak boleh dihantar semula sebagai rekod baharu. `amountCents` ialah integer sen positif yang disahkan pentadbir semasa kelulusan. Tuntutan baharu menyimpan `typeId`, `typeName` dan `typeAmountCents` pada masa penghantaran; jumlah kelulusan mesti sama dengan kadar yang disalin. Tuntutan lama tanpa jenis masih menggunakan jumlah manual. Bayaran menggunakan jumlah sama, dengan tarikh/kaedah/rujukan, dan tidak menyokong ansuran atau bayaran berulang. Keputusan/bayaran memeriksa `expectedUpdatedAt`, status semasa dan peranan. Kelulusan serta bayaran memerlukan kata laluan pentadbir dan pengesahan. Penulisan status, audit dan notifikasi adalah atomik.
 
-Jadual ini diasingkan daripada `aid_records`, supaya bantuan biasa dan khairat tidak dijumlahkan dua kali. Ringkasan UI mengira tuntutan diluluskan belum dibayar dan tuntutan dibayar secara berasingan, menggunakan integer sen. Tiada kadar automatik atau baki tabung dalam fasa ini.
+Jadual ini diasingkan daripada `aid_records`, supaya bantuan biasa dan khairat tidak dijumlahkan dua kali. Ringkasan UI mengira tuntutan diluluskan belum dibayar dan tuntutan dibayar secara berasingan, menggunakan integer sen. Kadar tuntutan baharu datang daripada katalog yang diurus pentadbir; tiada pengiraan baki tabung dalam fasa ini.
 
 Sandaran penuh SQLite merangkumi jadual khairat bersama rekod kematian/akaun. JSON versi 8 tidak mengeksportnya dan tidak menggantikannya semasa pemulihan. Jangan menggunakan pemulihan JSON untuk membatalkan rekod bayaran. Pemulihan penuh ke tarikh lama memerlukan penyelarasan dengan rekod transaksi sebenar bagi mengelakkan bayaran berganda di luar sistem.
+
+## Lampiran, katalog dan akses
+
+`khairat_types` menggunakan kod kekal dan foreign key nullable pada tuntutan untuk keserasian lama. Katalog kosong pada pemasangan/naik taraf pertama. Kadar/nama pada tuntutan ialah snapshot dan tidak ditulis semula semasa katalog berubah. Jenis tidak dipadam melalui API; gunakan status tidak aktif.
+
+`khairat_documents.claimId` ialah primary key serta foreign key kepada tuntutan. Sijil disimpan secara atomik bersama tuntutan baharu; kegagalan menyimpan dokumen membatalkan tuntutan. Rekod lama yang masih pending boleh menerima satu lampiran tambahan, dengan pemeriksaan status/versi terkini. Jenis fail disemak melalui MIME, sambungan, tandatangan awal kandungan dan base64/saiz sah; ini tidak mengesahkan keaslian sijil. Maksimum 5 MB bagi PDF/JPEG/PNG. Fail dimuat turun sebagai attachment selepas autentikasi, akses modul dan skop isi rumah diperiksa, tanpa laluan fail awam atau HTML pratonton. Metadata sahaja dihantar dalam senarai tuntutan.
+
+`member_module_access` menyimpan satu konfigurasi boolean bagi modul Ahli. Semua pilihan asal dibenarkan semasa migrasi. Peranan pentadbir/petugas kekal dikuatkuasakan oleh laluan sedia ada. API memeriksa pilihan modul pada setiap permintaan Ahli dan papan pemuka menapis maklumat modul yang disekat. Tetapan hanya boleh ditukar pentadbir dengan kata laluan dan expectedUpdatedAt; penulisan diaudit. Profil/keluarga/bantuan dikumpulkan sebagai satu modul. Tiada pengecualian individu dalam versi ini.
+
+Katalog, dokumen, snapshot kadar dan konfigurasi akses memerlukan sandaran penuh SQLite. JSON versi 8 tidak mengeksport atau menggantikan jadual ini semasa pemulihan. Fail BLOB ikut disalin oleh backup SQLite dan tidak memerlukan folder lampiran berasingan.
