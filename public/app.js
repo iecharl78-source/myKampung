@@ -359,6 +359,7 @@ function syncAidCounts(records) {
 const deathsUI=setupDeaths({api,getUser:()=>currentUser,showPanel,notice,onChanged:load});
 const administrationUI=setupAdministration({api,getUser:()=>currentUser,showPanel,notice});
 const khairatUI=setupKhairat({api,getUser:()=>currentUser,showPanel,notice,onChanged:load});
+administrationUI.mountKhairat();
 const headChangesUI=setupHeadChanges({api,getUser:()=>currentUser,showPanel,notice,onChanged:load});
 const residentUI=attachResidentFields($('#member-form'));
 const housingUI=setupHousingCatalog({api,getUser:()=>currentUser,showPanel,notice});

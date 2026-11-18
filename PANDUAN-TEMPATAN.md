@@ -438,3 +438,5 @@ Ambil sandaran penuh, hentikan pelayan, salin semua fail aplikasi terkini (terma
 Pentadbir membuka Tetapan sistem, memilih peranan Petugas dalam Akses modul pengguna dan menyimpan pilihan menggunakan kata laluan semasa. Semak dengan akaun Petugas berasingan: modul dimatikan disekat pada API serta disembunyikan selepas pelayar dimuat semula. Uji juga bantuan tanpa direktori dan direktori tanpa bantuan jika menggunakan kombinasi tersebut. Akses pentadbir dan had kelulusan asal tidak berubah.
 
 Tetapan Petugas disimpan dalam SQLite dan termasuk dalam sandaran penuh. JSON versi 8 tidak mengeksport atau menggantikannya semasa pemulihan.
+
+Pengurusan jenis/kadar kini dibuka melalui **Khairat kematian → Urus jenis & kadar khairat**, untuk Pentadbir sahaja. Selepas menyalin fail aplikasi terkini, mulakan semula pelayan dan tekan Ctrl+F5. Pemindahan skrin ini tidak mengubah data katalog, kadar atau tuntutan.

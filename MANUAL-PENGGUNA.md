@@ -233,7 +233,7 @@ Kelulusan kematian tidak boleh dibatalkan atau disunting melalui borang ini; sem
 
 ## Khairat kematian
 
-Menu **Khairat kematian** mengurus tuntutan dan rekod bayaran. Jenis khairat dan jumlah disediakan pentadbir melalui **Tetapan sistem → Jenis & kadar khairat**. Pemohon memilih jenis yang berkenaan; kadar semasa disalin ke tuntutan.
+Menu **Khairat kematian** mengurus tuntutan dan rekod bayaran. Jenis khairat dan jumlah disediakan pentadbir melalui **Khairat kematian → Urus jenis & kadar khairat**. Pemohon memilih jenis yang berkenaan; kadar semasa disalin ke tuntutan.
 
 ### Menghantar tuntutan
 
@@ -271,7 +271,7 @@ Tuntutan lama yang masih menunggu dan belum mempunyai sijil menyediakan borang *
 
 ## Pengurusan jenis dan kadar khairat
 
-Pentadbir membuka **Tetapan sistem → Jenis & kadar khairat**, mengisi kod unik, nama, jumlah bayaran RM dan status Aktif. Contoh: kod `ASAS`, nama `Khairat kematian asas`; jumlah mengikut keputusan komuniti. Tiada jenis atau kadar sebenar dicipta secara automatik.
+Pentadbir membuka **Khairat kematian → Urus jenis & kadar khairat**, mengisi kod unik, nama, jumlah bayaran RM dan status Aktif. Contoh: kod `ASAS`, nama `Khairat kematian asas`; jumlah mengikut keputusan komuniti. Tiada jenis atau kadar sebenar dicipta secara automatik.
 
 Tekan ikon Kemaskini untuk mengubah nama, kadar atau status. Kod kekal; nyahaktif jenis yang tidak lagi digunakan. Tuntutan baharu hanya menerima jenis aktif. Perubahan katalog tidak menukar nama/kadar yang telah disalin pada tuntutan sedia ada, termasuk yang masih menunggu. Pentadbir meluluskan mengikut kadar yang dipaparkan pada tuntutan itu. Satu rekod kematian masih terhad kepada satu tuntutan menunggu/diluluskan/dibayar, walaupun terdapat beberapa jenis khairat.
 
@@ -288,3 +288,5 @@ Pentadbir mengekalkan akses penuh; tetapan modul tidak memberi kuasa kelulusan, 
 Jenis khairat, salinan kadar tuntutan, sijil dan tetapan akses memerlukan **sandaran penuh SQLite** untuk pemindahan lengkap. Sandaran JSON versi 8 tidak mengandungi data ini.
 
 Akses Petugas sedia ada dikekalkan semasa naik taraf sehingga pentadbir mengubah pilihan. Jika modul bantuan dimatikan tetapi direktori dibenarkan, bilangan bantuan dan bahagian bantuan dalam borang ahli disembunyikan. Jika direktori dimatikan, ringkasan jumlah ahli pada papan pemuka turut disembunyikan. Notifikasi dan aktiviti yang dimatikan tidak dipaparkan melalui ringkasan papan pemuka.
+
+Pengurusan **Jenis & kadar khairat** berada dalam bahagian boleh dikembangkan **Urus jenis & kadar khairat** pada skrin Khairat kematian, untuk Pentadbir sahaja. Tetapan sistem mengandungi pengurusan akses modul Ahli/Petugas.
