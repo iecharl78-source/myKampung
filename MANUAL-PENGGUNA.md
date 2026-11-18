@@ -290,3 +290,19 @@ Jenis khairat, salinan kadar tuntutan, sijil dan tetapan akses memerlukan **sand
 Akses Petugas sedia ada dikekalkan semasa naik taraf sehingga pentadbir mengubah pilihan. Jika modul bantuan dimatikan tetapi direktori dibenarkan, bilangan bantuan dan bahagian bantuan dalam borang ahli disembunyikan. Jika direktori dimatikan, ringkasan jumlah ahli pada papan pemuka turut disembunyikan. Notifikasi dan aktiviti yang dimatikan tidak dipaparkan melalui ringkasan papan pemuka.
 
 Pengurusan **Jenis & kadar khairat** berada dalam bahagian boleh dikembangkan **Urus jenis & kadar khairat** pada skrin Khairat kematian, untuk Pentadbir sahaja. Tetapan sistem mengandungi pengurusan akses modul Ahli/Petugas.
+
+## Kumpulan menu utama
+
+Menu disusun dalam lima kumpulan:
+
+| Kumpulan | Menu |
+| --- | --- |
+| Umum | Papan pemuka, Profil saya |
+| Komuniti & Kebajikan | Ahli & isi rumah, Bantuan, Khairat kematian |
+| Permohonan & Kelulusan | Permohonan ahli, Semakan perubahan, Pertukaran ketua, Rekod kematian |
+| Maklumat & Komunikasi | Aktiviti & hebahan, Pertanyaan, Notifikasi |
+| Pentadbiran | Akaun pengguna, Tetapan sistem, Zon & jenis rumah, Laporan, Sejarah tindakan |
+
+Tekan nama kumpulan untuk membuka atau menutup senarai menu. Pada telefon, kumpulan menu yang dipilih dibuka secara automatik dan kumpulan lain diringkaskan. Pada komputer, kumpulan boleh dikembangkan mengikut keperluan; tatal menu sisi jika senarai panjang. Pengguna papan kekunci boleh menggunakan Tab untuk memilih tajuk kumpulan dan Enter/Space untuk membuka atau menutupnya.
+
+Menu tetap mengikut peranan dan tetapan akses Ahli/Petugas. Kumpulan tanpa sebarang menu yang dibenarkan tidak dipaparkan. Tukar kata laluan dan Log keluar kekal di ruangan akaun. Pengurusan jenis/kadar khairat berada di dalam Khairat kematian dan hanya tersedia kepada Pentadbir.

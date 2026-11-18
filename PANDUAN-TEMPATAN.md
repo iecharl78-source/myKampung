@@ -440,3 +440,5 @@ Pentadbir membuka Tetapan sistem, memilih peranan Petugas dalam Akses modul peng
 Tetapan Petugas disimpan dalam SQLite dan termasuk dalam sandaran penuh. JSON versi 8 tidak mengeksport atau menggantikannya semasa pemulihan.
 
 Pengurusan jenis/kadar kini dibuka melalui **Khairat kematian → Urus jenis & kadar khairat**, untuk Pentadbir sahaja. Selepas menyalin fail aplikasi terkini, mulakan semula pelayan dan tekan Ctrl+F5. Pemindahan skrin ini tidak mengubah data katalog, kadar atau tuntutan.
+
+Untuk versi menu berkumpulan, salin juga `public/navigation.js` bersama `public/app.js`, `public/style.css` dan `server.js` (atau gantikan semua fail aplikasi terkini). Mulakan semula pelayan dan tekan Ctrl+F5. Susunan menu tidak mengubah data atau tetapan akses.

@@ -1,3 +1,4 @@
+import {installNavigationGroups} from './navigation.js';
 import {setupAdministration} from './administration-ui.js';
 import {setupKhairat} from './khairat-ui.js';
 import {setupDeaths} from './deaths-ui.js';
@@ -282,6 +283,7 @@ function showPanel(id) {
   const titles={'administration-panel':'Tetapan sistem','khairat-panel':'Khairat kematian','deaths-panel':'Rekod kematian','head-changes-panel':'Pertukaran ketua keluarga','home-panel':'Papan pemuka',dashboard:'Ahli & isi rumah','portal-panel':'Profil saya','community-panel':'Aktiviti & hebahan','questions-panel':'Pertanyaan','notifications-panel':'Notifikasi','profile-review-panel':'Semakan perubahan','aid-panel':'Bantuan','reports-panel':'Laporan','registrations-panel':'Permohonan ahli','accounts-panel':'Akaun pengguna','audit-panel':'Sejarah tindakan','housing-panel':'Zon & jenis rumah'};document.querySelector('header>span>b').textContent=titles[id]||'myKampung';
   for(const panel of ['administration-panel','khairat-panel','deaths-panel','head-changes-panel','housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
   for(const [nav,panel] of [['nav-administration','administration-panel'],['nav-khairat','khairat-panel'],['nav-deaths','deaths-panel'],['nav-head-changes','head-changes-panel'],['nav-housing','housing-panel'],['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+  navigationUI.activate();
 }
 $('#nav-members').onclick=()=>showPanel('dashboard');
 async function loadUsers() {
@@ -371,5 +373,6 @@ const reportsUI=setupReports({api,showPanel,notice});
 const refreshPasswords=enhancePasswords();
 document.addEventListener('submit',refreshPasswords,true);
 document.addEventListener('form-idle',refreshPasswords,true);
+const navigationUI=installNavigationGroups();
 installFormState();installButtonIcons();
 try { await load(true); } catch(e) { showLogin(); if(e.message !== 'Sila log masuk.') notice(e.message); }
