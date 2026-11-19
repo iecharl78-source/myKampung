@@ -285,7 +285,7 @@ function showPanel(id) {
   for(const [nav,panel] of [['nav-administration','administration-panel'],['nav-khairat','khairat-panel'],['nav-deaths','deaths-panel'],['nav-head-changes','head-changes-panel'],['nav-housing','housing-panel'],['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
   navigationUI.activate();
 }
-$('#nav-members').onclick=()=>showPanel('dashboard');
+$('#nav-members').onclick=async()=>{try{await load();showPanel('dashboard');}catch(error){notice(error.message);}};
 async function loadUsers() {
   users=await api('/api/users');
   updateMemberOptions();renderUsers();
@@ -366,7 +366,7 @@ const headChangesUI=setupHeadChanges({api,getUser:()=>currentUser,showPanel,noti
 const residentUI=attachResidentFields($('#member-form'));
 const housingUI=setupHousingCatalog({api,getUser:()=>currentUser,showPanel,notice});
 const homeUI=setupDashboard({api,getUser:()=>currentUser,showPanel,notice});
-const portalUI=setupPortal({api,showPanel,getUser:()=>currentUser,notice});
+const portalUI=setupPortal({api,showPanel,getUser:()=>currentUser,notice,refreshMembers:()=>load()});
 const aidUI=setupAidUI({api,showPanel,getUser:()=>currentUser,notice,onRecordsChanged:syncAidCounts});
 const registrationsUI=setupRegistrations({api,showPanel,notice,refreshMembers:load});
 const reportsUI=setupReports({api,showPanel,notice});

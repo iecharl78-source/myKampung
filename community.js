@@ -77,13 +77,17 @@ export async function communityRoutes({req,res,path,user,db,json,body,validate})
     let data;
     if(input.decision==='approve'){
       if(!current || current.updatedAt!==row.baseUpdatedAt || !db.prepare("SELECT id FROM users WHERE id=? AND role='ahli' AND isActive=1 AND memberId=?").get(row.userId,current.id)){json(res,409,{error:'Rekod rasmi telah berubah atau tidak aktif. Tolak permohonan ini dan minta ahli menghantar maklumat terkini.'});return true;}
-      data=validate(JSON.parse(row.data));
+      data=validate(JSON.parse(row.data),{existingMember:current});
       const records=db.prepare('SELECT * FROM members').all().map(m=>({...m,household:JSON.parse(m.household)})),matches=duplicateMatches(data,records,current.id),confirmation=digest({id:row.id,data,matches});
       if(matches.length&&input.duplicateConfirmation!==confirmation){json(res,409,{code:'PROFILE_DUPLICATE',error:'Rekod berpotensi berganda. Semak padanan sebelum meluluskan.',matches,confirmation});return true;}
     }
     withAudit(db,user,input.decision==='approve'?'Lulus perubahan profil':'Tolak perubahan profil','permohonan profil',row.id,()=>{
       if(data){const columns=['name','phone','birthDate','gender','occupation','address','address1','address2','district','postcode','state','country','household',...memberDetailFields],values={...data,household:JSON.stringify(data.household)};
-        db.prepare(`UPDATE members SET ${columns.map(c=>`${c}=?`).join(',')},updatedAt=? WHERE id=?`).run(...columns.map(c=>values[c]),now,current.id);
+        const updated=db.prepare(`UPDATE members SET ${columns.map(c=>`${c}=?`).join(',')},updatedAt=? WHERE id=? AND identityKey=? AND updatedAt=? AND isActive=1`).run(...columns.map(c=>values[c]),now,current.id,row.identityKey,row.baseUpdatedAt);
+        const saved=db.prepare('SELECT * FROM members WHERE id=?').get(current.id);
+        const family=saved?JSON.parse(saved.household):[];
+        const matchesFamily=family.length===data.household.length && data.household.every((person,index)=>Object.entries(person).every(([key,value])=>family[index][key]===value));
+        if(updated.changes!==1 || !saved || !matchesFamily || columns.filter(key=>key!=='household').some(key=>saved[key]!==values[key]))throw Error('Data rasmi gagal disahkan selepas kelulusan. Permohonan belum diluluskan; sila muat semula dan cuba lagi.');
         db.prepare('UPDATE users SET fullName=?,updatedAt=? WHERE memberId=? AND role=\'ahli\'').run(data.name,now,current.id);
       }
       const result=db.prepare('UPDATE profile_requests SET status=?,reviewNote=?,reviewedBy=?,reviewedAt=? WHERE id=?').run(data?'approved':'rejected',note,user.username,now,row.id);
