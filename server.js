@@ -1,3 +1,5 @@
+import {initializeTaskHub,taskHubRoutes} from './task-hub.js';
+import {activeSession,initializeSecurity,securityBlocked,securityFailure,securityClear,verifyMfa,securityRoutes} from './security.js';
 import {initializeAccessSettings,memberModules,moduleForPath,accessSettingsRoutes} from './access-settings.js';
 import {initializeKhairat,khairatRoutes} from './khairat.js';
 import {initializeDeaths,deathRoutes,deathLabels,deceasedAccount} from './deaths.js';
@@ -40,12 +42,12 @@ migrateMemberStatus(db);
 migrateEmployerAddress(db);
 migrateMemberIdentity(db);
 initializeHousing(db);
-initializeAccounts(db,process.env.ADMIN_PASSWORD);
+initializeAccounts(db,process.env.ADMIN_PASSWORD);initializeSecurity(db);
 initializeAid(db);
 initializeRegistrations(db);
 initializeCommunity(db);
 initializeAidRequests(db);
-initializeHeadChanges(db);initializeDeaths(db);initializeKhairat(db);initializeAccessSettings(db);
+initializeHeadChanges(db);initializeDeaths(db);initializeKhairat(db);initializeAccessSettings(db);initializeTaskHub(db);
 const sessions = new Map(), attempts = new Map(), restorePreviews = new Map();
 const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)}));
 const allAid=()=>db.prepare('SELECT * FROM aid_records ORDER BY id').all();
@@ -107,13 +109,14 @@ function validate(input,{catalog=true,existingMember=null}={}) {
   const details=normalizeMemberDetails(input);if(catalog)checkHousing(db,details);
   return {name, phone, address, ...addressParts, ...details, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/administration-ui.js':['administration-ui.js','text/javascript'], '/khairat-ui.js':['khairat-ui.js','text/javascript'], '/deaths-ui.js':['deaths-ui.js','text/javascript'], '/head-changes-ui.js':['head-changes-ui.js','text/javascript'], '/ui-icons.js':['ui-icons.js','text/javascript'], '/navigation.js':['navigation.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/family-residence.js':['family-residence.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/security-ui.js':['security-ui.js','text/javascript'], '/task-hub-ui.js':['task-hub-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/administration-ui.js':['administration-ui.js','text/javascript'], '/khairat-ui.js':['khairat-ui.js','text/javascript'], '/deaths-ui.js':['deaths-ui.js','text/javascript'], '/head-changes-ui.js':['head-changes-ui.js','text/javascript'], '/ui-icons.js':['ui-icons.js','text/javascript'], '/navigation.js':['navigation.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/family-residence.js':['family-residence.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   res.setHeader('Referrer-Policy','no-referrer');
   const path = new URL(req.url, 'http://localhost').pathname;
   try {
+    if(['POST','PUT','DELETE'].includes(req.method)&&req.headers['sec-fetch-site']==='cross-site')return json(res,403,{error:'Asal permintaan tidak dibenarkan.'});
     if(runtime.publicOrigin)res.setHeader('Strict-Transport-Security','max-age=31536000');
     if(path==='/healthz' && req.method==='GET'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
     if (req.method === 'GET' && staticFiles[path]) { const [file,type] = staticFiles[path]; res.writeHead(200, {'Content-Type':`${type}; charset=utf-8`}); return res.end(readFileSync(join(root,'public',file))); }
@@ -128,23 +131,29 @@ const server = http.createServer(async (req,res) => {
       const input = await body(req);
       if(!db.prepare('SELECT id FROM users LIMIT 1').get()) return json(res,503,{error:'Pentadbir belum disediakan. Tetapkan ADMIN_PASSWORD pada pelayan.'});
       const username=typeof input.username==='string' ? input.username.trim().toLowerCase() : 'admin';
+      if(securityBlocked(db,'login:'+username))return json(res,429,{error:'Terlalu banyak percubaan untuk akaun ini. Cuba selepas 15 minit.'});
       const user=db.prepare('SELECT * FROM users WHERE username=?').get(username);
       const password = typeof input.password === 'string' && input.password.length <= 1000 ? input.password : '';
       if (!verifyPassword(user,password) || user.isActive!==1 || (user.role==='ahli' && deceasedAccount(db,user.memberId)) || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) {
-        attempts.set(key,{count:rate && rate.until > now ? rate.count+1 : 1,until:rate && rate.until > now ? rate.until : now+900000});
+        securityFailure(db,'login:'+username);attempts.set(key,{count:rate && rate.until > now ? rate.count+1 : 1,until:rate && rate.until > now ? rate.until : now+900000});
         return json(res,401,{error:'Nama pengguna atau kata laluan tidak tepat, atau akaun tidak aktif.'});
       }
-      attempts.delete(key);
-      for (const [k,v] of sessions) if (v.expires < now) sessions.delete(k);
-      const token = randomBytes(32).toString('hex'); sessions.set(token,{userId:user.id,expires:now+8*3600000});
+      if(!verifyMfa(db,user,input.code)){securityFailure(db,'login:'+username);attempts.set(key,{count:rate&&rate.until>now?rate.count+1:1,until:rate&&rate.until>now?rate.until:now+900000});return json(res,401,{error:'Masukkan kod aplikasi pengesah atau kod pemulihan 2FA yang sah.',mfaRequired:true});}
+      securityClear(db,'login:'+username);attempts.delete(key);
+      for (const [k,v] of sessions) if (v.expires<=now||v.lastSeen<=now-1800000){sessions.delete(k);restorePreviews.delete(k);}
+      const previous=[...sessions.entries()].filter(([,s])=>s.userId===user.id).sort((a,b)=>a[1].createdAt-b[1].createdAt);while(previous.length>=10){const [key]=previous.shift();sessions.delete(key);restorePreviews.delete(key);}
+      const token = randomBytes(32).toString('hex'); sessions.set(token,{userId:user.id,id:randomBytes(16).toString('hex'),createdAt:now,lastSeen:now,expires:now+8*3600000});
       res.setHeader('Set-Cookie',`session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${process.env.COOKIE_SECURE === '1' ? '; Secure' : ''}`);
       audit(db,user,'Log masuk','akaun',user.id);
       return json(res,200,{ok:true,user:{...publicUser(user),modules:memberModules(db,user)}});
     }
     const token = (req.headers.cookie || '').split(';').map(x=>x.trim()).find(x=>x.startsWith('session='))?.slice(8);
     const session=sessions.get(token);
-    const user=session && session.expires>Date.now() ? db.prepare('SELECT * FROM users WHERE id=? AND isActive=1').get(session.userId) : null;
+    const user=activeSession(session) ? db.prepare('SELECT * FROM users WHERE id=? AND isActive=1').get(session.userId) : null;
     if(!user || (user.role==='ahli' && deceasedAccount(db,user.memberId)) || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) { if(token) { sessions.delete(token);restorePreviews.delete(token); } return json(res,401,{error:'Sila log masuk.'}); }
+    session.lastSeen=Date.now();
+    if(await taskHubRoutes({req,res,path,user,db,json,body,isSessionActive:()=>sessions.get(token)===session&&session.expires>Date.now()&&db.prepare("SELECT id FROM users WHERE id=? AND role='admin' AND isActive=1").get(user.id)}))return;
+    if(await securityRoutes({req,res,path,user,db,json,body,sessions,token,restorePreviews}))return;
     if (path === '/api/session' && req.method === 'GET') return json(res,200,{ok:true,user:{...publicUser(user),modules:memberModules(db,user)}});
     const requestedModule=moduleForPath(path);if(user.role!=='admin'&&requestedModule&&!memberModules(db,user)[requestedModule])return json(res,403,{error:'Akses modul ini telah dinyahaktifkan oleh pentadbir.'});
     if(path==='/api/module-households'&&req.method==='GET'){const module=new URL(req.url,'http://localhost').searchParams.get('module');if(!['aid','headChanges','deaths'].includes(module)||user.role==='ahli'||!memberModules(db,user)[module])return json(res,403,{error:'Akses modul ini tidak dibenarkan.'});return json(res,200,allMembers().map(m=>({id:m.id,name:m.name,isActive:m.isActive,...(module==='aid'?{birthDate:m.birthDate,household:m.household.map(p=>({name:p.name,birthDate:p.birthDate}))}:{})})));}

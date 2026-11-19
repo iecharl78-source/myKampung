@@ -326,3 +326,8 @@ Setiap bayaran baharu memerlukan **No. resit bayaran** dan **Lampiran resit baya
 Jika resit tiada atau tidak sah, status kekal Diluluskan · Belum dibayar. Lampiran, rekod bayaran, audit dan notifikasi disimpan dalam satu transaksi. Resit yang telah disimpan tidak boleh ditindih melalui borang bayaran.
 
 Buka **Khairat kematian → Lihat / semak → Muat turun resit bayaran** untuk melihat bukti. Akses tertakluk kepada kebenaran modul; ahli hanya boleh memuat turun resit isi rumah sendiri. Bayaran lama dikekalkan dan ditandakan tanpa lampiran jika resit belum tersedia. Resit disertakan dalam **Sandaran penuh sistem (SQLite)**, bukan sandaran JSON. Buat sandaran penuh sebelum pemasangan dan kekalkan direktori/volume data sedia ada.
+
+
+## Keselamatan akaun dan pusat tugasan
+
+Buka **Umum → Keselamatan akaun** untuk menyediakan 2FA dan menamatkan sesi lain. Pentadbir boleh membuka **Permohonan & Kelulusan → Pusat tugasan** untuk menyemak usia permohonan dan menetapkan pegawai. Panduan pemasangan kunci penyulitan, kod pemulihan, had sesi dan penggunaan: [PANDUAN-KESELAMATAN.md](PANDUAN-KESELAMATAN.md). Buat sandaran penuh sebelum menaik taraf.
