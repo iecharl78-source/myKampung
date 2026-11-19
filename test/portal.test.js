@@ -52,9 +52,20 @@ test('Portal ahli: kelulusan perubahan, pengasingan isi rumah, bantuan sendiri, 
   assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve',reviewNote:'Disahkan'})).status,200);
   assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'})).status,409);
   profile=await (await req('/api/portal/profile','GET',undefined,first)).json();assert.equal(profile.name,proposal.name);assert.equal(profile.household.length,1);
+  // Regresi: kelulusan 1 -> 3 mesti mengemas kini rekod rasmi dan jadual keluarga.
+  proposal={...profile,household:[...profile.household,{name:'Bapa Baharu',relationship:'Bapa',employmentStatus:'Pesara',livesWithMember:'Ya'},{name:'Ibu Baharu',relationship:'Ibu',employmentStatus:'Tidak bekerja',livesWithMember:'Ya'}],expectedUpdatedAt:profile.updatedAt};
+  r=await req('/api/portal/profile','PUT',proposal,first);assert.equal(r.status,202,await r.clone().text());requestId=(await r.json()).id;
+  // Simulasi penulisan diabaikan: status tidak boleh menjadi approved.
+  db.exec("CREATE TRIGGER ignore_profile BEFORE UPDATE ON members BEGIN SELECT RAISE(IGNORE); END");
+  try{assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'})).status,400);assert.equal(db.prepare('SELECT status FROM profile_requests WHERE id=?').get(requestId).status,'pending');}finally{db.exec('DROP TRIGGER ignore_profile');}
+  r=await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'});assert.equal(r.status,200,await r.clone().text());
+  profile=await (await req('/api/portal/profile','GET',undefined,first)).json();assert.equal(profile.household.length,3);
+  const official=(await (await req('/api/members')).json()).find(m=>m.id===profile.id);assert.deepEqual(official.household,profile.household);
+  assert.equal(db.prepare('SELECT count(*) n FROM family_members f JOIN households h ON h.id=f.householdId WHERE h.headMemberId=?').get(profile.id).n,3);
+  assert.equal((await (await req('/api/dashboard','GET',undefined,first)).json()).household.family,3);
   // Padam keluarga juga hanya cadangan sehingga diluluskan; rekod berganda diberi amaran.
   proposal={...profile,name:other.name,household:[],expectedUpdatedAt:profile.updatedAt};r=await req('/api/portal/profile','PUT',proposal,first);requestId=(await r.json()).id;
-  r=await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'});assert.equal(r.status,409);const duplicate=await r.json();assert.equal(duplicate.code,'PROFILE_DUPLICATE');assert.equal((await (await req('/api/portal/profile','GET',undefined,first)).json()).household.length,1);
+  r=await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve'});assert.equal(r.status,409);const duplicate=await r.json();assert.equal(duplicate.code,'PROFILE_DUPLICATE');assert.equal((await (await req('/api/portal/profile','GET',undefined,first)).json()).household.length,3);
   assert.equal((await req(`/api/profile-requests/${requestId}/review`,'POST',{decision:'approve',duplicateConfirmation:duplicate.confirmation})).status,200);
   profile=await (await req('/api/portal/profile','GET',undefined,first)).json();assert.equal(profile.household.length,0);
   // Rekod berubah selepas permohonan: pentadbir tidak boleh menindih perubahan baharu.
