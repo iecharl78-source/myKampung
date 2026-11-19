@@ -1,7 +1,7 @@
 export const navigationGroups=[
- {key:'general',label:'Umum',items:['nav-home','nav-portal']},
+ {key:'general',label:'Umum',items:['nav-home','nav-portal','nav-security']},
  {key:'community',label:'Komuniti & Kebajikan',items:['nav-members','nav-aid','nav-khairat']},
- {key:'applications',label:'Permohonan & Kelulusan',items:['nav-registrations','nav-profile-review','nav-head-changes','nav-deaths']},
+ {key:'applications',label:'Permohonan & Kelulusan',items:['nav-tasks','nav-registrations','nav-profile-review','nav-head-changes','nav-deaths']},
  {key:'information',label:'Maklumat & Komunikasi',items:['nav-community','nav-questions','nav-notifications']},
  {key:'administration',label:'Pentadbiran',items:['nav-accounts','nav-administration','nav-housing','nav-reports','nav-audit']}
 ];

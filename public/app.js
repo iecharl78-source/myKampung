@@ -1,3 +1,5 @@
+import {setupSecurity} from './security-ui.js';
+import {setupTaskHub} from './task-hub-ui.js';
 import {installNavigationGroups} from './navigation.js';
 import {setupAdministration} from './administration-ui.js';
 import {setupKhairat} from './khairat-ui.js';
@@ -37,7 +39,8 @@ function hidePassword() {
   $('#toggle-password').setAttribute('aria-pressed','false');
 }
 function showLogin() {
-  administrationUI.reset();khairatUI.reset();deathsUI.reset();housingUI.reset();headChangesUI.reset();$('#new-user-section').open=false;document.querySelector('header>span>b').textContent='Selamat datang';homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
+  clearTimeout(idleTimer);members=[];editing=null;duplicateConfirmation='';$('#results').replaceChildren();$('#editor').close();$('#member-form').reset();$('#family-fields').replaceChildren();$('#login-form').reset();
+  securityUI.reset();taskHubUI.reset();administrationUI.reset();khairatUI.reset();deathsUI.reset();housingUI.reset();headChangesUI.reset();$('#new-user-section').open=false;document.querySelector('header>span>b').textContent='Selamat datang';homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
   aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
   $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[];$('#user-search').value='';$('#user-role-filter').value='all';$('#user-status-filter').value='all';$('#user-filter-count').textContent=''; currentUser=null;
@@ -47,7 +50,9 @@ function showLogin() {
 }
 async function load(openHome=false) {
   currentUser=(await api('/api/session')).user;
+  scheduleIdle();
   const resident=currentUser.role==='ahli',adminRole=currentUser.role==='admin';
+  $('#nav-security').hidden=false;$('#nav-tasks').hidden=!adminRole;
   $('#login').hidden=true;
   for(const id of ['nav-khairat','nav-deaths','nav-head-changes','nav-home','logout','current-user','open-password','nav-community','nav-questions','nav-notifications'])$('#'+id).hidden=false;
   $('#nav-administration').hidden=!adminRole;$('#nav-housing').hidden=!adminRole;await residentUI.refresh();
@@ -180,7 +185,7 @@ $('#toggle-password').onclick=()=>{
 $('#login-form').onsubmit=async event=>{
   event.preventDefault(); const button=event.target.querySelector('button[type="submit"]'); button.disabled=true; notice('');
   const password=event.target.elements.password.value; hidePassword();
-  try { await api('/api/login','POST',{username:event.target.elements.username.value,password}); event.target.reset(); await load(true); } catch(e) { notice(e.message); } finally { button.disabled=false; }
+  try { await api('/api/login','POST',{username:event.target.elements.username.value,password,code:event.target.elements.code.value.trim()}); event.target.reset(); await load(true); } catch(e) { notice(e.message); } finally { button.disabled=false; }
 };
 $('#logout').onclick=()=>{ $('#logout-error').textContent='';$('#logout-dialog').showModal(); };
 $('#logout-cancel').onclick=()=>$('#logout-dialog').close();
@@ -281,8 +286,8 @@ function showPanel(id) {
  const module={dashboard:'members','aid-panel':'aid','portal-panel':'profile','community-panel':'community','questions-panel':'questions','notifications-panel':'notifications','head-changes-panel':'headChanges','deaths-panel':'deaths','khairat-panel':'khairat'}[id];if(currentUser?.role!=='admin'&&module&&!currentUser.modules[module]){notice('Akses modul ini telah dinyahaktifkan oleh pentadbir.');id='home-panel';}
 
   const titles={'administration-panel':'Tetapan sistem','khairat-panel':'Khairat kematian','deaths-panel':'Rekod kematian','head-changes-panel':'Pertukaran ketua keluarga','home-panel':'Papan pemuka',dashboard:'Ahli & isi rumah','portal-panel':'Profil saya','community-panel':'Aktiviti & hebahan','questions-panel':'Pertanyaan','notifications-panel':'Notifikasi','profile-review-panel':'Semakan perubahan','aid-panel':'Bantuan','reports-panel':'Laporan','registrations-panel':'Permohonan ahli','accounts-panel':'Akaun pengguna','audit-panel':'Sejarah tindakan','housing-panel':'Zon & jenis rumah'};document.querySelector('header>span>b').textContent=titles[id]||'myKampung';
-  for(const panel of ['administration-panel','khairat-panel','deaths-panel','head-changes-panel','housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
-  for(const [nav,panel] of [['nav-administration','administration-panel'],['nav-khairat','khairat-panel'],['nav-deaths','deaths-panel'],['nav-head-changes','head-changes-panel'],['nav-housing','housing-panel'],['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+  for(const panel of ['security-panel','tasks-panel','administration-panel','khairat-panel','deaths-panel','head-changes-panel','housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
+  for(const [nav,panel] of [['nav-security','security-panel'],['nav-tasks','tasks-panel'],['nav-administration','administration-panel'],['nav-khairat','khairat-panel'],['nav-deaths','deaths-panel'],['nav-head-changes','head-changes-panel'],['nav-housing','housing-panel'],['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
   navigationUI.activate();
 }
 $('#nav-members').onclick=async()=>{try{await load();showPanel('dashboard');}catch(error){notice(error.message);}};
@@ -373,6 +378,13 @@ const reportsUI=setupReports({api,showPanel,notice});
 const refreshPasswords=enhancePasswords();
 document.addEventListener('submit',refreshPasswords,true);
 document.addEventListener('form-idle',refreshPasswords,true);
+const securityUI=setupSecurity({api,getUser:()=>currentUser,showPanel,notice});
+const taskHubUI=setupTaskHub({api,getUser:()=>currentUser,showPanel,notice});
+let idleTimer,lastInteraction=Date.now();
+function scheduleIdle(){lastInteraction=Date.now();clearTimeout(idleTimer);idleTimer=setTimeout(checkIdle,1800000);}
+function checkIdle(){if(!currentUser)return;if(Date.now()-lastInteraction>=1800000){showLogin();notice('Sesi tamat selepas 30 minit tanpa aktiviti. Sila log masuk semula.');}else{clearTimeout(idleTimer);idleTimer=setTimeout(checkIdle,1800000-(Date.now()-lastInteraction));}}
+for(const name of ['pointerdown','keydown'])document.addEventListener(name,e=>{if(currentUser&&e.isTrusted)scheduleIdle();},true);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkIdle();});
 const navigationUI=installNavigationGroups();
 installFormState();installButtonIcons();
 try { await load(true); } catch(e) { showLogin(); if(e.message !== 'Sila log masuk.') notice(e.message); }

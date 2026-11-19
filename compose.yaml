@@ -9,6 +9,7 @@ services:
       PUBLIC_ORIGIN: https://${DOMAIN:?Tetapkan DOMAIN dalam .env}
       COOKIE_SECURE: "1"
       TRUST_PROXY: "1"
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:-}
     volumes:
       - app_data:/app/data
     networks:
