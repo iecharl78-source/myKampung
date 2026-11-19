@@ -1,3 +1,4 @@
+import {initializeKhairatReceipts,validateReceipt,storeReceipt,receiptRoute} from './khairat-receipts.js';
 import {initializeKhairatSupport,khairatSupportRoutes,validateCertificate,storeCertificate} from './khairat-support.js';
 import {withAudit,verifyPassword} from './accounts.js';
 import {notify} from './community.js';
@@ -14,13 +15,14 @@ export function initializeKhairat(db){
  paymentDate TEXT NOT NULL DEFAULT '',paymentMethod TEXT NOT NULL DEFAULT '',paymentReference TEXT NOT NULL DEFAULT '',paymentNote TEXT NOT NULL DEFAULT '',paidBy TEXT NOT NULL DEFAULT '',paidAt TEXT NOT NULL DEFAULT '',
  createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL);
  CREATE UNIQUE INDEX IF NOT EXISTS one_open_khairat_claim ON khairat_claims(deathRecordId) WHERE status IN('pending','approved','paid');`);
- initializeKhairatSupport(db);
+ initializeKhairatSupport(db);initializeKhairatReceipts(db);
 }
 const text=(v,label,max=200)=>{if(typeof v!=='string'||!v.trim()||v.length>max)throw Error(`Sila isi ${label} (maksimum ${max} aksara).`);return v.trim();};
 export function khairatAmount(value){if(typeof value!=='string'||!/^\d{1,8}(\.\d{1,2})?$/.test(value))throw Error('Maklumat jumlah khairat mesti dalam RM dengan maksimum dua tempat perpuluhan.');const [whole,fraction='']=value.split('.'),cents=Number(whole)*100+Number(fraction.padEnd(2,'0'));if(cents<=0)throw Error('Maklumat jumlah khairat mesti lebih daripada sifar.');return cents;}
 function ownHouse(db,user){return user.role==='ahli'?db.prepare('SELECT householdKey FROM members WHERE id=?').get(user.memberId)?.householdKey:null;}
-const joined=`SELECT c.*,d.personName,d.birthDate,d.deathDate,coalesce(f.fileName,dc.fileName) certificateName,coalesce(f.byteLength,dc.byteLength) certificateSize,d.note deathNote,d.status deathStatus,CASE WHEN f.claimId IS NOT NULL THEN 'claim' ELSE 'death' END certificateSource FROM khairat_claims c JOIN death_records d ON d.id=c.deathRecordId LEFT JOIN khairat_documents f ON f.claimId=c.id LEFT JOIN death_documents dc ON dc.deathRecordId=d.id`;
+const joined=`SELECT c.*,d.personName,d.birthDate,d.deathDate,coalesce(f.fileName,dc.fileName) certificateName,coalesce(f.byteLength,dc.byteLength) certificateSize,(SELECT fileName FROM khairat_receipts WHERE claimId=c.id) receiptName,d.note deathNote,d.status deathStatus,CASE WHEN f.claimId IS NOT NULL THEN 'claim' ELSE 'death' END certificateSource FROM khairat_claims c JOIN death_records d ON d.id=c.deathRecordId LEFT JOIN khairat_documents f ON f.claimId=c.id LEFT JOIN death_documents dc ON dc.deathRecordId=d.id`;
 export async function khairatRoutes({req,res,path,user,db,json,body,isSessionActive}){
+ if(receiptRoute({req,res,path,user,db,json}))return true;
  if(await khairatSupportRoutes({req,res,path,user,db,json,body,isSessionActive}))return true;
  if(path==='/api/khairat/options'&&req.method==='GET'){
   const own=ownHouse(db,user);json(res,200,db.prepare(`SELECT d.id,d.personName,d.deathDate,d.householdKey,(SELECT fileName FROM death_documents WHERE deathRecordId=d.id) certificateName,c.status claimStatus FROM death_records d LEFT JOIN khairat_claims c ON c.deathRecordId=d.id AND c.status IN('pending','approved','paid') WHERE d.status='approved' ${user.role==='ahli'?'AND d.householdKey=?':''} ORDER BY d.id DESC`).all(...(user.role==='ahli'?[own||'']:[])));return true;
@@ -45,7 +47,7 @@ export async function khairatRoutes({req,res,path,user,db,json,body,isSessionAct
  const action=path.match(/^\/api\/khairat\/(\d+)\/(review|payment)$/);
  if(action&&req.method==='POST'){
   if(user.role!=='admin'){json(res,403,{error:'Keputusan dan rekod bayaran hanya untuk pentadbir.'});return true;}
-  const input=await body(req);if(!isSessionActive()){json(res,401,{error:'Sila log masuk semula.'});return true;}
+  const input=await body(req,action[2]==='payment'?8*1024*1024:100*1024);if(!isSessionActive()){json(res,401,{error:'Sila log masuk semula.'});return true;}
   const row=db.prepare(joined+' WHERE c.id=?').get(Number(action[1]));if(!row){json(res,404,{error:'Tuntutan tidak ditemui.'});return true;}
   if(row.updatedAt!==input.expectedUpdatedAt){json(res,409,{error:'Tuntutan telah berubah. Muat semula dan semak rekod terkini.'});return true;}
   const now=new Date().toISOString(),admin=db.prepare("SELECT * FROM users WHERE id=? AND role='admin' AND isActive=1").get(user.id);
@@ -63,8 +65,9 @@ export async function khairatRoutes({req,res,path,user,db,json,body,isSessionAct
   if(input.confirm!==true||!verifyPassword(admin,input.currentPassword))throw Error('Sila sahkan bayaran dan masukkan kata laluan pentadbir semasa yang tepat.');
   const date=input.paymentDate;if(typeof date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date))||new Date(date).toISOString().slice(0,10)!==date||date>todayInMalaysia()||date<row.deathDate)throw Error('Tarikh bayaran mesti sah, tidak mendahului tarikh kematian dan tidak pada masa hadapan.');
   if(!['Tunai','Pindahan bank','Cek'].includes(input.paymentMethod))throw Error('Sila pilih kaedah bayaran yang sah.');
-  const reference=text(input.paymentReference,'nombor rujukan transaksi/resit',200);if(typeof input.paymentNote!=='string'||input.paymentNote.length>1000)throw Error('Maklumat catatan bayaran tidak sah.');
-  withAudit(db,user,'Rekod bayaran khairat','khairat',row.id,()=>{db.prepare("UPDATE khairat_claims SET status='paid',paymentDate=?,paymentMethod=?,paymentReference=?,paymentNote=?,paidBy=?,paidAt=?,updatedAt=? WHERE id=?").run(date,input.paymentMethod,reference,input.paymentNote.trim(),user.username,now,now,row.id);notify(db,{userId:row.requestedBy,title:'Bayaran khairat direkodkan',body:`Tuntutan #${row.id} · ${reference}`});});json(res,200,{ok:true});return true;
+  const reference=text(input.paymentReference,'nombor resit bayaran',200);if(typeof input.paymentNote!=='string'||input.paymentNote.length>1000)throw Error('Maklumat catatan bayaran tidak sah.');
+  const receipt=validateReceipt(input.paymentReceipt);
+  withAudit(db,user,'Rekod bayaran khairat','khairat',row.id,()=>{storeReceipt(db,row.id,receipt,user);db.prepare("UPDATE khairat_claims SET status='paid',paymentDate=?,paymentMethod=?,paymentReference=?,paymentNote=?,paidBy=?,paidAt=?,updatedAt=? WHERE id=?").run(date,input.paymentMethod,reference,input.paymentNote.trim(),user.username,now,now,row.id);notify(db,{userId:row.requestedBy,title:'Bayaran khairat direkodkan',body:`Tuntutan #${row.id} · ${reference}`});});json(res,200,{ok:true});return true;
  }
  return false;
 }

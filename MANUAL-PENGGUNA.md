@@ -317,3 +317,12 @@ Selepas rekod kematian diluluskan, pilih rekod tersebut ketika membuat tuntutan 
 Bagi tuntutan lama tanpa lampiran, buka **Khairat kematian → Lihat / semak → Muat naik sijil kematian**. Ini tersedia untuk tuntutan menunggu, diluluskan dan dibayar. Penambahan lampiran tidak mengubah keputusan, jumlah atau butiran bayaran. Sijil yang sudah dilampirkan tidak boleh ditindih melalui borang ini. Lampiran tuntutan lama dikekalkan.
 
 Ahli hanya boleh mengakses sijil isi rumah sendiri melalui modul yang dibenarkan. Akaun individu yang telah meninggal kekal disekat; pentadbir atau akaun ahli aktif yang dipautkan kepada isi rumah berkenaan boleh mengurus lampiran. Dokumen disertakan dalam **Sandaran penuh sistem (SQLite)**; sandaran JSON bukan sandaran lampiran. Buat sandaran penuh sebelum memasang versi baharu, kekalkan direktori/volume data, kemudian bina dan mulakan semula aplikasi menggunakan kaedah pemasangan sedia ada.
+
+
+## Bukti pembayaran khairat
+
+Setiap bayaran baharu memerlukan **No. resit bayaran** dan **Lampiran resit bayaran** (PDF, JPG atau PNG, maksimum 5 MB), bersama tarikh, kaedah bayaran, pengesahan dan kata laluan pentadbir. No. resit menggunakan medan rujukan bayaran sedia ada; butiran transaksi tambahan boleh dicatat dalam Catatan bayaran. Bayaran direkodkan hanya setelah bayaran sebenar selesai di luar sistem. Sistem menyimpan bukti yang dimuat naik dan tidak mengesahkan ketulenan resit secara automatik.
+
+Jika resit tiada atau tidak sah, status kekal Diluluskan · Belum dibayar. Lampiran, rekod bayaran, audit dan notifikasi disimpan dalam satu transaksi. Resit yang telah disimpan tidak boleh ditindih melalui borang bayaran.
+
+Buka **Khairat kematian → Lihat / semak → Muat turun resit bayaran** untuk melihat bukti. Akses tertakluk kepada kebenaran modul; ahli hanya boleh memuat turun resit isi rumah sendiri. Bayaran lama dikekalkan dan ditandakan tanpa lampiran jika resit belum tersedia. Resit disertakan dalam **Sandaran penuh sistem (SQLite)**, bukan sandaran JSON. Buat sandaran penuh sebelum pemasangan dan kekalkan direktori/volume data sedia ada.
