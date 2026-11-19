@@ -306,3 +306,14 @@ Menu disusun dalam lima kumpulan:
 Tekan nama kumpulan untuk membuka atau menutup senarai menu. Pada telefon, kumpulan menu yang dipilih dibuka secara automatik dan kumpulan lain diringkaskan. Pada komputer, kumpulan boleh dikembangkan mengikut keperluan; tatal menu sisi jika senarai panjang. Pengguna papan kekunci boleh menggunakan Tab untuk memilih tajuk kumpulan dan Enter/Space untuk membuka atau menutupnya.
 
 Menu tetap mengikut peranan dan tetapan akses Ahli/Petugas. Kumpulan tanpa sebarang menu yang dibenarkan tidak dipaparkan. Tukar kata laluan dan Log keluar kekal di ruangan akaun. Pengurusan jenis/kadar khairat berada di dalam Khairat kematian dan hanya tersedia kepada Pentadbir.
+
+
+## Sijil kematian dan tuntutan khairat
+
+Semasa memilih **Tambah rekod kematian**, lampirkan sijil PDF, JPG atau PNG (maksimum 5 MB). Jika sijil belum tersedia, rekod boleh dihantar dahulu. Buka **Rekod kematian → Lihat / semak → Lampirkan sijil kematian** untuk menambahnya kemudian pada rekod menunggu atau diluluskan yang belum mempunyai sijil.
+
+Selepas rekod kematian diluluskan, pilih rekod tersebut ketika membuat tuntutan khairat. Sijil pada rekod kematian digunakan semula tanpa muat naik berulang. Pentadbir boleh membaca tarikh, status dan catatan rekod kematian serta memuat turun sijil dari paparan semakan khairat. Jika rekod lama belum mempunyai sijil, borang khairat masih membenarkan muat naik.
+
+Bagi tuntutan lama tanpa lampiran, buka **Khairat kematian → Lihat / semak → Muat naik sijil kematian**. Ini tersedia untuk tuntutan menunggu, diluluskan dan dibayar. Penambahan lampiran tidak mengubah keputusan, jumlah atau butiran bayaran. Sijil yang sudah dilampirkan tidak boleh ditindih melalui borang ini. Lampiran tuntutan lama dikekalkan.
+
+Ahli hanya boleh mengakses sijil isi rumah sendiri melalui modul yang dibenarkan. Akaun individu yang telah meninggal kekal disekat; pentadbir atau akaun ahli aktif yang dipautkan kepada isi rumah berkenaan boleh mengurus lampiran. Dokumen disertakan dalam **Sandaran penuh sistem (SQLite)**; sandaran JSON bukan sandaran lampiran. Buat sandaran penuh sebelum memasang versi baharu, kekalkan direktori/volume data, kemudian bina dan mulakan semula aplikasi menggunakan kaedah pemasangan sedia ada.
