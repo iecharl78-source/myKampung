@@ -1,0 +1,15 @@
+import {withAudit,audit} from './accounts.js';
+import {validateCertificate} from './khairat-support.js';
+export function initializeDeathCertificates(db){db.exec(`CREATE TABLE IF NOT EXISTS death_documents(deathRecordId INTEGER PRIMARY KEY REFERENCES death_records(id) ON DELETE RESTRICT,fileName TEXT NOT NULL,mimeType TEXT NOT NULL,byteLength INTEGER NOT NULL,sha256 TEXT NOT NULL,data BLOB NOT NULL,uploadedBy INTEGER NOT NULL REFERENCES users(id),uploadedAt TEXT NOT NULL);`);}
+export function storeDeathCertificate(db,id,file,user){return db.prepare('INSERT INTO death_documents(deathRecordId,fileName,mimeType,byteLength,sha256,data,uploadedBy,uploadedAt) VALUES(?,?,?,?,?,?,?,?)').run(id,file.fileName,file.mimeType,file.byteLength,file.sha256,file.data,user.id,new Date().toISOString());}
+export function sendCertificate(res,file){res.writeHead(200,{'Content-Type':file.mimeType,'Content-Disposition':`attachment; filename="sijil-kematian.${file.mimeType==='application/pdf'?'pdf':file.mimeType==='image/png'?'png':'jpg'}"; filename*=UTF-8''${encodeURIComponent(file.fileName).replace(/['()*]/g,c=>'%'+c.charCodeAt(0).toString(16))}`,'Content-Length':file.byteLength,'Content-Security-Policy':"sandbox; default-src 'none'",'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(Buffer.from(file.data));}
+export async function deathCertificateRoutes({req,res,path,user,db,json,body,isSessionActive}){
+ const m=path.match(/^\/api\/deaths\/(\d+)\/certificate$/);if(!m||!['GET','POST'].includes(req.method))return false;
+ const allowed=row=>user.role!=='ahli'||db.prepare('SELECT householdKey FROM members WHERE id=?').get(user.memberId)?.householdKey===row.householdKey;
+ const row=db.prepare('SELECT * FROM death_records WHERE id=?').get(Number(m[1]));if(!row){json(res,404,{error:'Rekod kematian tidak ditemui.'});return true;}if(!allowed(row)){json(res,403,{error:'Dokumen terhad kepada isi rumah sendiri.'});return true;}
+ if(req.method==='GET'){const file=db.prepare('SELECT * FROM death_documents WHERE deathRecordId=?').get(row.id);if(!file){json(res,404,{error:'Sijil kematian belum dilampirkan.'});return true;}audit(db,user,'Muat turun sijil kematian','rekod kematian',row.id);sendCertificate(res,file);return true;}
+ const input=await body(req,8*1024*1024);if(!isSessionActive()){json(res,401,{error:'Sila log masuk semula.'});return true;}
+ const current=db.prepare('SELECT * FROM death_records WHERE id=?').get(row.id);if(!current||!allowed(current)){json(res,403,{error:'Akses rekod telah berubah.'});return true;}
+ if(!['pending','approved'].includes(current.status)||db.prepare('SELECT deathRecordId FROM death_documents WHERE deathRecordId=?').get(row.id)){json(res,409,{error:'Sijil hanya boleh ditambah pada rekod menunggu atau diluluskan yang belum mempunyai lampiran.'});return true;}
+ const file=validateCertificate(input.certificate);withAudit(db,user,'Lampir sijil kematian','rekod kematian',row.id,()=>storeDeathCertificate(db,row.id,file,user));json(res,200,{ok:true});return true;
+}
