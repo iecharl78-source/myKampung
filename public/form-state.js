@@ -8,7 +8,7 @@ export function installFormState(root=document) {
     'khairat-request-form':'Sedang menghantar tuntutan khairat…','khairat-review-form':'Sedang menyimpan keputusan khairat…','khairat-payment-form':'Sedang merekod bayaran khairat…',
     'death-request-form':'Sedang menghantar rekod kematian…','death-review-form':'Sedang menyimpan keputusan kematian…',
     'head-change-request-form':'Sedang menghantar permohonan pertukaran…','head-change-review-form':'Sedang menyimpan keputusan pertukaran…',
-    'housing-catalog-form':'Sedang menyimpan katalog rumah…',
+    'housing-zones-form':'Sedang menyimpan zon komuniti…','housing-types-form':'Sedang menyimpan jenis rumah…',
     'full-backup-form':'Sedang menyediakan sandaran penuh…',
     'portal-aid-form':'Sedang menghantar permohonan bantuan…','aid-review-form':'Sedang menyimpan keputusan bantuan…','portal-profile-form':'Sedang menghantar permohonan…','profile-review-form':'Sedang menyimpan keputusan…','community-post-form':'Sedang menyimpan siaran…','question-form':'Sedang menghantar pertanyaan…','question-reply-form':'Sedang menghantar balasan…','question-status-form':'Sedang menyimpan status…','notification-form':'Sedang menyimpan…',
     'login-form':'Sedang log masuk…', 'logout-form':'Sedang log keluar…', 'registration-form':'Sedang menghantar permohonan…', 'registration-status-form':'Sedang menyemak status…', 'registration-review-form':'Sedang menyimpan keputusan semakan…', 'report-form':'Sedang menjana laporan…', 'member-form':'Sedang menyimpan rekod…',

@@ -158,7 +158,7 @@ Jika tidak boleh membuka sistem tempatan, pastikan pelayan Node.js masih berjala
 
 ## 15. Fasa pertama: pengenalan, kebajikan, rumah dan zon
 
-Pentadbir membuka **Zon & jenis rumah** untuk mencipta katalog komuniti. Pilih kategori, isi kod unik (contoh `ZON_A` atau `TERES`), nama dan status. Kod menggunakan huruf besar/nombor/garis bawah/sengkang. Nama/status boleh dikemas kini; kod kekal selepas dicipta. Nyahaktif pilihan yang tidak digunakan. Katalog bermula kosong supaya pentadbir boleh menggunakan zon dan jenis rumah sebenar komuniti, tanpa data contoh dimasukkan secara automatik.
+Pentadbir membuka **Zon & jenis rumah** untuk mencipta katalog komuniti. Pilih tab **Zon komuniti** atau **Jenis rumah**; setiap tab mempunyai borang tambah/kemas kini dan senarai rekod sendiri. Isi kod unik dalam kategori tersebut (contoh `ZON_A` untuk zon atau `TERES` untuk jenis rumah), nama dan status. Kod menggunakan huruf besar/nombor/garis bawah/sengkang. Nama/status boleh dikemas kini; kod kekal selepas dicipta. Nyahaktif pilihan yang tidak digunakan. Katalog bermula kosong supaya pentadbir boleh menggunakan zon dan jenis rumah sebenar komuniti, tanpa data contoh dimasukkan secara automatik. Pertukaran tab mengekalkan draf borang masing-masing; butang Simpan hanya menyimpan kategori tab tersebut. **Batal suntingan** mengosongkan borang tab berkenaan. Tab juga boleh ditukar menggunakan kekunci anak panah, Home dan End.
 
 Borang ahli utama dan pendaftaran penduduk mempunyai **Maklumat pengenalan & kebajikan** dan **Maklumat rumah & zon**, sebelum bahagian pekerjaan/majikan. Medan tambahan adalah pilihan supaya rekod lama boleh dilengkapkan secara berperingkat:
 
