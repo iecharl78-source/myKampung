@@ -1,3 +1,4 @@
+import {recordMemberChange} from './member-history.js';
 import { notify } from './community.js';
 import { randomBytes } from 'node:crypto';
 import { memberColumns,digest,duplicateMatches } from './data-tools.js';
@@ -105,6 +106,7 @@ export async function registrationRoutes({req,res,path,user,db,json,body,validat
           if(!account)throw Error('Maklumat akaun permohonan tidak tersedia. Hubungi pentadbir untuk semakan akaun.');
           db.prepare('UPDATE users SET isActive=1,memberId=?,updatedAt=? WHERE id=?').run(memberId,now,account.id);notify(db,{userId:account.id,title:'Pendaftaran diluluskan',body:'Selamat datang. Anda kini boleh melihat dan mengemas kini profil sendiri.'});
         }
+        recordMemberChange(db,user,'Lulus pendaftaran ahli',null,db.prepare('SELECT * FROM members WHERE id=?').get(memberId),{reason:note,source:'registration:'+row.id,submittedBy:data.name});
         audit(db,user,'Daftar ahli melalui permohonan','ahli',memberId);
       }
       return db.prepare('UPDATE registrations SET status=?,reviewNote=?,reviewedBy=?,reviewedAt=?,memberId=?,updatedAt=? WHERE id=? AND status=\'pending\'').run(input.decision==='approve'?'approved':'rejected',note,user.username,now,memberId,now,row.id);
