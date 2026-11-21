@@ -77,6 +77,8 @@ NODE_ENV=production
 PUBLIC_ORIGIN=https://komuniti.domainanda.com
 COOKIE_SECURE=1
 DATA_DIR=/home/CPANEL_USER/private/mykampung-data
+BACKUP_DIR=/home/CPANEL_USER/private/mykampung-backups
+BACKUP_INTERVAL_HOURS=24
 TRUST_PROXY=0
 ```
 
@@ -144,3 +146,5 @@ Laluan ini memerlukan akses dan konfigurasi pelayan berasingan; dokumen ini tida
 - [Node.js SQLite API](https://nodejs.org/docs/latest-v24.x/api/sqlite.html)
 
 Panduan ini menggabungkan syarat aplikasi yang disemak daripada kod dengan konfigurasi panel yang bergantung kepada penyedia. Tiada pengesahan langsung terhadap akaun hosting pengguna dilakukan.
+
+Untuk memantau keputusan Cron Jobs, pastikan `BACKUP_DIR` aplikasi sepadan dengan folder sandaran cron. `BACKUP_INTERVAL_HOURS` ialah sela dijangka pada paparan; ia mesti sepadan dengan jadual sebenar dan tidak mencipta tugas cron. Rujuk [PANDUAN-STATUS-SANDARAN.md](PANDUAN-STATUS-SANDARAN.md).

@@ -16,7 +16,7 @@ export async function fullBackupRoute({req,res,path,user,db,json,body,dataDir,is
  busy=true;let temporary;
  try{
   temporary=await mkdtemp(join(tmpdir(),'mykampung-backup-'));
-  const file=await fullBackup({dataDir,backupDir:temporary,keep:1});
+  const file=await fullBackup({dataDir,backupDir:temporary,keep:1,recordStatus:false});
   if(!isSessionActive()){json(res,401,{error:'Sesi telah tamat. Sila log masuk semula.'});return true;}
   audit(db,user,'Sediakan sandaran penuh sistem','sistem','');
   res.writeHead(200,{'Content-Type':'application/vnd.sqlite3','Content-Disposition':`attachment; filename="${basename(file)}"`});

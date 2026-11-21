@@ -96,3 +96,7 @@ Menu utama kini dikumpulkan kepada Umum, Komuniti & Kebajikan, Permohonan & Kelu
 Runtime projek memerlukan Node.js 24+. cPanel yang hanya menawarkan Node.js 20.20.2 belum serasi; semak kemungkinan runtime berbeza melalui Application Manager dengan penyedia sebelum memasang.
 
 - [Laporan kualiti data ahli dan semakan potensi pendua](PANDUAN-KUALITI-DATA.md)
+
+## Pemantauan sandaran
+
+Pentadbir boleh membuka **Pentadbiran → Status sandaran** untuk menyemak keputusan proses sandaran pelayan, fail terakhir dan amaran sandaran lewat/gagal. Paparan juga tersedia pada papan pemuka. Muat turun ke laptop direkodkan berasingan dan tidak mengaktifkan jadual automatik. Rujuk [PANDUAN-STATUS-SANDARAN.md](PANDUAN-STATUS-SANDARAN.md) untuk ujian laptop, konfigurasi Docker/cPanel dan batasan semakan. 2FA boleh kekal tidak aktif.

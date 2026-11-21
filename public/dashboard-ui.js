@@ -1,4 +1,4 @@
-export function setupDashboard({api,getUser,showPanel,notice}){
+export function setupDashboard({api,getUser,showPanel,notice,onBackupStatus}){
  const $=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let generation=0;
  const date=v=>new Date(v).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur'});
@@ -17,6 +17,7 @@ export function setupDashboard({api,getUser,showPanel,notice}){
   $('#home-announcements').innerHTML=data.announcements.map(row=>`<article class="home-item"><h3>${esc(row.title)}</h3><p class="post-body">${esc(row.body.length>240?row.body.slice(0,240)+'…':row.body)}</p><button type="button" class="quiet" data-home-target="nav-community">Baca hebahan →</button></article>`).join('')||'<p>Belum ada hebahan disiarkan.</p>';
   document.querySelectorAll('[data-home-target]').forEach(button=>button.onclick=async()=>{try{const id=button.querySelector('strong')?.id;if(id==='home-pending-khairat')$('#khairat-status').value='pending';if(id==='home-pending-deaths')$('#death-status').value='pending';if(id==='home-pending-head-changes')$('#head-status-filter').value='pending';if(id==='home-pending-profile'||id==='home-pending-aid'){$('#review-status-filter').value='pending';$('#review-search').value='';}if(id==='home-pending-registration')$('#registration-filter').value='pending';const target=$('#'+button.dataset.homeTarget);await target.onclick();const section={ 'home-pending-aid':'aid-review-list','home-pending-profile':'profile-review-list','home-own-profile-pending':'portal-request-status','home-own-aid-pending':'portal-aid-requests'}[id];if(section)$('#'+section).scrollIntoView({block:'start'});}catch(error){notice(error.message);}});
   document.querySelectorAll('[data-home-event]').forEach(button=>button.onclick=async()=>{try{$('#calendar-month').value=button.dataset.month;await $('#nav-community').onclick();if(!$('#community-panel').hidden)document.getElementById('event-'+button.dataset.homeEvent)?.scrollIntoView({block:'center'});}catch(error){notice(error.message);}});
+  if(admin&&onBackupStatus)await onBackupStatus();
  }
  $('#open-full-backup').onclick=()=>{$('#full-backup-form').reset();$('#full-backup-error').textContent='';$('#full-backup-dialog').showModal();};
  $('#full-backup-close').onclick=()=>{$('#full-backup-dialog').close();$('#full-backup-form').reset();};

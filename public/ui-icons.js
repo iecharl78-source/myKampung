@@ -32,7 +32,7 @@ const paths={
 export function iconSvg(kind,cls='ui-icon'){return `<svg class="${cls}" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths[kind]||paths.cursor}</svg>`;}
 function choose(button,label){
  const id=button.id,cls=button.classList;
- const nav={'nav-data-quality':'report','quality-tab-findings':'report','quality-tab-duplicates':'search','nav-administration':'users','nav-khairat':'gift','nav-deaths':'report','nav-head-changes':'users','nav-home':'home','nav-members':'users','nav-portal':'users','nav-community':'calendar','nav-questions':'message','nav-notifications':'bell','nav-profile-review':'check','nav-aid':'gift','nav-reports':'report','nav-registrations':'users','nav-accounts':'users','nav-audit':'report','nav-housing':'home'};
+ const nav={'nav-backup-status':'download','nav-data-quality':'report','quality-tab-findings':'report','quality-tab-duplicates':'search','nav-administration':'users','nav-khairat':'gift','nav-deaths':'report','nav-head-changes':'users','nav-home':'home','nav-members':'users','nav-portal':'users','nav-community':'calendar','nav-questions':'message','nav-notifications':'bell','nav-profile-review':'check','nav-aid':'gift','nav-reports':'report','nav-registrations':'users','nav-accounts':'users','nav-audit':'report','nav-housing':'home'};
  if(nav[id])return nav[id];
  if(button.hasAttribute('data-quality-member'))return 'users';
  if(cls.contains('user-link'))return 'link';if(cls.contains('user-reset'))return 'key';
