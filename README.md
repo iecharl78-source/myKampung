@@ -94,3 +94,5 @@ Menu utama kini dikumpulkan kepada Umum, Komuniti & Kebajikan, Permohonan & Kelu
 - [Pelancaran domain dan semakan keserasian cPanel](PANDUAN-PELANCARAN-DOMAIN.md)
 
 Runtime projek memerlukan Node.js 24+. cPanel yang hanya menawarkan Node.js 20.20.2 belum serasi; semak kemungkinan runtime berbeza melalui Application Manager dengan penyedia sebelum memasang.
+
+- [Laporan kualiti data ahli dan semakan potensi pendua](PANDUAN-KUALITI-DATA.md)

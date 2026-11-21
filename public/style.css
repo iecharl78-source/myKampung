@@ -61,3 +61,5 @@ aside{overflow-y:auto}.community-card{padding:20px;margin:15px 0;overflow-wrap:a
 .housing-catalog-tabs{display:flex;gap:10px;max-width:480px;margin:20px 0}.housing-catalog-tab{flex:1;min-width:0;min-height:44px}.housing-catalog-tab[aria-selected="true"]{background:#21634f;color:#fff;border-color:#21634f}.housing-catalog-tab:focus-visible{outline:2px solid #21634f;outline-offset:3px}.housing-catalog-heading{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 
 .housing-catalog-panel{padding-top:0}
+
+.quality-stat{display:flex;flex-direction:column;gap:10px;padding:20px;overflow-wrap:anywhere}.quality-stat strong{font-size:32px;color:#22654e}#quality-group-dialog .home-item{overflow-wrap:anywhere}
