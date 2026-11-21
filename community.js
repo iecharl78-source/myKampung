@@ -1,3 +1,4 @@
+import {recordMemberChange} from './member-history.js';
 import {deathLabels} from './deaths.js';
 import { audit,withAudit } from './accounts.js';
 import { duplicateMatches,digest } from './data-tools.js';
@@ -88,6 +89,7 @@ export async function communityRoutes({req,res,path,user,db,json,body,validate})
         const family=saved?JSON.parse(saved.household):[];
         const matchesFamily=family.length===data.household.length && data.household.every((person,index)=>Object.entries(person).every(([key,value])=>family[index][key]===value));
         if(updated.changes!==1 || !saved || !matchesFamily || columns.filter(key=>key!=='household').some(key=>saved[key]!==values[key]))throw Error('Data rasmi gagal disahkan selepas kelulusan. Permohonan belum diluluskan; sila muat semula dan cuba lagi.');
+        recordMemberChange(db,user,'Lulus perubahan profil',current,saved,{reason:note,source:'profile-request:'+row.id,submittedBy:db.prepare('SELECT fullName FROM users WHERE id=?').get(row.userId)?.fullName||''});
         db.prepare('UPDATE users SET fullName=?,updatedAt=? WHERE memberId=? AND role=\'ahli\'').run(data.name,now,current.id);
       }
       const result=db.prepare('UPDATE profile_requests SET status=?,reviewNote=?,reviewedBy=?,reviewedAt=? WHERE id=?').run(data?'approved':'rejected',note,user.username,now,row.id);

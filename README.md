@@ -85,3 +85,12 @@ Tuntutan berdasarkan kematian diluluskan, maklumat waris, kelulusan/penolakan pe
 Akses modul boleh ditetapkan berasingan untuk peranan **Ahli** dan **Petugas** melalui Tetapan sistem. Pilih peranan sebelum menyimpan. Sekatan berkuat kuasa pada API serta menu selepas muat semula. Pentadbir mengekalkan akses penuh; pilihan modul tidak memberi kuasa kelulusan pentadbir kepada Petugas. Tetapan kedua-dua peranan memerlukan sandaran penuh SQLite.
 
 Menu utama kini dikumpulkan kepada Umum, Komuniti & Kebajikan, Permohonan & Kelulusan, Maklumat & Komunikasi serta Pentadbiran. Kumpulan boleh dikembangkan/diringkaskan dan kumpulan kosong disembunyikan mengikut akses pengguna. Rujuk manual pengguna untuk susunan menu.
+
+
+## Sejarah ahli, pembentangan dan pelancaran domain
+
+- [Sejarah perubahan ahli dan keluarga](PANDUAN-SEJARAH-AHLI.md)
+- [Persediaan pembentangan dan ujian penerimaan pengguna](PANDUAN-PEMBENTANGAN.md)
+- [Pelancaran domain dan semakan keserasian cPanel](PANDUAN-PELANCARAN-DOMAIN.md)
+
+Runtime projek memerlukan Node.js 24+. cPanel yang hanya menawarkan Node.js 20.20.2 belum serasi; semak kemungkinan runtime berbeza melalui Application Manager dengan penyedia sebelum memasang.

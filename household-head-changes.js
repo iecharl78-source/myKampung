@@ -1,3 +1,4 @@
+import {recordMemberChange} from './member-history.js';
 import {approvedDeath} from './deaths.js';
 import {withAudit,verifyPassword} from './accounts.js';
 import {notify} from './community.js';
@@ -80,6 +81,7 @@ export async function headChangeRoutes({req,res,path,user,db,json,body,validate,
    if(proposed){
     const columns=['name','phone','birthDate','gender','occupation','address','household','address1','address2','district','postcode','state','country',...memberDetailFields],values={...proposed,household:JSON.stringify(proposed.household)};
     db.prepare(`UPDATE members SET ${columns.map(k=>`${k}=?`).join(',')},identityKey=?,updatedAt=? WHERE id=?`).run(...columns.map(k=>values[k]),row.candidateKey,now,member.id);
+    recordMemberChange(db,user,'Tukar ketua keluarga',member,db.prepare('SELECT * FROM members WHERE id=?').get(member.id),{reason:row.reason+(note?' · '+note:''),source:'head-change:'+row.id,submittedBy:row.requesterName});
     for(const id of affected){notify(db,{userId:id,title:'Pertukaran ketua keluarga diluluskan',body:'Akses akaun ahli utama lama ditamatkan. Hubungi pentadbir untuk pengurusan akses.'});db.prepare('UPDATE users SET memberId=NULL,isActive=0,updatedAt=? WHERE id=?').run(now,id);}
     notify(db,{admin:true,title:'Pertukaran ketua keluarga selesai',body:`Isi rumah #${member.id}. Sediakan akaun ketua baharu secara berasingan.`});
    }else notify(db,{userId:row.requestedBy,title:'Permohonan pertukaran ketua ditolak',body:note});
