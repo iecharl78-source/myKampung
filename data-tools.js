@@ -3,8 +3,8 @@ import { createHash } from 'node:crypto';
 
 export const memberColumns = ['id','name','phone','birthDate','gender','occupation','address','household','createdAt','updatedAt','address1','address2','district','postcode','state','country','employmentStatus','educationLevel','studyLevel','employerName','employerAddress','employerPhone','employerAddress1','employerAddress2','employerDistrict','employerPostcode','employerState','employerCountry','isActive','deactivatedAt','inactivityReason','identityKey','householdKey',...residentFields,...housingFields];
 export const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const nameKey = value => value.normalize('NFKC').toLocaleLowerCase('ms').replace(/[^\p{L}\p{N}]/gu,'');
-const phoneKey = value => {
+export const nameKey = value => value.normalize('NFKC').toLocaleLowerCase('ms').replace(/[^\p{L}\p{N}]/gu,'');
+export const phoneKey = value => {
   let digits=value.replace(/\D/g,'');
   if (digits.startsWith('0060')) digits=digits.slice(2);
   if (digits.startsWith('60')) digits='0'+digits.slice(2);
