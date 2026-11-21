@@ -8,7 +8,12 @@ import {join} from 'node:path';
 import {once} from 'node:events';
 import {DatabaseSync} from 'node:sqlite';
 import {todayInMalaysia} from '../public/age.js';
+import {initializeDeaths} from '../deaths.js';
 import {familyIdentity} from '../family-identities.js';
+
+test('Maklumat perkuburan: migrasi rekod lama selamat diulang dan medan baharu kosong',()=>{
+ const db=new DatabaseSync(':memory:');try{db.exec("CREATE TABLE users(id INTEGER PRIMARY KEY);CREATE TABLE death_records(id INTEGER PRIMARY KEY,personKey TEXT,status TEXT,personName TEXT);INSERT INTO death_records VALUES(1,'lama','approved','Rekod Lama');");initializeDeaths(db);initializeDeaths(db);const row=db.prepare('SELECT * FROM death_records').get();assert.equal(row.personName,'Rekod Lama');assert.equal(row.status,'approved');assert.equal(row.burialZone,'');assert.equal(row.gravestoneNumber,'');assert.equal(row.burialUpdatedAt,'');}finally{db.close();}
+});
 
 test('Kematian: akses isi rumah, keputusan pentadbir, tarikh, pendua, akaun, sejarah dan sandaran',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'kampung-head-')),password=randomBytes(16).toString('hex');let child;
@@ -25,15 +30,18 @@ test('Kematian: akses isi rumah, keputusan pentadbir, tarikh, pendua, akaun, sej
  const owner=await login('head'),other=await login('other'),staff=await login('staff');
  const getContext=async()=> (await (await req('/api/deaths/context/'+id)).json());let ctx=await getContext();const head=ctx.people[0],family=ctx.people[1],candidate=ctx.people[2];
  assert.equal((await req('/api/deaths/context/'+id,'GET',undefined,other)).status,403);assert.equal((await req('/api/deaths','GET',undefined,'')).status,401);
- const input={memberId:id,personKey:family.personKey,deathDate:'2026-01-01',note:'Disahkan oleh keluarga',confirm:true};
+ const input={memberId:id,personKey:family.personKey,deathDate:'2026-01-01',note:'Disahkan oleh keluarga',confirm:true,burialZone:' Zon A ',gravestoneNumber:' 0012-A '};
  assert.equal((await req('/api/deaths','POST',input,other)).status,403);
  for(const deathDate of ['2026-02-30','2999-01-01','1989-12-31'])assert.equal((await req('/api/deaths','POST',{...input,deathDate},owner)).status,400);
  assert.equal((await req('/api/deaths','POST',{...input,confirm:false},owner)).status,400);
+ for(const patch of [{burialZone:123},{burialZone:null},{gravestoneNumber:[]},{burialZone:'x'.repeat(101)},{gravestoneNumber:'x'.repeat(101)}])assert.equal((await req('/api/deaths','POST',{...input,...patch},owner)).status,400);
  r=await req('/api/deaths','POST',input,owner);assert.equal(r.status,202);let requestId=(await r.json()).id;
+ const submitted=(await (await req('/api/deaths','GET',undefined,owner)).json()).find(r=>r.id===requestId);assert.equal(submitted.burialZone,'Zon A');assert.equal(submitted.gravestoneNumber,'0012-A');
  assert.equal((await req('/api/deaths','POST',input,owner)).status,409);
  assert.equal((await req(`/api/deaths/${requestId}/review`,'POST',{decision:'approve',reviewNote:'',currentPassword:password,confirm:true},staff)).status,403);
  assert.equal((await req(`/api/deaths/${requestId}/review`,'POST',{decision:'reject',reviewNote:''})).status,400);
  assert.equal((await req(`/api/deaths/${requestId}/review`,'POST',{decision:'reject',reviewNote:'Sila semak tarikh'})).status,200);
+ assert.equal((await req(`/api/deaths/${requestId}/burial`,'POST',{burialZone:'Zon B',expectedUpdatedAt:''})).status,409);
  assert.equal((await req('/api/deaths','GET',undefined,other)).status,200);assert.equal((await (await req('/api/deaths','GET',undefined,other)).json()).length,0);
  r=await req('/api/deaths','POST',input,owner);requestId=(await r.json()).id;
  const approve={decision:'approve',reviewNote:'Disemak',currentPassword:password,confirm:true};
@@ -41,6 +49,17 @@ test('Kematian: akses isi rumah, keputusan pentadbir, tarikh, pendua, akaun, sej
  assert.equal((await req(`/api/deaths/${requestId}/review`,'POST',approve)).status,200);
  assert.equal((await req(`/api/deaths/${requestId}/review`,'POST',approve)).status,409);
  assert.equal((await req('/api/deaths','POST',input,owner)).status,409);
+ const burialId=requestId,approvedRecord=(await (await req('/api/deaths')).json()).find(r=>r.id===burialId);
+ const burialInput={burialZone:' Zon B ',gravestoneNumber:'0007-B',expectedUpdatedAt:''};
+ for(const cookie of [owner,staff,other])assert.equal((await req(`/api/deaths/${burialId}/burial`,'POST',burialInput,cookie)).status,403);
+ assert.equal((await req(`/api/deaths/${burialId}/burial`,'POST',burialInput,'')).status,401);
+ assert.equal((await req('/api/deaths/999999/burial','POST',burialInput)).status,404);
+ assert.equal((await req(`/api/deaths/${burialId}/burial`,'POST',{...burialInput,gravestoneNumber:42})).status,400);
+ assert.equal((await req(`/api/deaths/${burialId}/burial`,'POST',burialInput)).status,200);
+ assert.equal((await req(`/api/deaths/${burialId}/burial`,'POST',burialInput)).status,409);
+ const savedBurial=(await (await req('/api/deaths')).json()).find(r=>r.id===burialId);assert.equal(savedBurial.burialZone,'Zon B');assert.equal(savedBurial.gravestoneNumber,'0007-B');for(const key of ['status','reviewedAt','reviewedBy','personKey','deathDate'])assert.equal(savedBurial[key],approvedRecord[key]);
+ const burialDb=new DatabaseSync(join(dir,'kampung.sqlite'));burialDb.exec("CREATE TRIGGER fail_burial BEFORE INSERT ON audit_log BEGIN SELECT RAISE(ABORT,'rollback burial'); END");
+ try{assert.equal((await req(`/api/deaths/${burialId}/burial`,'POST',{burialZone:'Zon Gagal',expectedUpdatedAt:savedBurial.burialUpdatedAt})).status,400);assert.equal(burialDb.prepare('SELECT burialZone FROM death_records WHERE id=?').get(burialId).burialZone,'Zon B');}finally{burialDb.exec('DROP TRIGGER fail_burial');burialDb.close();}
  let members=await (await req('/api/members')).json(),m=members.find(m=>m.id===id);assert.equal(m.household[0].deathDate,'2026-01-01');assert.equal(m.household.length,2);assert.equal((await req('/api/session','GET',undefined,owner)).status,200);
  const portal=await (await req('/api/portal/profile','GET',undefined,owner)).json();assert.equal(portal.household[0].deathDate,'2026-01-01');
  // Changed identity details invalidate a pending death request.
@@ -64,7 +83,7 @@ test('Kematian: akses isi rumah, keputusan pentadbir, tarikh, pendua, akaun, sej
  m=(await (await req('/api/members')).json()).find(m=>m.id===id);assert.equal(m.name,'Calon Ketua');assert.equal(m.deathDate,undefined);assert.equal(m.household.find(p=>p.personKey===head.personKey).deathDate,'2026-01-01');
  // JSON recovery retains local death history and does not reopen deceased accounts.
  let preview=await (await req('/api/restore/preview','POST',beforeDeaths)).json();r=await req('/api/restore/confirm','POST',{previewToken:preview.previewToken,password,confirmation:'PULIHKAN'});assert.equal(r.status,200,await r.clone().text());m=(await (await req('/api/members')).json()).find(m=>m.id===id);assert.equal(m.deathDate,'2026-01-01');assert.equal(m.household[0].deathDate,'2026-01-01');assert.equal((await (await req('/api/deaths')).json()).filter(r=>r.status==='approved').length,2);assert.equal((await req('/api/login','POST',{username:'head',password},'')).status,401);
- r=await req('/api/backup/full','POST',{currentPassword:password});assert.equal(r.status,200);const file=join(dir,'death-full.sqlite');await writeFile(file,Buffer.from(await r.arrayBuffer()));const copied=new DatabaseSync(file,{readOnly:true});assert.equal(copied.prepare("SELECT count(*) n FROM death_records WHERE status='approved'").get().n,2);copied.close();
- await stop();base=await start();admin=await login('admin');assert.equal((await (await req('/api/deaths')).json()).filter(r=>r.status==='approved').length,2);
+ r=await req('/api/backup/full','POST',{currentPassword:password});assert.equal(r.status,200);const file=join(dir,'death-full.sqlite');await writeFile(file,Buffer.from(await r.arrayBuffer()));const copied=new DatabaseSync(file,{readOnly:true});assert.equal(copied.prepare("SELECT count(*) n FROM death_records WHERE status='approved'").get().n,2);assert.equal(copied.prepare('SELECT gravestoneNumber FROM death_records WHERE id=?').get(burialId).gravestoneNumber,'0007-B');copied.close();
+ await stop();base=await start();admin=await login('admin');const restoredBurial=(await (await req('/api/deaths')).json()).find(r=>r.id===burialId);assert.equal(restoredBurial.burialZone,'Zon B');assert.equal(restoredBurial.gravestoneNumber,'0007-B');assert.equal((await (await req('/api/deaths')).json()).filter(r=>r.status==='approved').length,2);
  }finally{await stop();await rm(dir,{recursive:true,force:true});}
 });

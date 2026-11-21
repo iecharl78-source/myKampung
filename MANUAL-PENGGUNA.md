@@ -331,3 +331,14 @@ Buka **Khairat kematian → Lihat / semak → Muat turun resit bayaran** untuk m
 ## Keselamatan akaun dan pusat tugasan
 
 Buka **Umum → Keselamatan akaun** untuk menyediakan 2FA dan menamatkan sesi lain. Pentadbir boleh membuka **Permohonan & Kelulusan → Pusat tugasan** untuk menyemak usia permohonan dan menetapkan pegawai. Panduan pemasangan kunci penyulitan, kod pemulihan, had sesi dan penggunaan: [PANDUAN-KESELAMATAN.md](PANDUAN-KESELAMATAN.md). Buat sandaran penuh sebelum menaik taraf.
+
+
+## Zon kubur dan nombor batu nisan
+
+Borang **Rekod kematian → Tambah rekod kematian** mempunyai medan pilihan **Zon kubur** dan **Nombor batu nisan**, setiap satu maksimum 100 aksara. Contoh: `Zon A` dan `0012-A`. Nombor batu nisan disimpan sebagai teks supaya sifar awal, huruf dan tanda sempang dikekalkan. Zon ini merujuk kepada kawasan perkuburan, berasingan daripada zon kediaman komuniti.
+
+Maklumat dipaparkan dalam **Lihat / semak**. Carian senarai rekod kematian juga menerima zon kubur dan nombor batu nisan. Rekod lama memaparkan **Belum diisi** sehingga dilengkapkan.
+
+Pentadbir boleh membuka **Lihat / semak → Kemas kini maklumat perkuburan** untuk melengkapkan atau membetulkan kedua-dua medan pada rekod menunggu atau diluluskan. Ahli dan petugas boleh mengisi semasa menghantar rekod baharu, tetapi kemas kini selepas penghantaran terhad kepada pentadbir dan diaudit. Perubahan serentak ditolak jika versi maklumat perkuburan sudah berubah. Perubahan ini tidak mengubah keputusan kematian, kelayakan akaun, tuntutan khairat atau bayaran.
+
+Naik taraf menambah medan kosong tanpa meneka atau memadam maklumat lama. Buat sandaran penuh sebelum pemasangan, kekalkan direktori/volume data dan mulakan semula aplikasi. Maklumat perkuburan disertakan dalam sandaran penuh SQLite. Fungsi ini tidak memerlukan pengaktifan 2FA.
