@@ -112,3 +112,7 @@ Rekod baharu memerlukan nama pelapor sebenar dan hubungannya dengan si mati. Aka
 ## Label Acc Asnaf dan had fleksibel
 
 Pentadbir menetapkan had pendapatan per kapita melalui **Tetapan sistem**, lalai RM350.00. Senarai ahli memaparkan Acc Asnaf apabila jumlah pendapatan ahli utama/keluarga hidup yang tinggal bersama dibahagi bilangan mereka kurang daripada had. Pendapatan kosong atau kediaman belum diketahui memerlukan semakan. Had baharu digunakan pada pengiraan senarai terkini tanpa mula semula pelayan. Rujuk [PANDUAN-ASNAF.md](PANDUAN-ASNAF.md) untuk formula, contoh, data tidak lengkap dan sandaran.
+
+## Penapis dan laporan Asnaf
+
+Senarai ahli menyediakan penapis Status Asnaf. Pentadbir boleh menjana **Laporan → Semakan Asnaf**, menapis status/zon/negeri/daerah, mencetak dan mengeksport CSV menggunakan formula serta had semasa. Laporan menyatakan purata, bilangan penghuni, had dan sebab rekod belum lengkap. Jika had berubah selepas pratonton, jana semula sebelum eksport. Lihat [PANDUAN-ASNAF.md](PANDUAN-ASNAF.md).
