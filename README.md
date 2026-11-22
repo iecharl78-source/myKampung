@@ -124,3 +124,7 @@ Bantuan yang telah direkodkan boleh menerima pengakuan nama penerima, tarikh dan
 ## Penapis dan laporan pengakuan bantuan
 
 Menu Bantuan menyediakan penapis status pengakuan serta bukti semasa. Pentadbir boleh menjana **Laporan → Pengakuan penerimaan bantuan**, mencetak/PDF dan mengeksport CSV untuk tindakan susulan. Bukti lama tidak dianggap mengesahkan versi bantuan yang telah berubah; eksport meminta laporan dijana semula jika hasil berubah sejak pratonton. Rujuk [PANDUAN-PENGAKUAN-BANTUAN.md](PANDUAN-PENGAKUAN-BANTUAN.md).
+
+## Ringkasan komuniti mengikut zon
+
+Pentadbir boleh membuka pintasan pada papan pemuka atau **Laporan → Ringkasan komuniti mengikut zon** untuk membandingkan isi rumah, penghuni diketahui tinggal bersama, status Asnaf dan bantuan. Zon kosong/tiada katalog serta isi rumah belum berzon dikekalkan dalam paparan. Penapis tarikh/kategori hanya mengehadkan bantuan; pengelompokan menggunakan zon semasa. Cetakan/PDF dan CSV tersedia. Lihat [PANDUAN-RINGKASAN-ZON.md](PANDUAN-RINGKASAN-ZON.md).
