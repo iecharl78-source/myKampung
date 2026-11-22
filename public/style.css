@@ -63,3 +63,13 @@ aside{overflow-y:auto}.community-card{padding:20px;margin:15px 0;overflow-wrap:a
 .housing-catalog-panel{padding-top:0}
 
 .quality-stat{display:flex;flex-direction:column;gap:10px;padding:20px;overflow-wrap:anywhere}.quality-stat strong{font-size:32px;color:#22654e}#quality-group-dialog .home-item{overflow-wrap:anywhere}
+
+/* Shared dialog heading: title and close action stay together while content scrolls. */
+dialog{--dialog-padding:28px;scroll-padding-block-start:8rem}
+dialog .dialog-head,dialog .modal-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:12px;position:sticky;top:calc(-1 * var(--dialog-padding));z-index:2;background:#fff;margin:calc(-1 * var(--dialog-padding)) calc(-1 * var(--dialog-padding)) 20px;padding:14px var(--dialog-padding);border-bottom:1px solid #e3e9e4}
+dialog .dialog-head>:first-child,dialog .modal-head>:first-child{min-width:0;flex:1;overflow-wrap:anywhere}
+dialog .dialog-head h2,dialog .modal-head h2{margin:0;line-height:1.35}
+dialog .dialog-head>button,dialog .modal-head>button{flex:0 0 auto;align-self:flex-start;margin-inline-start:auto;min-width:44px;min-height:44px;white-space:nowrap}
+@media(max-width:700px){dialog{--dialog-padding:20px}dialog .dialog-head,dialog .modal-head{gap:10px;padding-block:10px;margin-bottom:16px}}
+dialog .row-actions{flex-wrap:wrap}
+@media(max-width:700px){dialog{scroll-padding-block-start:10rem}dialog .dialog-head h2,dialog .modal-head h2{font-size:16px}}
