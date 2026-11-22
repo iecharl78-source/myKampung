@@ -100,3 +100,7 @@ Runtime projek memerlukan Node.js 24+. cPanel yang hanya menawarkan Node.js 20.2
 ## Pemantauan sandaran
 
 Pentadbir boleh membuka **Pentadbiran → Status sandaran** untuk menyemak keputusan proses sandaran pelayan, fail terakhir dan amaran sandaran lewat/gagal. Paparan juga tersedia pada papan pemuka. Muat turun ke laptop direkodkan berasingan dan tidak mengaktifkan jadual automatik. Rujuk [PANDUAN-STATUS-SANDARAN.md](PANDUAN-STATUS-SANDARAN.md) untuk ujian laptop, konfigurasi Docker/cPanel dan batasan semakan. 2FA boleh kekal tidak aktif.
+
+## Permit kubur pada rekod kematian
+
+Rekod kematian menyokong lampiran **permit kubur** berasingan daripada sijil kematian (PDF/JPG/PNG, maksimum 5 MB setiap fail). Muat naik ketika menghantar rekod atau tambah kemudian pada rekod menunggu/diluluskan yang belum mempunyai permit. Muat turun mengikut akses modul dan isi rumah; lampiran disertakan dalam sandaran penuh SQLite. Rujuk [MANUAL-PENGGUNA.md](MANUAL-PENGGUNA.md) untuk langkah penggunaan dan had hosting bagi dua lampiran serentak.
