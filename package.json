@@ -1,1 +1,1 @@
-{"name":"mykampung","version":"0.1.0","private":true,"type":"module","engines":{"node":">=24"},"scripts":{"start":"node server.js","test":"node --test"}}
+{"name":"mykampung","version":"0.1.0","private":true,"type":"module","engines":{"node":">=20"},"scripts":{"start":"node server.js","test":"node --test","fix-permissions":"chmod -R u=rwX,go=rX ."},"dependencies":{"node-sqlite3-wasm":"0.8.61"}}

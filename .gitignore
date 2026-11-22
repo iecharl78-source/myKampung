@@ -3,3 +3,4 @@ data/
 *.log
 backups/
 __pycache__/
+node_modules/

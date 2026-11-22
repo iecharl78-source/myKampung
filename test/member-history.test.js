@@ -6,11 +6,11 @@ import {mkdtemp,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {once} from 'node:events';
-import {DatabaseSync} from 'node:sqlite';
+import {DatabaseSync} from '../sqlite.js';
 import {checkHosting} from '../scripts/check-hosting.js';
 
 test('Semakan hosting mengesan Node lama dan menolak DATA_DIR awam tanpa membaca pangkalan data sebenar',async()=>{
- const root=await mkdtemp(join(tmpdir(),'hosting-check-'));try{const old=await checkHosting({version:'20.20.2',dataDir:join(root,'private')});assert.equal(old.compatible,false);const ok=await checkHosting({dataDir:join(root,'private')});assert.equal(ok.compatible,true);const bad=await checkHosting({dataDir:join(root,'public_html','data')});assert.equal(bad.compatible,false);assert.ok(bad.checks.some(c=>c.name==='dataDirectory'&&!c.ok));}finally{await rm(root,{recursive:true,force:true});}
+ const root=await mkdtemp(join(tmpdir(),'hosting-check-'));try{const old=await checkHosting({version:'18.20.0',dataDir:join(root,'private')});assert.equal(old.compatible,false);const ok=await checkHosting({dataDir:join(root,'private')});assert.equal(ok.compatible,true);const bad=await checkHosting({dataDir:join(root,'public_html','data')});assert.equal(bad.compatible,false);assert.ok(bad.checks.some(c=>c.name==='dataDirectory'&&!c.ok));}finally{await rm(root,{recursive:true,force:true});}
 });
 
 test('Sejarah ahli: perubahan rasmi, pemohon/pelulus, akses, rollback, pemadaman dan sandaran',async()=>{

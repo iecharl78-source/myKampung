@@ -1,4 +1,4 @@
-import {DatabaseSync,backup} from 'node:sqlite';
+import {DatabaseSync,backup} from '../sqlite.js';
 import {mkdir,rename,rm,chmod} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';

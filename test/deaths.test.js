@@ -6,7 +6,7 @@ import {mkdtemp,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {once} from 'node:events';
-import {DatabaseSync} from 'node:sqlite';
+import {DatabaseSync} from '../sqlite.js';
 import {todayInMalaysia} from '../public/age.js';
 import {initializeDeaths,reporterFields} from '../deaths.js';
 import {familyIdentity} from '../family-identities.js';

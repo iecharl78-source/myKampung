@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { once } from 'node:events';
 import { createBackup } from '../data-tools.js';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync } from '../sqlite.js';
 
 test('Pendaftaran awam menunggu kelulusan, keputusan hanya pentadbir, pendua dan sandaran',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'kampung-reg-')),password=randomBytes(16).toString('hex');

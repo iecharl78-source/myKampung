@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { once } from 'node:events';
 import { randomBytes } from 'node:crypto';
 import { createBackup } from '../data-tools.js';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync } from '../sqlite.js';
 
 test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
   const dir = await mkdtemp(join(tmpdir(),'mykampung-'));

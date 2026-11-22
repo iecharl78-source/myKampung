@@ -19,7 +19,7 @@ import {dashboardData} from './dashboard.js';
 import {initializeAidRequests,aidRequestRoutes} from './aid-requests.js';
 import { runtimeConfig,clientAddress } from './runtime-config.js';
 const runtime=runtimeConfig();
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync } from './sqlite.js';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

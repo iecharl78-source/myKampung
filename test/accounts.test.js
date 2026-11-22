@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync } from '../sqlite.js';
 import { randomBytes } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { mkdtemp,rm } from 'node:fs/promises';
@@ -105,4 +105,43 @@ test('Akaun berasingan, peranan, kata laluan, penamatan sesi dan audit',async()=
     const auditAfter=await (await req('/api/audit')).json();assert.ok(auditAfter.total>audit.total);assert.ok(auditAfter.rows.some(row=>row.action==='Pulihkan sandaran'));
     assert.equal((await req('/api/logout','POST')).status,200);assert.equal((await req('/api/session')).status,401);
   } finally { if(child.exitCode===null) {const exit=once(child,'exit');child.kill();await exit;} await rm(dir,{recursive:true,force:true}); }
+});
+
+test('Akaun pentadbir utama dilindungi daripada pentadbir lain; pentadbir lain masih boleh mengurus akaun biasa',async t=>{
+  const dir=await mkdtemp(join(tmpdir(),'kampung-protected-'));
+  const password=randomBytes(16).toString('hex'),secondPassword=randomBytes(16).toString('hex'),staffPassword=randomBytes(16).toString('hex'),attempt=randomBytes(16).toString('hex');
+  const env={...process.env,DATA_DIR:dir,PORT:'0',HOST:'127.0.0.1',ADMIN_PASSWORD:password,COOKIE_SECURE:'0'};delete env.PROTECTED_USERNAMES;
+  const child=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env,stdio:['ignore','pipe','pipe']});
+  t.after(async()=>{if(child.exitCode===null&&child.signalCode===null){const exited=once(child,'exit');child.kill();await exited;}await rm(dir,{recursive:true,force:true,maxRetries:5});});
+  const base=await new Promise((resolve,reject)=>{let output='',errors='';const timeout=setTimeout(()=>reject(Error('Startup timeout: '+errors)),10000);child.stderr.on('data',c=>errors+=c);child.stdout.on('data',c=>{output+=c;const m=output.match(/port (\d+)/);if(m){clearTimeout(timeout);resolve(`http://127.0.0.1:${m[1]}`);}});child.once('exit',()=>{clearTimeout(timeout);reject(Error('Server exited: '+errors));});});
+  const req=(path,method,data,cookie)=>fetch(base+path,{method,headers:{Cookie:cookie,'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});
+  const login=async(username,secret)=>{const r=await req('/api/login','POST',{username,password:secret},'');assert.equal(r.status,200);return r.headers.get('set-cookie').split(';')[0];};
+  const owner=await login('admin',password);
+  assert.equal((await req('/api/users','POST',{username:'penguji',fullName:'Pentadbir Penguji',role:'admin',password:secondPassword},owner)).status,201);
+  const tester=await login('penguji',secondPassword);
+  let users=await (await req('/api/users','GET',undefined,tester)).json();
+  const ownerId=users.find(u=>u.username==='admin').id,testerId=users.find(u=>u.username==='penguji').id;
+  assert.equal(users.find(u=>u.id===ownerId).isProtected,true);assert.equal(users.find(u=>u.id===testerId).isProtected,false);
+  for(const [action,data] of [['password',{newPassword:attempt}],['status',{active:false}],['member',{memberId:1}]]){
+    const r=await req(`/api/users/${ownerId}/${action}`,'POST',{currentPassword:secondPassword,...data},tester);
+    assert.equal(r.status,403,action);assert.match((await r.json()).error,/dilindungi/);
+  }
+  assert.equal((await req('/api/session','GET',undefined,owner)).status,200,'pemilik tidak dilog keluar');
+  assert.equal((await req('/api/login','POST',{username:'admin',password:attempt},'')).status,401);await login('admin',password);
+  const audit=await (await req('/api/audit','GET',undefined,owner)).json();assert.equal(audit.rows.some(r=>r.targetId===String(ownerId)&&/Tetap semula|Nyahaktif/.test(r.action)),false);
+  const created=await req('/api/users','POST',{username:'petugasuji',fullName:'Petugas Uji',role:'petugas',password:staffPassword},tester);assert.equal(created.status,201);const staffId=(await created.json()).id;
+  assert.equal((await req(`/api/users/${staffId}/password`,'POST',{currentPassword:secondPassword,newPassword:attempt},tester)).status,200);await login('petugasuji',attempt);
+  assert.equal((await req(`/api/users/${staffId}/status`,'POST',{currentPassword:secondPassword,active:false},tester)).status,200);
+  assert.equal((await req(`/api/users/${testerId}/password`,'POST',{currentPassword:password,newPassword:attempt},owner)).status,200);
+  assert.equal((await req(`/api/users/${testerId}/status`,'POST',{currentPassword:password,active:false},owner)).status,200);
+  assert.equal((await req('/api/login','POST',{username:'penguji',password:attempt},'')).status,401);
+});
+
+test('PROTECTED_USERNAMES boleh diubah atau dimatikan',()=>{
+  const previous=process.env.PROTECTED_USERNAMES;
+  try{
+    delete process.env.PROTECTED_USERNAMES;assert.equal(publicUser({id:1,username:'admin'}).isProtected,true);assert.equal(publicUser({id:2,username:'penguji'}).isProtected,false);
+    process.env.PROTECTED_USERNAMES=' Owner , admin2 ';assert.equal(publicUser({id:1,username:'admin'}).isProtected,false);assert.equal(publicUser({id:3,username:'owner'}).isProtected,true);
+    process.env.PROTECTED_USERNAMES='-';assert.equal(publicUser({id:1,username:'admin'}).isProtected,false);
+  }finally{if(previous===undefined)delete process.env.PROTECTED_USERNAMES;else process.env.PROTECTED_USERNAMES=previous;}
 });

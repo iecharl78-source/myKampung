@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync } from '../sqlite.js';
 import { migrateMemberStatus } from '../migrations.js';
 
 test('Rekod lama menjadi aktif dan migrasi berulang mengekalkan status nyahaktif',()=>{

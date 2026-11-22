@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync } from '../sqlite.js';
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { mkdtemp,rm,readFile } from 'node:fs/promises';

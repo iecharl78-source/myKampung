@@ -9,10 +9,14 @@ export function runtimeConfig(env=process.env) {
   }
   const secureCookie=env.COOKIE_SECURE==='1';
   if(env.NODE_ENV==='production' && (!publicOrigin || !secureCookie)) throw Error('Production memerlukan PUBLIC_ORIGIN HTTPS dan COOKIE_SECURE=1.');
-  return {publicOrigin,secureCookie,trustProxy:env.TRUST_PROXY==='1'};
+  // TRUST_PROXY=1: trusted reverse proxy (e.g. Caddy) that overwrites X-Real-IP.
+  // TRUST_PROXY=passenger: cPanel/Passenger; use only Passenger's own "!~" client-address header,
+  // which visitors cannot supply. Never trust X-Real-IP there: Apache passes it through unchanged.
+  const proxyHeader={'1':'x-real-ip',passenger:'!~passenger-client-address'}[env.TRUST_PROXY]||'';
+  return {publicOrigin,secureCookie,trustProxy:Boolean(proxyHeader),proxyHeader};
 }
 export function clientAddress(req,config) {
-  const supplied=req.headers['x-real-ip'];
+  const supplied=config.proxyHeader?req.headers[config.proxyHeader]:undefined;
   if(config.trustProxy && typeof supplied==='string' && isIP(supplied)) return supplied;
   return req.socket.remoteAddress;
 }

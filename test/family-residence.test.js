@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {DatabaseSync} from 'node:sqlite';
+import {DatabaseSync} from '../sqlite.js';
 import {normalizeFamilyResidence,familyResidenceAddress,familyResidenceFields} from '../public/family-residence.js';
 import {initializeHousing} from '../housing.js';
 import {migrateAddress,migrateMemberDetails,migrateMemberStatus,migrateEmployerAddress,migrateMemberIdentity} from '../migrations.js';
