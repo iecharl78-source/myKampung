@@ -342,3 +342,7 @@ Maklumat dipaparkan dalam **Lihat / semak**. Carian senarai rekod kematian juga 
 Pentadbir boleh membuka **Lihat / semak → Kemas kini maklumat perkuburan** untuk melengkapkan atau membetulkan kedua-dua medan pada rekod menunggu atau diluluskan. Ahli dan petugas boleh mengisi semasa menghantar rekod baharu, tetapi kemas kini selepas penghantaran terhad kepada pentadbir dan diaudit. Perubahan serentak ditolak jika versi maklumat perkuburan sudah berubah. Perubahan ini tidak mengubah keputusan kematian, kelayakan akaun, tuntutan khairat atau bayaran.
 
 Naik taraf menambah medan kosong tanpa meneka atau memadam maklumat lama. Buat sandaran penuh sebelum pemasangan, kekalkan direktori/volume data dan mulakan semula aplikasi. Maklumat perkuburan disertakan dalam sandaran penuh SQLite. Fungsi ini tidak memerlukan pengaktifan 2FA.
+
+### Pilihan zon kubur
+
+Dalam borang Tambah rekod kematian dan Kemas kini maklumat perkuburan, pilih **Zon A, Zon B, Zon C, Zon D, Zon E atau Zon F** melalui senarai pilihan. Pilih **Belum ditentukan** jika zon belum diketahui; medan ini kekal pilihan. Nombor batu nisan diisi seperti biasa. Nilai zon lama di luar enam pilihan kekal dipaparkan sebagai pilihan bertanda **(rekod lama)** ketika disunting, supaya menyimpan nombor batu nisan tidak memadam zon asal. Pentadbir boleh menukarnya kepada zon yang betul selepas semakan.
