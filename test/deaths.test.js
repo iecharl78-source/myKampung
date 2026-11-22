@@ -12,7 +12,7 @@ import {initializeDeaths,reporterFields} from '../deaths.js';
 import {familyIdentity} from '../family-identities.js';
 
 test('Maklumat perkuburan: migrasi rekod lama selamat diulang dan medan baharu kosong',()=>{
- const db=new DatabaseSync(':memory:');try{db.exec("CREATE TABLE users(id INTEGER PRIMARY KEY);CREATE TABLE death_records(id INTEGER PRIMARY KEY,personKey TEXT,status TEXT,personName TEXT);INSERT INTO death_records VALUES(1,'lama','approved','Rekod Lama');");initializeDeaths(db);initializeDeaths(db);const row=db.prepare('SELECT * FROM death_records').get();assert.equal(row.personName,'Rekod Lama');assert.equal(row.status,'approved');assert.equal(row.burialZone,'');assert.equal(row.gravestoneNumber,'');assert.equal(row.burialUpdatedAt,'');assert.equal(row.reporterName,'');assert.equal(row.reporterRelationship,'');assert.equal(row.reporterUpdatedAt,'');}finally{db.close();}
+ const db=new DatabaseSync(':memory:');try{db.exec("CREATE TABLE users(id INTEGER PRIMARY KEY);CREATE TABLE death_records(id INTEGER PRIMARY KEY,personKey TEXT,status TEXT,personName TEXT);INSERT INTO death_records VALUES(1,'lama','approved','Rekod Lama');");initializeDeaths(db);initializeDeaths(db);const row=db.prepare('SELECT * FROM death_records').get();assert.equal(row.personName,'Rekod Lama');assert.equal(row.status,'approved');assert.equal(row.burialZone,'');assert.equal(row.gravestoneNumber,'');assert.equal(row.burialUpdatedAt,'');assert.equal(row.reporterName,'');assert.equal(row.reporterRelationship,'');assert.equal(row.reporterUpdatedAt,'');assert.equal(row.reporterPersonKey,'');}finally{db.close();}
 });
 
 test('Pelapor: nama dan hubungan wajib, nama si mati ditolak tanpa menganggap nama akaun ialah pelapor',()=>{
