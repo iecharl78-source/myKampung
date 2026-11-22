@@ -1,3 +1,4 @@
+import {setupAidAcknowledgements,acknowledgementLabel} from './aid-acknowledgements-ui.js';
 import { todayInMalaysia } from './age.js';
 
 export function setupAidUI({api,showPanel,getUser,notice,onRecordsChanged=()=>{}}) {
@@ -5,23 +6,26 @@ export function setupAidUI({api,showPanel,getUser,notice,onRecordsChanged=()=>{}
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=cents=>new Intl.NumberFormat('ms-MY',{style:'currency',currency:'MYR'}).format(cents/100);
   const kinds={ahli:'Ahli utama',isi_rumah:'Isi rumah',keluarga:'Ahli keluarga'};
-  let records=[],members=[],types=[],editingType=null,profileMember=null,editing=null,confirmation='',deleting=null;
+  let records=[],members=[],types=[],editingType=null,profileMember=null,editing=null,confirmation='',deleting=null,generation=0;
+  const acknowledgements=setupAidAcknowledgements({api,getUser,notice,onChanged:()=>load()});
   async function load() {
-    [records,members,types]=await Promise.all([api('/api/aid'),api(getUser()?.role==='petugas'?'/api/module-households?module=aid':'/api/members'),api('/api/aid-types')]);
+    const ticket=++generation,userId=getUser()?.id;const result=await Promise.all([api('/api/aid?acknowledgements=1'),api(getUser()?.role==='petugas'?'/api/module-households?module=aid':'/api/members'),api('/api/aid-types')]);
+    if(ticket!==generation||getUser()?.id!==userId)return false;[records,members,types]=result;
     onRecordsChanged(records);
     const selected=$('#aid-member-filter').value;
     $('#aid-member-filter').innerHTML='<option value="">Semua isi rumah</option>'+members.map(m=>`<option value="${m.id}">${esc(m.name)} (#${m.id})</option>`).join('');
     if(members.some(m=>String(m.id)===selected)) $('#aid-member-filter').value=selected;
-    render();renderTypes();renderProfile();
+    render();renderTypes();renderProfile();return true;
   }
   function render() {
     const search=$('#aid-search').value.trim().toLocaleLowerCase('ms'),memberId=$('#aid-member-filter').value,from=$('#aid-from').value,to=$('#aid-to').value;
     const rows=records.filter(row=>(!memberId || row.memberId===Number(memberId)) && (!from || row.receivedDate>=from) && (!to || row.receivedDate<=to) && [row.title,row.provider,row.recipientName,row.householdName,row.category].join(' ').toLocaleLowerCase('ms').includes(search));
     $('#aid-count').textContent=rows.length;$('#aid-total').textContent=money(rows.reduce((n,row)=>n+(row.amountCents||0),0));$('#aid-households').textContent=new Set(rows.map(row=>row.memberId)).size;
-    $('#aid-list').innerHTML=rows.length?`<div class="table-wrap"><table><thead><tr><th>TARIKH / BANTUAN</th><th>PENERIMA</th><th>PEMBERI</th><th>NILAI / KUANTITI</th><th>TINDAKAN</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.receivedDate)}<br><b>${esc(row.title)}</b><br>${esc(row.category)}</td><td>${esc(row.recipientName)}<br><span class="badge">${kinds[row.recipientKind]}</span><small>Isi rumah ${esc(row.householdName)} (#${row.memberId})${row.memberActive?'':' · Tidak aktif'}</small></td><td>${esc(row.provider)}</td><td>${row.amountCents===null?'':money(row.amountCents)}<br>${row.quantity===null?'':`${row.quantity} ${esc(row.unit)}`}</td><td><button class="quiet aid-edit" data-id="${row.id}">Lihat / edit</button>${getUser()?.role==='admin'?`<button class="quiet aid-delete" data-id="${row.id}">Padam</button>`:''}</td></tr>`).join('')}</tbody></table></div><p class="table-footer">${rows.length} rekod sepadan</p>`:'<div class="empty"><h3>Tiada rekod bantuan</h3><p>Rekodkan bantuan yang telah diterima atau ubah carian anda.</p></div>';
+    $('#aid-list').innerHTML=rows.length?`<div class="table-wrap"><table><thead><tr><th>TARIKH / BANTUAN</th><th>PENERIMA</th><th>PEMBERI</th><th>NILAI / KUANTITI</th><th>TINDAKAN</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.receivedDate)}<br><b>${esc(row.title)}</b><br>${esc(row.category)}</td><td>${esc(row.recipientName)}<br><span class="badge">${kinds[row.recipientKind]}</span><small>Isi rumah ${esc(row.householdName)} (#${row.memberId})${row.memberActive?'':' · Tidak aktif'}</small></td><td>${esc(row.provider)}</td><td>${row.amountCents===null?'':money(row.amountCents)}<br>${row.quantity===null?'':`${row.quantity} ${esc(row.unit)}`}</td><td><button type="button" class="quiet aid-acknowledge" data-id="${row.id}">${esc(acknowledgementLabel(row))}</button><button class="quiet aid-edit" data-id="${row.id}">Lihat / edit</button>${getUser()?.role==='admin'?`<button class="quiet aid-delete" data-id="${row.id}">Padam</button>`:''}</td></tr>`).join('')}</tbody></table></div><p class="table-footer">${rows.length} rekod sepadan</p>`:'<div class="empty"><h3>Tiada rekod bantuan</h3><p>Rekodkan bantuan yang telah diterima atau ubah carian anda.</p></div>';
     bindAidActions();
   }
   function bindAidActions() {
+    document.querySelectorAll('.aid-acknowledge').forEach(b=>b.onclick=()=>acknowledgements.open(Number(b.dataset.id)).catch(e=>notice(e.message)));
     document.querySelectorAll('.aid-edit').forEach(button=>button.onclick=()=>open(records.find(row=>row.id===Number(button.dataset.id))));
     document.querySelectorAll('.aid-delete').forEach(button=>button.onclick=()=>{deleting=records.find(row=>row.id===Number(button.dataset.id));$('#aid-delete-form').reset();$('#aid-delete-error').textContent='';$('#aid-delete-summary').textContent=`${deleting.title} · ${deleting.recipientName} · ${deleting.receivedDate}`;$('#aid-delete-dialog').showModal();});
   }
@@ -35,7 +39,7 @@ export function setupAidUI({api,showPanel,getUser,notice,onRecordsChanged=()=>{}
     const rows=records.filter(row=>row.memberId===profileMember.id);
     $('#member-aid-add').hidden=profileMember.isActive!==1;
     $('#member-aid-summary').textContent=`${rows.length} rekod bantuan`+` · Jumlah nilai ${money(rows.reduce((sum,row)=>sum+(row.amountCents||0),0))}`;
-    $('#member-aid-list').innerHTML=rows.length?`<div class="table-wrap"><table><thead><tr><th>BANTUAN / TARIKH</th><th>PENERIMA</th><th>PEMBERI</th><th>NILAI / KUANTITI</th><th></th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.title)}<br>${esc(row.receivedDate)}</td><td>${esc(row.recipientName)}<br>${kinds[row.recipientKind]}</td><td>${esc(row.provider)}</td><td>${row.amountCents===null?'':money(row.amountCents)}<br>${row.quantity===null?'':`${row.quantity} ${esc(row.unit)}`}</td><td><button type="button" class="quiet aid-edit" data-id="${row.id}">Lihat / edit</button>${getUser()?.role==='admin'?`<button type="button" class="quiet aid-delete" data-id="${row.id}">Padam</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:'<p class="hint">Belum ada bantuan diterima yang direkodkan untuk ahli atau isi rumah ini.</p>';
+    $('#member-aid-list').innerHTML=rows.length?`<div class="table-wrap"><table><thead><tr><th>BANTUAN / TARIKH</th><th>PENERIMA</th><th>PEMBERI</th><th>NILAI / KUANTITI</th><th></th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.title)}<br>${esc(row.receivedDate)}</td><td>${esc(row.recipientName)}<br>${kinds[row.recipientKind]}</td><td>${esc(row.provider)}</td><td>${row.amountCents===null?'':money(row.amountCents)}<br>${row.quantity===null?'':`${row.quantity} ${esc(row.unit)}`}</td><td><button type="button" class="quiet aid-acknowledge" data-id="${row.id}">${esc(acknowledgementLabel(row))}</button><button type="button" class="quiet aid-edit" data-id="${row.id}">Lihat / edit</button>${getUser()?.role==='admin'?`<button type="button" class="quiet aid-delete" data-id="${row.id}">Padam</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:'<p class="hint">Belum ada bantuan diterima yang direkodkan untuk ahli atau isi rumah ini.</p>';
     bindAidActions();
   }
   function renderTypes() {
@@ -85,7 +89,7 @@ export function setupAidUI({api,showPanel,getUser,notice,onRecordsChanged=()=>{}
     if(!row) fillType();
     recipients();$('#aid-editor').showModal();
   }
-  $('#nav-aid').onclick=async()=>{try {await load();showPanel('aid-panel');}catch(error){notice(error.message);}};
+  $('#nav-aid').onclick=async()=>{try {if(await load()!==false)showPanel('aid-panel');}catch(error){notice(error.message);}};
   $('#aid-add').onclick=()=>open();
   $('#member-aid-add').onclick=()=>open();
   for(const id of ['aid-search','aid-member-filter','aid-from','aid-to']) $('#'+id).addEventListener('input',render);
@@ -111,5 +115,5 @@ export function setupAidUI({api,showPanel,getUser,notice,onRecordsChanged=()=>{}
     try {await api(`/api/aid/${deleting.id}`,'DELETE',{expectedUpdatedAt:deleting.updatedAt,confirmation:event.target.elements.confirmation.value});$('#aid-delete-dialog').close();await load();notice('Rekod bantuan dipadam. Sandaran keselamatan disimpan dalam data/backups.');}
     catch(error){$('#aid-delete-error').textContent=error.message;}
   };
-  return {async showMember(member){ profileMember=member||null;$('#member-aid-section').hidden=!member;if(!member)return;$('#member-aid-list').textContent='Memuatkan rekod bantuan…';try{await load();}catch(error){$('#member-aid-list').textContent=error.message;} }, clearMember(){profileMember=null;},reset(){profileMember=null;types=[];editingType=null;$('#aid-type-form').reset();$('#aid-types-list').replaceChildren();$('#aid-type-cancel').hidden=true;$('#member-aid-section').hidden=true;records=[];members=[];editing=null;$('#aid-list').replaceChildren();$('#aid-editor').close();$('#aid-delete-dialog').close();$('#aid-form').reset();$('#aid-delete-form').reset();}};
+  return {async showMember(member){ profileMember=member||null;$('#member-aid-section').hidden=!member;if(!member)return;$('#member-aid-list').textContent='Memuatkan rekod bantuan…';try{await load();}catch(error){$('#member-aid-list').textContent=error.message;} }, clearMember(){profileMember=null;},reset(){generation++;acknowledgements.reset();profileMember=null;types=[];editingType=null;$('#aid-type-form').reset();$('#aid-types-list').replaceChildren();$('#aid-type-cancel').hidden=true;$('#member-aid-section').hidden=true;records=[];members=[];editing=null;$('#aid-list').replaceChildren();$('#aid-editor').close();$('#aid-delete-dialog').close();$('#aid-form').reset();$('#aid-delete-form').reset();}};
 }

@@ -40,7 +40,7 @@ export function setupPortal({api,showPanel,getUser,notice,refreshMembers}){
   }
   $('#portal-add-family').onclick=()=>{if($('#portal-family-fields').children.length>=30){$('#portal-profile-error').textContent='Maksimum 30 ahli keluarga.';return;}family();updateDirty();};
   async function loadMember(){
-    const [data,aid,requests]=await Promise.all([api('/api/portal/profile'),api('/api/portal/aid'),api('/api/profile-requests')]);if(getUser()?.role!=='ahli')return;
+    const [data,aid,requests]=await Promise.all([api('/api/portal/profile'),api('/api/portal/aid?acknowledgements=1'),api('/api/profile-requests')]);if(getUser()?.role!=='ahli')return;
     $('#portal-request-status').innerHTML='<h3>Status permohonan perubahan</h3>'+ (requests.length?requests.map(row=>`<article><b>#${row.id} · ${{pending:'Menunggu semakan',approved:'Diluluskan',rejected:'Ditolak'}[row.status]}</b><p>${date(row.createdAt)} · ${esc(row.reviewNote)}</p><details><summary>Maklumat yang dihantar</summary><pre class="post-body">${esc(Object.entries(row.data).filter(([key])=>labels[key]).map(([key,v])=>`${labels[key]}: ${value(v)}`).join('\n'))}</pre></details></article>`).join(''):'<p>Tiada permohonan perubahan.</p>');
     profile=data;form.reset();await residentUI.refresh(data);$('#portal-family-fields').replaceChildren();
     for(const key of ['name','phone','birthDate','gender','occupation',...addressFields,...memberDetailFields])if(form.elements[key])form.elements[key].value=data[key]??'';

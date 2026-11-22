@@ -56,7 +56,7 @@ export async function aidRequestRoutes({req,res,path,user,db,json,body}){
    const duplicates=db.prepare('SELECT * FROM aid_records WHERE memberId=? AND id!=?').all(raw.id,previous?.id||-1).filter(r=>['recipientKind','recipientName','recipientBirthDate','title','provider','receivedDate'].every(k=>r[k].toLocaleLowerCase('ms')===data[k].toLocaleLowerCase('ms'))),confirmation=digest({id:row.id,data,duplicates});
    if(duplicates.length&&input.duplicateConfirmation!==confirmation){json(res,409,{code:'AID_REQUEST_DUPLICATE',error:'Bantuan serupa telah direkodkan. Semak sebelum meluluskan.',confirmation});return true;}
   }
-  const now=new Date().toISOString();withAudit(db,user,data?'Lulus maklumat bantuan ahli':'Tolak maklumat bantuan ahli','permohonan bantuan',row.id,()=>{
+  const now=new Date(Math.max(Date.now(),(Date.parse(previous?.updatedAt)||0)+1)).toISOString();withAudit(db,user,data?'Lulus maklumat bantuan ahli':'Tolak maklumat bantuan ahli','permohonan bantuan',row.id,()=>{
    if(data){const cols=aidColumns.filter(k=>!['id','createdAt','updatedAt'].includes(k));if(previous)db.prepare(`UPDATE aid_records SET ${cols.map(k=>`${k}=?`).join(',')},updatedAt=? WHERE id=?`).run(...cols.map(k=>data[k]),now,previous.id);else db.prepare(`INSERT INTO aid_records(${cols.join(',')},createdAt,updatedAt) VALUES(${cols.map(()=>'?').join(',')},?,?)`).run(...cols.map(k=>data[k]),now,now);}
    const result=db.prepare('UPDATE aid_requests SET status=?,reviewNote=?,reviewedBy=?,reviewedAt=? WHERE id=?').run(data?'approved':'rejected',note,user.username,now,row.id);notify(db,{userId:row.userId,title:data?'Maklumat bantuan diluluskan':'Maklumat bantuan ditolak',body:note});return result;
   });json(res,200,{ok:true});return true;

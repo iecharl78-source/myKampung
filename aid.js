@@ -1,3 +1,4 @@
+import {acknowledgementSummary} from './aid-acknowledgements.js';
 import { todayInMalaysia } from './public/age.js';
 import { withAudit } from './accounts.js';
 import { digest } from './data-tools.js';
@@ -117,7 +118,7 @@ export async function aidRoutes({req,res,path,user,db,json,body,safetySnapshot})
   }
   if(path!=='/api/aid' && !/^\/api\/aid\/\d+$/.test(path)) return false;
   if(path==='/api/aid' && req.method==='GET') {
-    json(res,200,db.prepare('SELECT a.*,m.name AS householdName,m.isActive AS memberActive FROM aid_records a JOIN members m ON m.id=a.memberId ORDER BY a.receivedDate DESC,a.id DESC').all());return true;
+    json(res,200,db.prepare('SELECT a.*,m.name AS householdName,m.isActive AS memberActive FROM aid_records a JOIN members m ON m.id=a.memberId ORDER BY a.receivedDate DESC,a.id DESC').all().map(row=>new URL(req.url,'http://localhost').searchParams.get('acknowledgements')==='1'?{...row,acknowledgement:acknowledgementSummary(db,row)}:row));return true;
   }
   const match=path.match(/^\/api\/aid\/(\d+)$/);
   if((path==='/api/aid' && req.method==='POST') || (match && req.method==='PUT')) {
@@ -133,7 +134,7 @@ export async function aidRoutes({req,res,path,user,db,json,body,safetySnapshot})
       input.category=previous?.aidTypeId===type.id?previous.category:type.category;
       input.provider=input.provider || type.provider;
     }
-    const record=validateAid(input,member,previous),now=new Date().toISOString();
+    const record=validateAid(input,member,previous),now=new Date(Math.max(Date.now(),(Date.parse(previous?.updatedAt)||0)+1)).toISOString();
     const duplicates=db.prepare('SELECT * FROM aid_records WHERE memberId=? AND id!=?').all(record.memberId,previous?.id || -1).filter(row=>['recipientKind','recipientName','recipientBirthDate','title','provider','receivedDate'].every(key=>row[key].toLocaleLowerCase('ms')===record[key].toLocaleLowerCase('ms')));
     const confirmation=digest({record,duplicates});
     if(duplicates.length && input.duplicateConfirmation!==confirmation) {json(res,409,{code:'AID_DUPLICATE',error:'Bantuan serupa untuk penerima, pemberi dan tarikh yang sama telah direkodkan. Semak sebelum meneruskan.',confirmation});return true;}
@@ -149,6 +150,7 @@ export async function aidRoutes({req,res,path,user,db,json,body,safetySnapshot})
     if(!row) {json(res,404,{error:'Rekod bantuan tidak ditemui.'});return true;}
     if(input.expectedUpdatedAt!==row.updatedAt) {json(res,409,{error:'Rekod bantuan telah berubah. Muat semula dan semak rekod.'});return true;}
     if(input.confirmation!=='PADAM') throw Error('Sila taip PADAM untuk membuang rekod bantuan.');
+    if(db.prepare('SELECT id FROM aid_acknowledgements WHERE aidId=? LIMIT 1').get(row.id)){json(res,409,{error:'Rekod mempunyai sejarah pengakuan penerimaan dan perlu dikekalkan.'});return true;}
     const safetyBackup=safetySnapshot('sebelum-padam-bantuan');
     withAudit(db,user,'Padam bantuan','bantuan',row.id,()=>db.prepare('DELETE FROM aid_records WHERE id=?').run(row.id));
     json(res,200,{ok:true,safetyBackup});return true;

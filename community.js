@@ -1,3 +1,4 @@
+import {acknowledgementSummary} from './aid-acknowledgements.js';
 import {recordMemberChange} from './member-history.js';
 import {deathLabels} from './deaths.js';
 import { audit,withAudit } from './accounts.js';
@@ -98,7 +99,7 @@ export async function communityRoutes({req,res,path,user,db,json,body,validate})
   }
   if(path==='/api/portal/aid'&&req.method==='GET'){
     if(user.role!=='ahli'){json(res,403,{error:'Portal ini untuk ahli.'});return true;}
-    json(res,200,db.prepare('SELECT * FROM aid_records WHERE memberId=? ORDER BY receivedDate DESC,id DESC').all(user.memberId));return true;
+    json(res,200,db.prepare('SELECT * FROM aid_records WHERE memberId=? ORDER BY receivedDate DESC,id DESC').all(user.memberId).map(row=>new URL(req.url,'http://localhost').searchParams.get('acknowledgements')==='1'?{...row,acknowledgement:acknowledgementSummary(db,row)}:row));return true;
   }
   const post=path.match(/^\/api\/(announcements|events)(?:\/(\d+))?$/);
   if(post){
