@@ -358,3 +358,13 @@ Selepas disimpan, pilih **Muat turun permit kubur** dalam maklumat rekod. Muat n
 Permit disimpan dalam SQLite dan disertakan dalam **sandaran penuh sistem**; eksport JSON tidak merangkuminya. Ambil sandaran penuh sebelum naik taraf, kekalkan direktori/volume data dan mulakan semula aplikasi. Jadual permit dicipta secara automatik; rekod lama dipaparkan tanpa permit sehingga dilampirkan. Fungsi ini tidak memerlukan pengaktifan 2FA.
 
 Bagi hosting, had badan permintaan aplikasi untuk penghantaran rekod baharu ialah 16 MiB, bagi menampung dua lampiran 5 MB dalam JSON/base64. Konfigurasi Caddy diselaraskan kepada 17 MB; semak juga had proxy/Passenger/cPanel penyedia hosting (sekurang-kurangnya 16 MiB). Had setiap fail kekal 5 MB dan kandungan fail disemak sebelum disimpan.
+
+### Pelapor kematian dan akaun penghantar
+
+Borang rekod kematian baharu memerlukan **Nama pelapor / waris yang melaporkan** serta **Hubungan pelapor dengan si mati**. Masukkan nama orang yang memberikan laporan, contohnya anak atau pasangan, bukan nama si mati. Sistem tidak mengisi nama pelapor daripada nama akaun yang log masuk. Nama pelapor yang sama dengan nama si mati selepas penyeragaman huruf besar/kecil dan ruang ditolak.
+
+Paparan semakan membezakan tiga perkara: nama si mati, pelapor/waris sebenar dan **Akaun penghantar (rekod sistem)**. Akaun penghantar menunjukkan akaun yang digunakan ketika rekod dihantar; ia bukan pengesahan identiti orang yang melaporkan. Dalam tuntutan khairat, nama akaun turut dilabel **Akaun penghantar tuntutan**, berasingan daripada waris/penerima bayaran.
+
+Rekod lama tidak mempunyai maklumat pelapor yang berasingan. Sistem memaparkan **Maklumat pelapor belum direkodkan**, tanpa menyalin nama akaun atau meneka nama waris. Pentadbir boleh membuka **Lihat / semak → Betulkan maklumat pelapor** pada rekod menunggu atau diluluskan, mengisi nama serta hubungan yang telah disahkan, kemudian memilih **Simpan maklumat pelapor**. Ahli dan Petugas tidak boleh membetulkan maklumat selepas penghantaran. Rekod ditolak tidak menerima pembetulan ini.
+
+Pembetulan diaudit bersama nilai sebelum/selepas dan dilindungi daripada perubahan serentak. Akaun penghantar asal, status kelulusan kematian, lampiran sijil/permit, zon kubur, nombor batu nisan dan bayaran dikekalkan. Maklumat pelapor disertakan dalam sandaran penuh SQLite. Naik taraf menambah medan kosong secara automatik; sandarkan sistem dahulu dan mulakan semula aplikasi dengan direktori data asal.

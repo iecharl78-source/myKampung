@@ -104,3 +104,7 @@ Pentadbir boleh membuka **Pentadbiran → Status sandaran** untuk menyemak keput
 ## Permit kubur pada rekod kematian
 
 Rekod kematian menyokong lampiran **permit kubur** berasingan daripada sijil kematian (PDF/JPG/PNG, maksimum 5 MB setiap fail). Muat naik ketika menghantar rekod atau tambah kemudian pada rekod menunggu/diluluskan yang belum mempunyai permit. Muat turun mengikut akses modul dan isi rumah; lampiran disertakan dalam sandaran penuh SQLite. Rujuk [MANUAL-PENGGUNA.md](MANUAL-PENGGUNA.md) untuk langkah penggunaan dan had hosting bagi dua lampiran serentak.
+
+## Pelapor rekod kematian
+
+Rekod baharu memerlukan nama pelapor sebenar dan hubungannya dengan si mati. Akaun penghantar dipaparkan berasingan sebagai jejak sistem. Pentadbir boleh melengkapkan/membetulkan pelapor pada rekod menunggu atau diluluskan; rekod lama tidak diisi secara andaian. Rujuk [MANUAL-PENGGUNA.md](MANUAL-PENGGUNA.md). Klien API yang menghantar `POST /api/deaths` juga perlu menghantar `reporterName` dan `reporterRelationship`.
