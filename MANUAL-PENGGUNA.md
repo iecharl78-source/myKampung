@@ -346,3 +346,15 @@ Naik taraf menambah medan kosong tanpa meneka atau memadam maklumat lama. Buat s
 ### Pilihan zon kubur
 
 Dalam borang Tambah rekod kematian dan Kemas kini maklumat perkuburan, pilih **Zon A, Zon B, Zon C, Zon D, Zon E atau Zon F** melalui senarai pilihan. Pilih **Belum ditentukan** jika zon belum diketahui; medan ini kekal pilihan. Nombor batu nisan diisi seperti biasa. Nilai zon lama di luar enam pilihan kekal dipaparkan sebagai pilihan bertanda **(rekod lama)** ketika disunting, supaya menyimpan nombor batu nisan tidak memadam zon asal. Pentadbir boleh menukarnya kepada zon yang betul selepas semakan.
+
+### Lampiran permit kubur
+
+Dalam **Rekod kematian → Tambah rekod kematian**, pilih fail pada medan **Permit kubur**. Sijil kematian dan permit kubur ialah dua lampiran berasingan; setiap fail menerima PDF, JPG atau PNG sehingga 5 MB. Kedua-duanya boleh dihantar serentak. Zon kubur dipilih daripada Zon A hingga Zon F.
+
+Jika permit belum tersedia semasa penghantaran, buka **Lihat / semak → Lampirkan permit kubur** kemudian. Ahli boleh melampirkan permit bagi isi rumah sendiri; Pentadbir dan Petugas mengikut akses modul Rekod kematian. Rekod mesti berstatus menunggu semakan atau diluluskan dan belum mempunyai permit. Rekod ditolak tidak menerima tambahan permit. Lampiran sedia ada tidak boleh ditindih atau dipadam melalui fungsi ini.
+
+Selepas disimpan, pilih **Muat turun permit kubur** dalam maklumat rekod. Muat naik tambahan dan muat turun direkodkan dalam sejarah tindakan. Permit tidak menggantikan sijil kematian untuk tuntutan khairat; kelulusan rekod dan bayaran tidak berubah ketika permit ditambah. Jika akaun individu telah disekat selepas kelulusan kematian, dapatkan bantuan pentadbir atau pengguna isi rumah yang masih mempunyai akses.
+
+Permit disimpan dalam SQLite dan disertakan dalam **sandaran penuh sistem**; eksport JSON tidak merangkuminya. Ambil sandaran penuh sebelum naik taraf, kekalkan direktori/volume data dan mulakan semula aplikasi. Jadual permit dicipta secara automatik; rekod lama dipaparkan tanpa permit sehingga dilampirkan. Fungsi ini tidak memerlukan pengaktifan 2FA.
+
+Bagi hosting, had badan permintaan aplikasi untuk penghantaran rekod baharu ialah 16 MiB, bagi menampung dua lampiran 5 MB dalam JSON/base64. Konfigurasi Caddy diselaraskan kepada 17 MB; semak juga had proxy/Passenger/cPanel penyedia hosting (sekurang-kurangnya 16 MiB). Had setiap fail kekal 5 MB dan kandungan fail disemak sebelum disimpan.
