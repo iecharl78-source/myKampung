@@ -116,3 +116,7 @@ Pentadbir menetapkan had pendapatan per kapita melalui **Tetapan sistem**, lalai
 ## Penapis dan laporan Asnaf
 
 Senarai ahli menyediakan penapis Status Asnaf. Pentadbir boleh menjana **Laporan → Semakan Asnaf**, menapis status/zon/negeri/daerah, mencetak dan mengeksport CSV menggunakan formula serta had semasa. Laporan menyatakan purata, bilangan penghuni, had dan sebab rekod belum lengkap. Jika had berubah selepas pratonton, jana semula sebelum eksport. Lihat [PANDUAN-ASNAF.md](PANDUAN-ASNAF.md).
+
+## Pengakuan penerimaan bantuan
+
+Bantuan yang telah direkodkan boleh menerima pengakuan nama penerima, tarikh dan bukti PDF/JPG/PNG sehingga 5 MB. Ahli mengakui bantuan isi rumah sendiri; Pentadbir/Petugas boleh merekod bagi pihak penerima dengan bukti wajib. Perubahan bantuan memerlukan pengakuan baharu dan mengekalkan sejarah terdahulu. Pengakuan/bukti memerlukan sandaran penuh SQLite; pemulihan JSON dan pemadaman bantuan disekat apabila berkaitan sejarah pengakuan. Rujuk [PANDUAN-PENGAKUAN-BANTUAN.md](PANDUAN-PENGAKUAN-BANTUAN.md).
