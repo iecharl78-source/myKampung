@@ -1,3 +1,4 @@
+import {setupBackupMonitor} from './backup-monitor-ui.js';
 import {setupDataQuality} from './data-quality-ui.js';
 import {setupMemberHistory} from './member-history-ui.js';
 import {setupSecurity} from './security-ui.js';
@@ -42,7 +43,7 @@ function hidePassword() {
 }
 function showLogin() {
   clearTimeout(idleTimer);members=[];editing=null;duplicateConfirmation='';$('#results').replaceChildren();$('#editor').close();$('#member-form').reset();$('#family-fields').replaceChildren();$('#login-form').reset();
-  qualityUI.reset();historyUI.reset();securityUI.reset();taskHubUI.reset();administrationUI.reset();khairatUI.reset();deathsUI.reset();housingUI.reset();headChangesUI.reset();$('#new-user-section').open=false;document.querySelector('header>span>b').textContent='Selamat datang';homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
+  backupUI.reset();qualityUI.reset();historyUI.reset();securityUI.reset();taskHubUI.reset();administrationUI.reset();khairatUI.reset();deathsUI.reset();housingUI.reset();headChangesUI.reset();$('#new-user-section').open=false;document.querySelector('header>span>b').textContent='Selamat datang';homeUI.reset();portalUI.reset();aidCounts.clear();reportsUI.reset();registrationsUI.reset();$('#logout-dialog').close();$('#logout-form').reset();
   aidUI.reset(); hidePassword(); $('#action-dialog').close(); resetMemberAction(); $('#restore-dialog').close(); resetRestore();
   for(const id of ['password-dialog','user-action-dialog']) $('#'+id).close();
   $('#password-form').reset(); $('#user-action-form').reset(); $('#new-user-form').reset(); users=[];$('#user-search').value='';$('#user-role-filter').value='all';$('#user-status-filter').value='all';$('#user-filter-count').textContent=''; currentUser=null;
@@ -54,7 +55,7 @@ async function load(openHome=false) {
   currentUser=(await api('/api/session')).user;
   scheduleIdle();
   const resident=currentUser.role==='ahli',adminRole=currentUser.role==='admin';
-  $('#nav-security').hidden=false;$('#nav-tasks').hidden=!adminRole;$('#nav-member-history').hidden=!adminRole;$('#nav-data-quality').hidden=!adminRole;
+  $('#nav-security').hidden=false;$('#nav-tasks').hidden=!adminRole;$('#nav-member-history').hidden=!adminRole;$('#nav-data-quality').hidden=!adminRole;$('#nav-backup-status').hidden=!adminRole;
   $('#login').hidden=true;
   for(const id of ['nav-khairat','nav-deaths','nav-head-changes','nav-home','logout','current-user','open-password','nav-community','nav-questions','nav-notifications'])$('#'+id).hidden=false;
   $('#nav-administration').hidden=!adminRole;$('#nav-housing').hidden=!adminRole;await residentUI.refresh();
@@ -288,9 +289,9 @@ $('#action-form').onsubmit=async event=>{
 function showPanel(id) {
  const module={dashboard:'members','aid-panel':'aid','portal-panel':'profile','community-panel':'community','questions-panel':'questions','notifications-panel':'notifications','head-changes-panel':'headChanges','deaths-panel':'deaths','khairat-panel':'khairat'}[id];if(currentUser?.role!=='admin'&&module&&!currentUser.modules[module]){notice('Akses modul ini telah dinyahaktifkan oleh pentadbir.');id='home-panel';}
 
-  const titles={'data-quality-panel':'Kualiti data','administration-panel':'Tetapan sistem','khairat-panel':'Khairat kematian','deaths-panel':'Rekod kematian','head-changes-panel':'Pertukaran ketua keluarga','home-panel':'Papan pemuka',dashboard:'Ahli & isi rumah','portal-panel':'Profil saya','community-panel':'Aktiviti & hebahan','questions-panel':'Pertanyaan','notifications-panel':'Notifikasi','profile-review-panel':'Semakan perubahan','aid-panel':'Bantuan','reports-panel':'Laporan','registrations-panel':'Permohonan ahli','accounts-panel':'Akaun pengguna','audit-panel':'Sejarah tindakan','housing-panel':'Zon & jenis rumah'};document.querySelector('header>span>b').textContent=titles[id]||'myKampung';
-  for(const panel of ['data-quality-panel','member-history-panel','security-panel','tasks-panel','administration-panel','khairat-panel','deaths-panel','head-changes-panel','housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
-  for(const [nav,panel] of [['nav-data-quality','data-quality-panel'],['nav-member-history','member-history-panel'],['nav-security','security-panel'],['nav-tasks','tasks-panel'],['nav-administration','administration-panel'],['nav-khairat','khairat-panel'],['nav-deaths','deaths-panel'],['nav-head-changes','head-changes-panel'],['nav-housing','housing-panel'],['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
+  const titles={'backup-status-panel':'Status sandaran','data-quality-panel':'Kualiti data','administration-panel':'Tetapan sistem','khairat-panel':'Khairat kematian','deaths-panel':'Rekod kematian','head-changes-panel':'Pertukaran ketua keluarga','home-panel':'Papan pemuka',dashboard:'Ahli & isi rumah','portal-panel':'Profil saya','community-panel':'Aktiviti & hebahan','questions-panel':'Pertanyaan','notifications-panel':'Notifikasi','profile-review-panel':'Semakan perubahan','aid-panel':'Bantuan','reports-panel':'Laporan','registrations-panel':'Permohonan ahli','accounts-panel':'Akaun pengguna','audit-panel':'Sejarah tindakan','housing-panel':'Zon & jenis rumah'};document.querySelector('header>span>b').textContent=titles[id]||'myKampung';
+  for(const panel of ['backup-status-panel','data-quality-panel','member-history-panel','security-panel','tasks-panel','administration-panel','khairat-panel','deaths-panel','head-changes-panel','housing-panel','home-panel','portal-panel','community-panel','questions-panel','notifications-panel','profile-review-panel','dashboard','accounts-panel','audit-panel','aid-panel','reports-panel','registrations-panel']) $('#'+panel).hidden=panel!==id;
+  for(const [nav,panel] of [['nav-backup-status','backup-status-panel'],['nav-data-quality','data-quality-panel'],['nav-member-history','member-history-panel'],['nav-security','security-panel'],['nav-tasks','tasks-panel'],['nav-administration','administration-panel'],['nav-khairat','khairat-panel'],['nav-deaths','deaths-panel'],['nav-head-changes','head-changes-panel'],['nav-housing','housing-panel'],['nav-home','home-panel'],['nav-portal','portal-panel'],['nav-community','community-panel'],['nav-questions','questions-panel'],['nav-notifications','notifications-panel'],['nav-profile-review','profile-review-panel'],['nav-members','dashboard'],['nav-aid','aid-panel'],['nav-reports','reports-panel'],['nav-registrations','registrations-panel'],['nav-accounts','accounts-panel'],['nav-audit','audit-panel']]) $('#'+nav).classList.toggle('active',id===panel);
   navigationUI.activate();
 }
 $('#nav-members').onclick=async()=>{try{await load();showPanel('dashboard');}catch(error){notice(error.message);}};
@@ -373,7 +374,8 @@ administrationUI.mountKhairat();
 const headChangesUI=setupHeadChanges({api,getUser:()=>currentUser,showPanel,notice,onChanged:load});
 const residentUI=attachResidentFields($('#member-form'));
 const housingUI=setupHousingCatalog({api,getUser:()=>currentUser,showPanel,notice});
-const homeUI=setupDashboard({api,getUser:()=>currentUser,showPanel,notice});
+const backupUI=setupBackupMonitor({api,getUser:()=>currentUser,showPanel,notice});
+const homeUI=setupDashboard({api,getUser:()=>currentUser,showPanel,notice,onBackupStatus:()=>backupUI.refreshSummary()});
 const portalUI=setupPortal({api,showPanel,getUser:()=>currentUser,notice,refreshMembers:()=>load()});
 const aidUI=setupAidUI({api,showPanel,getUser:()=>currentUser,notice,onRecordsChanged:syncAidCounts});
 const registrationsUI=setupRegistrations({api,showPanel,notice,refreshMembers:load});

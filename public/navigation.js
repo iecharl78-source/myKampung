@@ -3,7 +3,7 @@ export const navigationGroups=[
  {key:'community',label:'Komuniti & Kebajikan',items:['nav-members','nav-aid','nav-khairat']},
  {key:'applications',label:'Permohonan & Kelulusan',items:['nav-tasks','nav-registrations','nav-profile-review','nav-head-changes','nav-deaths']},
  {key:'information',label:'Maklumat & Komunikasi',items:['nav-community','nav-questions','nav-notifications']},
- {key:'administration',label:'Pentadbiran',items:['nav-accounts','nav-administration','nav-housing','nav-data-quality','nav-reports','nav-member-history','nav-audit']}
+ {key:'administration',label:'Pentadbiran',items:['nav-accounts','nav-administration','nav-housing','nav-data-quality','nav-backup-status','nav-reports','nav-member-history','nav-audit']}
 ];
 export function installNavigationGroups(){
  const aside=document.querySelector('aside'),label=aside.querySelector('.side-label'),nav=document.createElement('nav');nav.className='navigation-groups';nav.setAttribute('aria-label','Menu utama');nav.hidden=true;label.textContent='MENU UTAMA';label.after(nav);
