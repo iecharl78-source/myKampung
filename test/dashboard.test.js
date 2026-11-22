@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {DatabaseSync} from 'node:sqlite';
+import {DatabaseSync} from '../sqlite.js';
 import {dashboardData} from '../dashboard.js';
 import {initializeCommunity} from '../community.js';
 import {initializeAidRequests} from '../aid-requests.js';

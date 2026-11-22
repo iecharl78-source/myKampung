@@ -6,7 +6,7 @@ import {mkdtemp,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {once} from 'node:events';
-import {DatabaseSync} from 'node:sqlite';
+import {DatabaseSync} from '../sqlite.js';
 import {validateBurialPermit,initializeBurialPermits,storeBurialPermit,burialPermitRoutes} from '../burial-permits.js';
 import {restoreFull} from '../scripts/restore-full.js';
 const pdf={fileName:'permit.pdf',mimeType:'application/pdf',base64:Buffer.from('%PDF-1.4\nPermit kubur\n%%EOF').toString('base64')};

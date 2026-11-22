@@ -11,8 +11,13 @@ export function verifyPassword(user,password) {
   const hash=scryptSync(password,user?.salt || 'myKampung-invalid-user',64);
   return timingSafeEqual(hash,user ? Buffer.from(user.hash,'hex') : Buffer.alloc(64)) && Boolean(user);
 }
+// Protected accounts (default: the primary "admin") can only be changed by themselves:
+// other administrators cannot reset their password, deactivate them or relink them.
+// Override with PROTECTED_USERNAMES=admin,owner (comma-separated); set it to "-" to disable.
+const protectedUsernames=()=>new Set((process.env.PROTECTED_USERNAMES??'admin').split(',').map(name=>name.trim().toLowerCase()).filter(name=>name&&name!=='-'));
+export const isProtectedAccount=user=>Boolean(user)&&protectedUsernames().has(String(user.username).toLowerCase());
 export function publicUser(user) {
-  return {id:user.id,username:user.username,fullName:user.fullName,role:user.role,isActive:user.isActive,createdAt:user.createdAt,memberId:user.memberId??null};
+  return {id:user.id,username:user.username,fullName:user.fullName,role:user.role,isActive:user.isActive,createdAt:user.createdAt,memberId:user.memberId??null,isProtected:isProtectedAccount(user)};
 }
 export function initializeAccounts(db,initialPassword) {
   db.exec('BEGIN IMMEDIATE');
@@ -101,6 +106,7 @@ export async function accountRoutes({req,res,path,user,db,json,body,revokeSessio
   if(match && req.method==='POST') {
     const input=await body(req),target=db.prepare('SELECT * FROM users WHERE id=?').get(Number(match[1]));
     if(!target) { json(res,404,{error:'Akaun tidak ditemui.'});return true; }
+    if(isProtectedAccount(target)&&target.id!==user.id) { json(res,403,{error:'Akaun pentadbir utama dilindungi. Hanya pemilik akaun itu boleh mengubahnya.'});return true; }
     if(!verifyPassword(user,input.currentPassword)) { json(res,400,{error:'Kata laluan pentadbir semasa tidak tepat.'});return true; }
     if(match[2]==='member') {
       if(target.role!=='ahli')throw Error('Pautan ini hanya untuk akaun ahli.');

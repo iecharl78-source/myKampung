@@ -6,7 +6,7 @@ import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {once} from 'node:events';
-import {DatabaseSync} from 'node:sqlite';
+import {DatabaseSync} from '../sqlite.js';
 import {analyzeDataQuality} from '../data-quality.js';
 const catalog={zones:[{code:'A',name:'Zon A',isActive:1}],housingTypes:[{code:'T',isActive:1}]};
 const complete=(id=1)=>({id,name:'Ahli '+id,phone:'012111'+String(id).padStart(4,'0'),birthDate:'1980-01-01',employmentStatus:'Bekerja',address1:'Rumah',country:'Malaysia',district:'Raub',state:'Pahang',postcode:'27600',zoneCode:'A',housingTypeCode:'T',isActive:1,household:[]});

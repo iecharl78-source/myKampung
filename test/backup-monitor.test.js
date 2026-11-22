@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {DatabaseSync} from 'node:sqlite';
+import {DatabaseSync} from '../sqlite.js';
 import {mkdtemp,mkdir,rm,readFile,writeFile,unlink,symlink,lstat,readdir,utimes} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';

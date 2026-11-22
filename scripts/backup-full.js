@@ -1,5 +1,5 @@
 import {backupDirectory,backupPattern,writeBackupStatus} from './backup-status.js';
-import { DatabaseSync,backup } from 'node:sqlite';
+import { DatabaseSync,backup } from '../sqlite.js';
 import { mkdir,chmod,readdir,unlink,rename,lstat } from 'node:fs/promises';
 import { join,resolve,basename } from 'node:path';
 import { randomBytes } from 'node:crypto';

@@ -12,7 +12,7 @@ Untuk percubaan rakan, kongsi ZIP kod daripada GitHub bersama panduan; rakan men
 
 ## Mula
 
-Perlu Node.js 24 atau lebih baharu. Dari folder aplikasi yang mempunyai `server.js`, jalankan arahan Bash berikut untuk menetapkan kata laluan pentadbir pertama tanpa merekodkannya dalam sejarah shell:
+Perlu Node.js 20 atau lebih baharu (jalankan `npm install` dahulu; Node.js 20 menggunakan pemacu `node-sqlite3-wasm`, Node.js 22.13+/24 menggunakan `node:sqlite` terbina dalam). Dari folder aplikasi yang mempunyai `server.js`, jalankan arahan Bash berikut untuk menetapkan kata laluan pentadbir pertama tanpa merekodkannya dalam sejarah shell:
 
 ```bash
 read -rs -p 'Kata laluan pentadbir (minimum 12 aksara): ' ADMIN_PASSWORD
@@ -38,7 +38,7 @@ Gunakan checkout sedia ada dalam tugas cloud; jangan cipta Git worktree kecuali 
 
 Rujuk [PANDUAN-DALAM-TALIAN.md](PANDUAN-DALAM-TALIAN.md) untuk pakej VPS/Docker Compose dengan Caddy HTTPS, volume SQLite kekal, penciptaan pentadbir pertama, pemindahan data tempatan dan sandaran penuh berjadual. Ini memerlukan VPS serta domain sebenar; menerbitkan persekitaran pembangunan sahaja tidak menerbitkan laman web awam.
 
-Mod production memerlukan `PUBLIC_ORIGIN=https://domain-anda` dan `COOKIE_SECURE=1`. `TRUST_PROXY=1` hanya digunakan apabila app di belakang proxy yang dipercayai dan port app tidak boleh dicapai terus oleh orang awam. Penggunaan tempatan melalui Node.js standalone kekal tersedia seperti panduan terdahulu.
+Mod production memerlukan `PUBLIC_ORIGIN=https://domain-anda` dan `COOKIE_SECURE=1`. `TRUST_PROXY=1` hanya digunakan apabila app di belakang proxy yang dipercayai dan port app tidak boleh dicapai terus oleh orang awam (proxy itu mesti menetapkan `X-Real-IP` sendiri). Pada cPanel (Passenger), gunakan `TRUST_PROXY=passenger`: IP pelawat dibaca daripada header dalaman Passenger sahaja, kerana Apache cPanel tidak menggantikan `X-Real-IP`. Penggunaan tempatan melalui Node.js standalone kekal tersedia seperti panduan terdahulu.
 
 ## Portal ahli dan kelulusan perubahan
 
@@ -93,7 +93,7 @@ Menu utama kini dikumpulkan kepada Umum, Komuniti & Kebajikan, Permohonan & Kelu
 - [Persediaan pembentangan dan ujian penerimaan pengguna](PANDUAN-PEMBENTANGAN.md)
 - [Pelancaran domain dan semakan keserasian cPanel](PANDUAN-PELANCARAN-DOMAIN.md)
 
-Runtime projek memerlukan Node.js 24+. cPanel yang hanya menawarkan Node.js 20.20.2 belum serasi; semak kemungkinan runtime berbeza melalui Application Manager dengan penyedia sebelum memasang.
+Runtime projek menyokong Node.js 20+. Pada Node.js 20 (contohnya cPanel/CloudLinux), `sqlite.js` menggunakan `node-sqlite3-wasm` tanpa binaan natif; WAL tidak tersedia, jadi gunakan satu worker sahaja. Jalankan `Run NPM Install` dalam Setup Node.js App sebelum memulakan aplikasi.
 
 - [Laporan kualiti data ahli dan semakan potensi pendua](PANDUAN-KUALITI-DATA.md)
 

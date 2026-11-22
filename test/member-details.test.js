@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync } from '../sqlite.js';
 import { migrateMemberDetails, migrateEmployerAddress } from '../migrations.js';
 import { normalizeMemberDetails, memberDetailFields } from '../public/member-details.js';
 

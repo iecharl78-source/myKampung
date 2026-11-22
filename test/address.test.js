@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync } from '../sqlite.js';
 import { migrateAddress } from '../migrations.js';
 import { formatAddress, postcodeSuggestions } from '../public/address.js';
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync } from '../sqlite.js';
 import { mkdtemp,rm,readdir,stat,writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -16,6 +16,10 @@ test('Production memerlukan HTTPS dan kuki selamat; alamat proxy hanya dipercaya
   const req={headers:{'x-real-ip':'203.0.113.10','x-forwarded-for':'spoofed'},socket:{remoteAddress:'127.0.0.1'}};
   assert.equal(clientAddress(req,config),'203.0.113.10');assert.equal(clientAddress(req,runtimeConfig({})),'127.0.0.1');
   assert.equal(clientAddress({...req,headers:{'x-real-ip':'spoofed,1.2.3.4'}},config),'127.0.0.1');
+  const passenger=runtimeConfig({TRUST_PROXY:'passenger'}),viaPassenger={headers:{'!~passenger-client-address':'45.121.20.21','x-real-ip':'198.51.100.7','x-forwarded-for':'198.51.100.8, 45.121.20.21'},socket:{remoteAddress:'127.0.0.1'}};
+  assert.equal(clientAddress(viaPassenger,passenger),'45.121.20.21');
+  assert.equal(clientAddress({...viaPassenger,headers:{'x-real-ip':'198.51.100.7'}},passenger),'127.0.0.1');
+  assert.equal(clientAddress(viaPassenger,config),'198.51.100.7');assert.equal(clientAddress(viaPassenger,runtimeConfig({TRUST_PROXY:'0'})),'127.0.0.1');
 });
 
 test('Sandaran penuh konsisten ketika SQLite masih terbuka, disahkan dan putaran hanya membuang fail sendiri',async()=>{

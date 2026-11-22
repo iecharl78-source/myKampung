@@ -1,5 +1,5 @@
 // Entry point for hosting panels that require a CommonJS startup file.
-// Keep Node.js 24+ and a single application worker; confirm Passenger support with the host.
+// Node.js 20+ (Node 20 uses the node-sqlite3-wasm driver via sqlite.js). Keep a single application worker.
 import('./server.js').catch(error=>{
   console.error('myKampung gagal dimulakan:',error.message);
   process.exitCode=1;
