@@ -22,7 +22,7 @@ test('Sijil rekod kematian: guna semula khairat, tambah pada rekod lama, akses d
  let owner=await login('pemohon'),other=await login('lain');const people=(await (await req('/api/deaths/context/'+memberId)).json()).people.slice(1);
  const ids=[];
  for(const [i,p] of people.entries()){
-  const data={memberId,personKey:p.personKey,deathDate:'2026-01-01',note:'Maklumat keluarga',confirm:true,...(i===0?{certificate}:{})};
+  const data={memberId,personKey:p.personKey,deathDate:'2026-01-01',reporterName:'Waris Ujian',reporterRelationship:'Anak',note:'Maklumat keluarga',confirm:true,...(i===0?{certificate}:{})};
   if(i===0){r=await req('/api/deaths','POST',{...data,certificate:{...certificate,base64:'AAAA'}},owner);assert.equal(r.status,400);}
   r=await req('/api/deaths','POST',data,owner);assert.equal(r.status,202,await r.clone().text());ids.push((await r.json()).id);
  }

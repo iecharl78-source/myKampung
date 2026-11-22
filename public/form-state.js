@@ -6,7 +6,7 @@ export function installFormState(root=document) {
   const messages={
     'khairat-type-form':'Sedang menyimpan jenis khairat…','module-access-form':'Sedang menyimpan akses ahli…','khairat-certificate-form':'Sedang memuat naik sijil kematian…',
     'khairat-request-form':'Sedang menghantar tuntutan khairat…','khairat-review-form':'Sedang menyimpan keputusan khairat…','khairat-payment-form':'Sedang merekod bayaran khairat…',
-    'death-permit-form':'Sedang memuat naik permit kubur…','death-request-form':'Sedang menghantar rekod kematian…','death-review-form':'Sedang menyimpan keputusan kematian…',
+    'death-reporter-form':'Sedang menyimpan maklumat pelapor…','death-permit-form':'Sedang memuat naik permit kubur…','death-request-form':'Sedang menghantar rekod kematian…','death-review-form':'Sedang menyimpan keputusan kematian…',
     'head-change-request-form':'Sedang menghantar permohonan pertukaran…','head-change-review-form':'Sedang menyimpan keputusan pertukaran…',
     'housing-zones-form':'Sedang menyimpan zon komuniti…','housing-types-form':'Sedang menyimpan jenis rumah…',
     'full-backup-form':'Sedang menyediakan sandaran penuh…',
