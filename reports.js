@@ -1,3 +1,6 @@
+import {acknowledgementSummary} from './aid-acknowledgements.js';
+import {acknowledgementColumns,acknowledgementRows} from './aid-acknowledgement-reports.js';
+import {digest} from './data-tools.js';
 import {classifyAsnaf,readAsnafSettings} from './asnaf.js';
 import {deathLabels} from './deaths.js';
 import {familyResidenceLabels,familyResidenceAddress} from './public/family-residence.js';
@@ -11,13 +14,14 @@ const aidColumns=[['id','ID bantuan'],['memberId','ID isi rumah'],['householdNam
 export function reportFilters(params) {
   const get=(key,max=200)=>{const value=(params.get(key)||'').trim();if(value.length>max)throw Error('Maklumat penapis laporan terlalu panjang.');return value;};
   const type=get('type')||'members',status=get('status')||'active',format=get('format')||'json';
-  if(!['members','family','aid','asnaf'].includes(type) || !['active','inactive','all'].includes(status) || !['json','csv'].includes(format)) throw Error('Maklumat jenis laporan, status atau format tidak sah.');
+  if(!['members','family','aid','asnaf','acknowledgements'].includes(type) || !['active','inactive','all'].includes(status) || !['json','csv'].includes(format)) throw Error('Maklumat jenis laporan, status atau format tidak sah.');
   const from=get('from',10),to=get('to',10);
   for(const value of [from,to])if(value && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0,10)!==value))throw Error('Tarikh penapis laporan tidak sah.');
   if(from && to && from>to)throw Error('Tarikh mula laporan mesti sebelum atau sama dengan tarikh akhir.');
-  if(type!=='aid' && (from || to || get('category')))throw Error('Sila gunakan penapis tarikh dan kategori pada laporan bantuan sahaja.');
+  if(!['aid','acknowledgements'].includes(type) && (from || to || get('category')))throw Error('Sila gunakan penapis tarikh dan kategori pada laporan bantuan sahaja.');
   const asnafState=get('asnafState',20)||'all',asnafSettingsUpdatedAt=get('asnafSettingsUpdatedAt',40);if(!['all','asnaf','not_asnaf','incomplete'].includes(asnafState)||(type!=='asnaf'&&(asnafState!=='all'||asnafSettingsUpdatedAt)))throw Error('Maklumat penapis Asnaf tidak sah.');
-  return {type,status,format,from,to,asnafState,asnafSettingsUpdatedAt,q:get('q'),state:get('state',100),district:get('district',100),zoneCode:get('zoneCode',30),category:get('category',50)};
+  const ackState=get('ackState',20)||'all',ackEvidence=get('ackEvidence',20)||'all',ackVersion=get('ackVersion',64);if(!['all','none','current','stale'].includes(ackState)||!['all','with','without'].includes(ackEvidence)||(ackVersion&&!/^[a-f0-9]{64}$/.test(ackVersion))||(type!=='acknowledgements'&&(ackState!=='all'||ackEvidence!=='all'||ackVersion)))throw Error('Maklumat penapis pengakuan bantuan tidak sah.');
+  return {type,status,format,from,to,ackState,ackEvidence,ackVersion,asnafState,asnafSettingsUpdatedAt,q:get('q'),state:get('state',100),district:get('district',100),zoneCode:get('zoneCode',30),category:get('category',50)};
 }
 export function buildReport(members,aid,filters,today=todayInMalaysia(),asnafSettings=null) {
   const normal=value=>String(value??'').trim().toLocaleLowerCase('ms');
@@ -33,6 +37,8 @@ export function buildReport(members,aid,filters,today=todayInMalaysia(),asnafSet
     if(!asnafSettings||!Number.isSafeInteger(asnafSettings.thresholdCents)||asnafSettings.thresholdCents<0)throw Error('Maklumat had Asnaf tidak tersedia.');
     title='Laporan semakan Asnaf';columns=[['id','ID ahli'],['name','Ahli utama'],['status','Status isi rumah'],['phone','Telefon'],['zoneCode','Kod zon'],['district','Daerah'],['address','Alamat'],['asnafLabel','Status Asnaf'],['residentCount','Penghuni yang dikira'],['totalIncome','Jumlah pendapatan bulanan (RM)'],['averageIncome','Pendapatan per kapita (RM)'],['threshold','Had per kapita (RM; kurang daripada)'],['reason','Maklumat perlu disemak'],['calculatedAt','Masa pengiraan (UTC)']];
     rows=selected.map(m=>{const a=classifyAsnaf(m,asnafSettings.thresholdCents);const reason=a.state==='incomplete'?[a.missingIncomeCount?`${a.missingIncomeCount} pendapatan belum lengkap`:'',a.unknownResidenceCount?`${a.unknownResidenceCount} status kediaman belum lengkap`:'',a.invalidFamily?'Rekod keluarga perlu disemak':'',!a.residentCount?'Tiada penghuni hidup yang boleh dikira':''].filter(Boolean).join('; '):'';return {id:m.id,name:m.name,status:status(m),phone:m.phone,zoneCode:m.zoneCode,district:m.district,address:m.address,asnafState:a.state,asnafLabel:{asnaf:'Acc Asnaf',not_asnaf:'Tidak memenuhi had Asnaf',incomplete:'Perlu semakan'}[a.state],residentCount:a.residentCount,totalIncome:a.totalIncomeCents===null?'':(a.totalIncomeCents/100).toFixed(2),averageIncome:a.averageIncome===null?'':a.averageIncome.toFixed(4),threshold:(a.thresholdCents/100).toFixed(2),reason,calculatedAt:generatedAt};}).filter(row=>filters.asnafState==='all'||row.asnafState===filters.asnafState);
+  } else if(filters.type==='acknowledgements') {
+    title='Laporan pengakuan penerimaan bantuan';columns=acknowledgementColumns;rows=acknowledgementRows(aid,memberMap,filters);
   } else if(filters.type==='family') {
     title='Laporan ahli keluarga';columns=familyColumns;
     rows=selected.flatMap(m=>m.household.map(person=>({...person,livesWithMember:person.livesWithMember||'Belum diisi',currentResidenceAddress:familyResidenceAddress(person,m),memberId:m.id,householdName:m.name,status:status(m),age:calculateAge(person.birthDate,today)??''})));
@@ -42,10 +48,11 @@ export function buildReport(members,aid,filters,today=todayInMalaysia(),asnafSet
     rows=aid.filter(row=>memberMap.has(row.memberId) && (!filters.from || row.receivedDate>=filters.from) && (!filters.to || row.receivedDate<=filters.to) && (!filters.category || row.category===filters.category)).map(row=>({...row,householdName:memberMap.get(row.memberId).name,status:status(memberMap.get(row.memberId)),recipientKind:kinds[row.recipientKind],amount:row.amountCents===null?'':(row.amountCents/100).toFixed(2),quantity:row.quantity??''}));
   }
   if(filters.q)rows=rows.filter(row=>columns.some(([key])=>normal(row[key]).includes(normal(filters.q))));
-  if(filters.type==='aid')totalCents=rows.reduce((sum,row)=>sum+(row.amountCents||0),0);
+  if(['aid','acknowledgements'].includes(filters.type))totalCents=rows.reduce((sum,row)=>sum+(row.amountCents||0),0);
   const householdCount=new Set(rows.map(row=>['members','asnaf'].includes(filters.type)?row.id:row.memberId)).size;
   const result={title,filters,generatedAt,columns:columns.map(([key,label])=>({key,label})),total:rows.length,householdCount,totalCents};
   if(filters.type==='asnaf')result.asnaf={thresholdCents:asnafSettings.thresholdCents,settingsUpdatedAt:asnafSettings.updatedAt,counts:Object.fromEntries(['asnaf','not_asnaf','incomplete'].map(state=>[state,rows.filter(r=>r.asnafState===state).length]))};
+  if(filters.type==='acknowledgements')result.acknowledgements={version:digest(rows),counts:Object.fromEntries(['none','current','stale'].map(state=>[state,rows.filter(r=>r._ackState===state).length])),missingEvidence:rows.filter(r=>r._missingEvidence).length};
   // Hanya medan yang ditunjukkan dimasukkan; jangan hantar objek penuh profil.
   result.rows=rows.map(row=>Object.fromEntries(columns.map(([key])=>[key,row[key]??''])));
   return result;
@@ -62,7 +69,7 @@ export function reportRoute({req,res,path,user,db,json,members,aid}) {
   if(path!=='/api/reports')return false;
   if(user.role!=='admin'){json(res,403,{error:'Laporan dan eksport terhad kepada pentadbir.'});return true;}
   if(req.method!=='GET'){json(res,405,{error:'Kaedah laporan tidak disokong.'});return true;}
-  const filters=reportFilters(new URL(req.url,'http://localhost').searchParams),settings=filters.type==='asnaf'?readAsnafSettings(db):null;if(settings&&filters.asnafSettingsUpdatedAt&&filters.asnafSettingsUpdatedAt!==settings.updatedAt){json(res,409,{error:'Had Asnaf telah berubah sejak pratonton. Jana laporan semula sebelum mengeksport.'});return true;}const source=members(),report=buildReport(filters.type==='asnaf'?source.map(m=>deathLabels(db,m)):source,filters.type==='asnaf'?[]:aid(),filters,undefined,settings);
+  const filters=reportFilters(new URL(req.url,'http://localhost').searchParams),settings=filters.type==='asnaf'?readAsnafSettings(db):null;if(settings&&filters.asnafSettingsUpdatedAt&&filters.asnafSettingsUpdatedAt!==settings.updatedAt){json(res,409,{error:'Had Asnaf telah berubah sejak pratonton. Jana laporan semula sebelum mengeksport.'});return true;}const source=members(),report=buildReport(filters.type==='asnaf'?source.map(m=>deathLabels(db,m)):source,filters.type==='asnaf'?[]:filters.type==='acknowledgements'?aid().map(row=>({...row,acknowledgement:acknowledgementSummary(db,row)})):aid(),filters,undefined,settings);if(report.acknowledgements&&filters.ackVersion&&filters.ackVersion!==report.acknowledgements.version){json(res,409,{error:'Maklumat bantuan atau pengakuan telah berubah sejak pratonton. Jana laporan semula sebelum mengeksport.'});return true;}
   if(filters.format==='csv') {
     audit(db,user,'Eksport laporan CSV','laporan',filters.type,`${report.total} rekod`);
     res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="myKampung-${filters.type}-${todayInMalaysia()}.csv"`});res.end(reportCsv(report));

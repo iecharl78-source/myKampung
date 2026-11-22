@@ -1,3 +1,4 @@
+import {acknowledgementMatches} from './acknowledgement-status.js';
 import {setupAidAcknowledgements,acknowledgementLabel} from './aid-acknowledgements-ui.js';
 import { todayInMalaysia } from './age.js';
 
@@ -19,7 +20,7 @@ export function setupAidUI({api,showPanel,getUser,notice,onRecordsChanged=()=>{}
   }
   function render() {
     const search=$('#aid-search').value.trim().toLocaleLowerCase('ms'),memberId=$('#aid-member-filter').value,from=$('#aid-from').value,to=$('#aid-to').value;
-    const rows=records.filter(row=>(!memberId || row.memberId===Number(memberId)) && (!from || row.receivedDate>=from) && (!to || row.receivedDate<=to) && [row.title,row.provider,row.recipientName,row.householdName,row.category].join(' ').toLocaleLowerCase('ms').includes(search));
+    const rows=records.filter(row=>acknowledgementMatches(row.acknowledgement,$('#aid-ack-state').value,$('#aid-ack-evidence').value)&&(!memberId || row.memberId===Number(memberId)) && (!from || row.receivedDate>=from) && (!to || row.receivedDate<=to) && [row.title,row.provider,row.recipientName,row.householdName,row.category].join(' ').toLocaleLowerCase('ms').includes(search));
     $('#aid-count').textContent=rows.length;$('#aid-total').textContent=money(rows.reduce((n,row)=>n+(row.amountCents||0),0));$('#aid-households').textContent=new Set(rows.map(row=>row.memberId)).size;
     $('#aid-list').innerHTML=rows.length?`<div class="table-wrap"><table><thead><tr><th>TARIKH / BANTUAN</th><th>PENERIMA</th><th>PEMBERI</th><th>NILAI / KUANTITI</th><th>TINDAKAN</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.receivedDate)}<br><b>${esc(row.title)}</b><br>${esc(row.category)}</td><td>${esc(row.recipientName)}<br><span class="badge">${kinds[row.recipientKind]}</span><small>Isi rumah ${esc(row.householdName)} (#${row.memberId})${row.memberActive?'':' · Tidak aktif'}</small></td><td>${esc(row.provider)}</td><td>${row.amountCents===null?'':money(row.amountCents)}<br>${row.quantity===null?'':`${row.quantity} ${esc(row.unit)}`}</td><td><button type="button" class="quiet aid-acknowledge" data-id="${row.id}">${esc(acknowledgementLabel(row))}</button><button class="quiet aid-edit" data-id="${row.id}">Lihat / edit</button>${getUser()?.role==='admin'?`<button class="quiet aid-delete" data-id="${row.id}">Padam</button>`:''}</td></tr>`).join('')}</tbody></table></div><p class="table-footer">${rows.length} rekod sepadan</p>`:'<div class="empty"><h3>Tiada rekod bantuan</h3><p>Rekodkan bantuan yang telah diterima atau ubah carian anda.</p></div>';
     bindAidActions();
@@ -92,7 +93,7 @@ export function setupAidUI({api,showPanel,getUser,notice,onRecordsChanged=()=>{}
   $('#nav-aid').onclick=async()=>{try {if(await load()!==false)showPanel('aid-panel');}catch(error){notice(error.message);}};
   $('#aid-add').onclick=()=>open();
   $('#member-aid-add').onclick=()=>open();
-  for(const id of ['aid-search','aid-member-filter','aid-from','aid-to']) $('#'+id).addEventListener('input',render);
+  for(const id of ['aid-search','aid-member-filter','aid-from','aid-to','aid-ack-state','aid-ack-evidence']) $('#'+id).addEventListener('input',render);
   $('#aid-form').addEventListener('input',clearWarning);
   for(const key of ['memberId','recipientKind']) $('#aid-form').elements[key].addEventListener('change',recipients);
   $('#aid-close').onclick=$('#aid-cancel').onclick=()=>$('#aid-editor').close();
@@ -115,5 +116,5 @@ export function setupAidUI({api,showPanel,getUser,notice,onRecordsChanged=()=>{}
     try {await api(`/api/aid/${deleting.id}`,'DELETE',{expectedUpdatedAt:deleting.updatedAt,confirmation:event.target.elements.confirmation.value});$('#aid-delete-dialog').close();await load();notice('Rekod bantuan dipadam. Sandaran keselamatan disimpan dalam data/backups.');}
     catch(error){$('#aid-delete-error').textContent=error.message;}
   };
-  return {async showMember(member){ profileMember=member||null;$('#member-aid-section').hidden=!member;if(!member)return;$('#member-aid-list').textContent='Memuatkan rekod bantuan…';try{await load();}catch(error){$('#member-aid-list').textContent=error.message;} }, clearMember(){profileMember=null;},reset(){generation++;acknowledgements.reset();profileMember=null;types=[];editingType=null;$('#aid-type-form').reset();$('#aid-types-list').replaceChildren();$('#aid-type-cancel').hidden=true;$('#member-aid-section').hidden=true;records=[];members=[];editing=null;$('#aid-list').replaceChildren();$('#aid-editor').close();$('#aid-delete-dialog').close();$('#aid-form').reset();$('#aid-delete-form').reset();}};
+  return {async showMember(member){ profileMember=member||null;$('#member-aid-section').hidden=!member;if(!member)return;$('#member-aid-list').textContent='Memuatkan rekod bantuan…';try{await load();}catch(error){$('#member-aid-list').textContent=error.message;} }, clearMember(){profileMember=null;},reset(){generation++;$('#aid-ack-state').value='all';$('#aid-ack-evidence').value='all';acknowledgements.reset();profileMember=null;types=[];editingType=null;$('#aid-type-form').reset();$('#aid-types-list').replaceChildren();$('#aid-type-cancel').hidden=true;$('#member-aid-section').hidden=true;records=[];members=[];editing=null;$('#aid-list').replaceChildren();$('#aid-editor').close();$('#aid-delete-dialog').close();$('#aid-form').reset();$('#aid-delete-form').reset();}};
 }

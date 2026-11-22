@@ -120,3 +120,7 @@ Senarai ahli menyediakan penapis Status Asnaf. Pentadbir boleh menjana **Laporan
 ## Pengakuan penerimaan bantuan
 
 Bantuan yang telah direkodkan boleh menerima pengakuan nama penerima, tarikh dan bukti PDF/JPG/PNG sehingga 5 MB. Ahli mengakui bantuan isi rumah sendiri; Pentadbir/Petugas boleh merekod bagi pihak penerima dengan bukti wajib. Perubahan bantuan memerlukan pengakuan baharu dan mengekalkan sejarah terdahulu. Pengakuan/bukti memerlukan sandaran penuh SQLite; pemulihan JSON dan pemadaman bantuan disekat apabila berkaitan sejarah pengakuan. Rujuk [PANDUAN-PENGAKUAN-BANTUAN.md](PANDUAN-PENGAKUAN-BANTUAN.md).
+
+## Penapis dan laporan pengakuan bantuan
+
+Menu Bantuan menyediakan penapis status pengakuan serta bukti semasa. Pentadbir boleh menjana **Laporan → Pengakuan penerimaan bantuan**, mencetak/PDF dan mengeksport CSV untuk tindakan susulan. Bukti lama tidak dianggap mengesahkan versi bantuan yang telah berubah; eksport meminta laporan dijana semula jika hasil berubah sejak pratonton. Rujuk [PANDUAN-PENGAKUAN-BANTUAN.md](PANDUAN-PENGAKUAN-BANTUAN.md).
