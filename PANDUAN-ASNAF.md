@@ -28,7 +28,7 @@ Senarai **Ahli & isi rumah** memaparkan **Asnaf: Perlu semakan** bersama bilanga
 
 ## Kesan perubahan had
 
-Selepas pentadbir menyimpan had, label dalam senarai yang dimuatkan pada pelayarnya dikemas kini. Pengguna lain membuka semula menu Ahli & isi rumah atau memuat semula aplikasi untuk mendapatkan pengiraan terkini. Pentadbir dan Petugas yang mempunyai akses Ahli boleh melihat label; **hanya Pentadbir** boleh membaca/mengubah tetapan had. Label belum ditambah ke laporan eksport atau portal peribadi Ahli dalam perubahan ini.
+Selepas pentadbir menyimpan had, label dalam senarai yang dimuatkan pada pelayarnya dikemas kini. Pengguna lain membuka semula menu Ahli & isi rumah atau memuat semula aplikasi untuk mendapatkan pengiraan terkini. Pentadbir dan Petugas yang mempunyai akses Ahli boleh melihat label; **hanya Pentadbir** boleh membaca/mengubah tetapan had. Portal peribadi Ahli belum memaparkan label ini. Pentadbir boleh mendapatkan laporan dan eksport melalui menu Laporan seperti diterangkan di bawah.
 
 Had ini terpakai kepada seluruh sistem. Ia ialah penanda formula komuniti; ia tidak meluluskan permohonan bantuan, bayaran khairat atau memindahkan wang. Menukar had tidak mengubah maklumat pendapatan, sejarah profil, rekod bantuan atau keputusan lama. Rekod tidak aktif masih boleh diperiksa dengan formula semasa apabila dipaparkan dalam senarai.
 
@@ -37,3 +37,17 @@ Had ini terpakai kepada seluruh sistem. Ia ialah penanda formula komuniti; ia ti
 Perubahan had direkodkan dalam sejarah tindakan bersama had sebelum/selepas. Kata laluan tidak dimasukkan ke dalam audit. Jika pentadbir lain sudah mengubah tetapan, sistem menolak simpanan menggunakan versi lama; pilih **Muat semula** dan semak nilai terkini dahulu.
 
 Ambil **sandaran penuh SQLite** sebelum naik taraf. Kekalkan folder/volume data dan mulakan semula aplikasi. Jadual tetapan dicipta automatik dengan RM350.00 hanya jika belum wujud. Tetapan yang telah disimpan dikekalkan selepas mula semula dan disertakan dalam sandaran/pemulihan penuh. Eksport JSON ahli tidak membawa tetapan ini. 2FA boleh kekal tidak aktif.
+
+## Penapis senarai ahli
+
+Dalam **Ahli & isi rumah**, gunakan **Status Asnaf** untuk memilih Semua, Acc Asnaf, Tidak memenuhi had atau Perlu semakan. Penapis ini digabungkan dengan status aktif/tidak aktif dan carian nama, telefon atau alamat. Petugas yang mempunyai akses Ahli boleh menggunakan penapis ini. Buka semula menu untuk memuatkan pengiraan mengikut had serta profil terkini.
+
+## Laporan, cetakan dan CSV
+
+Pentadbir membuka **Pentadbiran → Laporan → Jenis laporan: Semakan Asnaf**. Pilih status Asnaf, status ahli/isi rumah, negeri, daerah, kod zon atau carian, kemudian jana laporan. Had semasa dipaparkan bersama masa laporan dijana; ringkasan memaparkan bilangan setiap status selepas penapis digunakan.
+
+Setiap baris laporan menunjukkan ahli utama, telefon/alamat/zon, status Asnaf, bilangan penghuni yang dikira, jumlah pendapatan bulanan, purata per kapita, had serta maklumat yang memerlukan semakan. Rekod tidak lengkap mempunyai nilai pendapatan/purata kosong; ia tidak dieksport sebagai sifar. Formula dan pengecualian individu meninggal dunia sama seperti senarai ahli.
+
+Gunakan **Cetak / PDF** untuk mencetak paparan atau memilih Simpan sebagai PDF dalam pelayar. Paparan/cetakan terhad kepada 500 rekod pertama; **Muat turun CSV** membawa semua rekod sepadan. CSV menyertakan had dan masa pengiraan UTC pada setiap baris. Cetakan memaparkan masa Malaysia. Laporan/CSV terhad kepada Pentadbir dan tindakan melihat/mengeksport diaudit.
+
+Laporan ialah pengiraan pada masa dijana, bukan keputusan bantuan atau sejarah kelayakan yang dibekukan. CSV mengira semula menggunakan rekod rasmi semasa eksport. Jika had telah berubah sejak pratonton, eksport ditolak dengan arahan **Jana laporan semula** supaya had baharu tidak digunakan tanpa pengetahuan pengguna. Perubahan profil sejak pratonton juga boleh mengubah hasil eksport. Fail laporan mengandungi maklumat kewangan; simpan mengikut kawalan akses komuniti.
