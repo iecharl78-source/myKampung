@@ -361,10 +361,20 @@ Bagi hosting, had badan permintaan aplikasi untuk penghantaran rekod baharu iala
 
 ### Pelapor kematian dan akaun penghantar
 
-Borang rekod kematian baharu memerlukan **Nama pelapor / waris yang melaporkan** serta **Hubungan pelapor dengan si mati**. Masukkan nama orang yang memberikan laporan, contohnya anak atau pasangan, bukan nama si mati. Sistem tidak mengisi nama pelapor daripada nama akaun yang log masuk. Nama pelapor yang sama dengan nama si mati selepas penyeragaman huruf besar/kecil dan ruang ditolak.
+Borang rekod kematian baharu memerlukan **pelapor / waris yang melaporkan** serta **Hubungan pelapor dengan si mati**. Pilih pelapor melalui dropdown rekod isi rumah; nama diisi daripada individu yang dipilih dan disahkan semula oleh pelayan. Sistem tidak mengisi nama pelapor daripada nama akaun yang log masuk. Pilihan **Lain-lain / tidak tersenarai** membenarkan nama orang luar dimasukkan; untuk nama manual, nama si mati selepas penyeragaman huruf besar/kecil dan ruang ditolak.
 
 Paparan semakan membezakan tiga perkara: nama si mati, pelapor/waris sebenar dan **Akaun penghantar (rekod sistem)**. Akaun penghantar menunjukkan akaun yang digunakan ketika rekod dihantar; ia bukan pengesahan identiti orang yang melaporkan. Dalam tuntutan khairat, nama akaun turut dilabel **Akaun penghantar tuntutan**, berasingan daripada waris/penerima bayaran.
 
 Rekod lama tidak mempunyai maklumat pelapor yang berasingan. Sistem memaparkan **Maklumat pelapor belum direkodkan**, tanpa menyalin nama akaun atau meneka nama waris. Pentadbir boleh membuka **Lihat / semak → Betulkan maklumat pelapor** pada rekod menunggu atau diluluskan, mengisi nama serta hubungan yang telah disahkan, kemudian memilih **Simpan maklumat pelapor**. Ahli dan Petugas tidak boleh membetulkan maklumat selepas penghantaran. Rekod ditolak tidak menerima pembetulan ini.
 
 Pembetulan diaudit bersama nilai sebelum/selepas dan dilindungi daripada perubahan serentak. Akaun penghantar asal, status kelulusan kematian, lampiran sijil/permit, zon kubur, nombor batu nisan dan bayaran dikekalkan. Maklumat pelapor disertakan dalam sandaran penuh SQLite. Naik taraf menambah medan kosong secara automatik; sandarkan sistem dahulu dan mulakan semula aplikasi dengan direktori data asal.
+
+### Dropdown pelapor daripada isi rumah
+
+Dropdown **Pilih pelapor daripada isi rumah** tersedia pada borang rekod baharu dan pembetulan pelapor oleh pentadbir. Senarai menggunakan isi rumah semasa, termasuk ketua dan ahli keluarga berdaftar. Si mati serta individu yang mempunyai rekod kematian menunggu/diluluskan dikecualikan. Individu daripada isi rumah lain tidak boleh dipautkan melalui pilihan keluarga.
+
+Hubungan juga dipilih melalui dropdown. Apabila si mati ialah ketua isi rumah semasa, hubungan sedia ada keluarga dicadangkan dan masih perlu disemak. Jika si mati ialah ahli keluarga lain, pilih hubungan kepada si mati sendiri; hubungan dalam profil asal merujuk kepada ketua isi rumah dan tidak boleh dianggap sama. Menukar individu si mati mengosongkan pilihan pelapor untuk semakan semula. Pilih Lain-lain pada hubungan untuk menyatakan hubungan khusus.
+
+Gunakan **Lain-lain / tidak tersenarai** bagi waris belum didaftarkan, jiran, petugas atau pelapor di luar senarai. Isi nama dan hubungan sebenar. Rekod pelapor lama dikekalkan sebagai maklumat tersimpan tanpa dipadankan secara automatik berdasarkan nama. Jika pelapor yang pernah dipilih sudah tiada dalam isi rumah atau tidak lagi layak, nama lama kekal untuk semakan dalam pilihan Lain-lain; pentadbir perlu mengesahkan sebelum menyimpan semula.
+
+Identiti individu yang dipilih serta nama/hubungan ketika disimpan disertakan dalam sandaran penuh. Perubahan nama atau isi rumah kemudian tidak menukar rekod sejarah secara automatik. Naik taraf menambah medan identiti pelapor kosong tanpa memadankan rekod lama secara andaian.
