@@ -1,3 +1,4 @@
+import {initializeAsnaf,readAsnafSettings,classifyAsnaf,asnafSettingsRoute} from './asnaf.js';
 import {backupMonitorRoute} from './backup-monitor.js';
 import {dataQualityRoute} from './data-quality.js';
 import {historyReason,initializeMemberHistory,recordMemberChange,memberHistoryRoutes} from './member-history.js';
@@ -50,7 +51,7 @@ initializeAid(db);
 initializeRegistrations(db);
 initializeCommunity(db);
 initializeAidRequests(db);
-initializeHeadChanges(db);initializeDeaths(db);initializeKhairat(db);initializeAccessSettings(db);initializeTaskHub(db);initializeMemberHistory(db);
+initializeHeadChanges(db);initializeDeaths(db);initializeKhairat(db);initializeAccessSettings(db);initializeTaskHub(db);initializeMemberHistory(db);initializeAsnaf(db);
 const sessions = new Map(), attempts = new Map(), restorePreviews = new Map();
 const allMembers = () => db.prepare('SELECT * FROM members ORDER BY id DESC').all().map(x=>({...x,household:JSON.parse(x.household)}));
 const allAid=()=>db.prepare('SELECT * FROM aid_records ORDER BY id').all();
@@ -112,7 +113,7 @@ function validate(input,{catalog=true,existingMember=null}={}) {
   const details=normalizeMemberDetails(input);if(catalog)checkHousing(db,details);
   return {name, phone, address, ...addressParts, ...details, birthDate:date(input.birthDate), gender, occupation:text(input.occupation || ''), household,isActive,deactivatedAt,inactivityReason};
 }
-const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/security-ui.js':['security-ui.js','text/javascript'], '/task-hub-ui.js':['task-hub-ui.js','text/javascript'], '/member-history-ui.js':['member-history-ui.js','text/javascript'], '/data-quality-ui.js':['data-quality-ui.js','text/javascript'], '/backup-monitor-ui.js':['backup-monitor-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/administration-ui.js':['administration-ui.js','text/javascript'], '/khairat-ui.js':['khairat-ui.js','text/javascript'], '/deaths-ui.js':['deaths-ui.js','text/javascript'], '/head-changes-ui.js':['head-changes-ui.js','text/javascript'], '/ui-icons.js':['ui-icons.js','text/javascript'], '/navigation.js':['navigation.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/family-residence.js':['family-residence.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
+const staticFiles = {'/':['index.html','text/html'], '/daftar':['registration.html','text/html'], '/daftar/':['registration.html','text/html'], '/registration.js':['registration.js','text/javascript'], '/registrations-ui.js':['registrations-ui.js','text/javascript'], '/portal-ui.js':['portal-ui.js','text/javascript'], '/dashboard-ui.js':['dashboard-ui.js','text/javascript'], '/security-ui.js':['security-ui.js','text/javascript'], '/task-hub-ui.js':['task-hub-ui.js','text/javascript'], '/member-history-ui.js':['member-history-ui.js','text/javascript'], '/data-quality-ui.js':['data-quality-ui.js','text/javascript'], '/backup-monitor-ui.js':['backup-monitor-ui.js','text/javascript'], '/portal-aid.js':['portal-aid.js','text/javascript'], '/asnaf-settings-ui.js':['asnaf-settings-ui.js','text/javascript'], '/administration-ui.js':['administration-ui.js','text/javascript'], '/khairat-ui.js':['khairat-ui.js','text/javascript'], '/deaths-ui.js':['deaths-ui.js','text/javascript'], '/head-changes-ui.js':['head-changes-ui.js','text/javascript'], '/ui-icons.js':['ui-icons.js','text/javascript'], '/navigation.js':['navigation.js','text/javascript'], '/app.js':['app.js','text/javascript'], '/reports-ui.js':['reports-ui.js','text/javascript'], '/aid-ui.js':['aid-ui.js','text/javascript'], '/password-tools.js':['password-tools.js','text/javascript'], '/form-state.js':['form-state.js','text/javascript'], '/age.js':['age.js','text/javascript'], '/address.js':['address.js','text/javascript'], '/education.js':['education.js','text/javascript'], '/family-residence.js':['family-residence.js','text/javascript'], '/resident-fields.js':['resident-fields.js','text/javascript'], '/phase-one-ui.js':['phase-one-ui.js','text/javascript'], '/member-details.js':['member-details.js','text/javascript'], '/style.css':['style.css','text/css']};
 const server = http.createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -155,6 +156,7 @@ const server = http.createServer(async (req,res) => {
     const user=activeSession(session) ? db.prepare('SELECT * FROM users WHERE id=? AND isActive=1').get(session.userId) : null;
     if(!user || (user.role==='ahli' && deceasedAccount(db,user.memberId)) || (user.role==='ahli' && !db.prepare('SELECT id FROM members WHERE id=? AND isActive=1').get(user.memberId))) { if(token) { sessions.delete(token);restorePreviews.delete(token); } return json(res,401,{error:'Sila log masuk.'}); }
     session.lastSeen=Date.now();
+    if(await asnafSettingsRoute({req,res,path,user,db,json,body,isSessionActive:()=>sessions.get(token)===session&&session.expires>Date.now()}))return;
     if(await backupMonitorRoute({req,res,path,user,db,json,isSessionActive:()=>sessions.get(token)===session&&session.expires>Date.now()&&db.prepare("SELECT id FROM users WHERE id=? AND role='admin' AND isActive=1").get(user.id)}))return;
     if(dataQualityRoute({req,res,path,user,db,json}))return;
     if(await memberHistoryRoutes({req,res,path,user,db,json}))return;
@@ -181,7 +183,7 @@ const server = http.createServer(async (req,res) => {
     if(reportRoute({req,res,path,user,db,json,members:allMembers,aid:allAid})) return;
     if(await aidRoutes({req,res,path,user,db,json,body,safetySnapshot})) return;
     if (path === '/api/logout' && req.method === 'POST') { audit(db,user,'Log keluar','akaun',user.id); sessions.delete(token); restorePreviews.delete(token); res.setHeader('Set-Cookie','session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); return json(res,200,{ok:true}); }
-    if (path === '/api/members' && req.method === 'GET') return json(res,200,allMembers().map(m=>deathLabels(db,m)));
+    if (path === '/api/members' && req.method === 'GET') {const {thresholdCents}=readAsnafSettings(db);return json(res,200,allMembers().map(m=>{const member=deathLabels(db,m);return {...member,asnaf:classifyAsnaf(member,thresholdCents)};}));}
     if (path === '/api/backup' && req.method === 'GET') {
       res.setHeader('Content-Disposition',`attachment; filename="myKampung-sandaran-${new Date().toISOString().replace(/[:.]/g,'-')}.json"`);
       const backup=createBackup(allMembers(),allAid(),allAidTypes(),allRegistrations(),bulletinState(db),housingCatalog(db));audit(db,user,'Muat turun sandaran','sistem','');

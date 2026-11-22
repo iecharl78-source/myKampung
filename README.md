@@ -108,3 +108,7 @@ Rekod kematian menyokong lampiran **permit kubur** berasingan daripada sijil kem
 ## Pelapor rekod kematian
 
 Rekod baharu memerlukan nama pelapor sebenar dan hubungannya dengan si mati. Akaun penghantar dipaparkan berasingan sebagai jejak sistem. Pentadbir boleh melengkapkan/membetulkan pelapor pada rekod menunggu atau diluluskan; rekod lama tidak diisi secara andaian. Rujuk [MANUAL-PENGGUNA.md](MANUAL-PENGGUNA.md). Klien API boleh menghantar `reporterPersonKey` untuk memilih individu yang masih layak dalam isi rumah; nama diperoleh daripada rekod semasa. Bagi pelapor luar, hantar `reporterPersonKey` kosong dan `reporterName`. `reporterRelationship` wajib untuk kedua-dua pilihan. Dropdown pelapor dan hubungan tersedia pada rekod baharu serta pembetulan pentadbir; nilai sejarah dikekalkan.
+
+## Label Acc Asnaf dan had fleksibel
+
+Pentadbir menetapkan had pendapatan per kapita melalui **Tetapan sistem**, lalai RM350.00. Senarai ahli memaparkan Acc Asnaf apabila jumlah pendapatan ahli utama/keluarga hidup yang tinggal bersama dibahagi bilangan mereka kurang daripada had. Pendapatan kosong atau kediaman belum diketahui memerlukan semakan. Had baharu digunakan pada pengiraan senarai terkini tanpa mula semula pelayan. Rujuk [PANDUAN-ASNAF.md](PANDUAN-ASNAF.md) untuk formula, contoh, data tidak lengkap dan sandaran.

@@ -73,3 +73,5 @@ dialog .dialog-head>button,dialog .modal-head>button{flex:0 0 auto;align-self:fl
 @media(max-width:700px){dialog{--dialog-padding:20px}dialog .dialog-head,dialog .modal-head{gap:10px;padding-block:10px;margin-bottom:16px}}
 dialog .row-actions{flex-wrap:wrap}
 @media(max-width:700px){dialog{scroll-padding-block-start:10rem}dialog .dialog-head h2,dialog .modal-head h2{font-size:16px}}
+
+.asnaf-indicator{display:block;font-size:11px;font-weight:600;color:#52675a;margin:6px 0}.asnaf-qualified{color:#8b352b}.asnaf-incomplete{color:#805600}.person .asnaf-calculation{white-space:normal;max-width:260px;line-height:1.6}#asnaf-settings-error{color:#a43e32}

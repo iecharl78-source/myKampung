@@ -111,7 +111,7 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     const restored=await request('/api/restore/confirm','POST',{previewToken:preview.previewToken,password,confirmation:'PULIHKAN'});assert.equal(restored.status,200);
     const safety=(await restored.json()).safetyBackup;
     assert.ok((await readdir(join(dir,'backups'))).includes(safety));
-    const safetyData=JSON.parse(await readFile(join(dir,'backups',safety),'utf8'));assert.deepEqual(safetyData.members,changed);
+    const safetyData=JSON.parse(await readFile(join(dir,'backups',safety),'utf8'));assert.deepEqual(safetyData.members,changed.map(({asnaf,...member})=>member));assert.ok(safetyData.members.every(member=>!Object.hasOwn(member,'asnaf')));
     assert.deepEqual(await (await request('/api/members')).json(),before);
     assert.equal((await request('/api/restore/confirm','POST',{previewToken:preview.previewToken,password,confirmation:'PULIHKAN'})).status,409);
     await stop();base=await start();
@@ -149,7 +149,7 @@ test('Aliran pentadbir, keluarga, kawalan akses dan data kekal', async () => {
     const beforeDelete=await (await request('/api/members')).json();assert.equal(beforeDelete.length,2);
     const deletion=await request(`/api/members/${id}`,'DELETE',deleteInput);assert.equal(deletion.status,200);
     const deletionBackup=(await deletion.json()).safetyBackup;
-    assert.deepEqual(JSON.parse(await readFile(join(dir,'backups',deletionBackup),'utf8')).members,beforeDelete);
+    assert.deepEqual(JSON.parse(await readFile(join(dir,'backups',deletionBackup),'utf8')).members,beforeDelete.map(({asnaf,...member})=>member));
     rows=await (await request('/api/members')).json();assert.equal(rows.length,1);assert.equal(rows[0].id,studentId);
     assert.deepEqual(rows[0],beforeDelete.find(row=>row.id===studentId));
     assert.equal((await request(`/api/members/${id}`,'DELETE',deleteInput)).status,404);
