@@ -5,7 +5,7 @@
 //   database runs in the default rollback-journal mode; keep a single application worker.
 // Set SQLITE_DRIVER=wasm to force the WebAssembly driver (useful for testing on newer Node.js).
 import { createRequire } from 'node:module';
-import { closeSync, copyFileSync, existsSync, mkdtempSync, openSync, readSync, rmSync, statSync, unlinkSync } from 'node:fs';
+import { closeSync, copyFileSync, existsSync, mkdtempSync, openSync, readSync, rmdirSync, rmSync, statSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -50,6 +50,31 @@ if (native) {
     return args;
   }
 
+  // node-sqlite3-wasm locks a database by creating a "<file>.lock" directory and removes it on
+  // unlock. A process killed mid-query (SIGKILL from Passenger/CloudLinux limits) leaves that
+  // directory behind, and every later open then fails with "database is locked" forever.
+  // Normal locks last milliseconds, so a lock directory older than STALE_LOCK_MS is treated as
+  // abandoned and removed. Override with SQLITE_STALE_LOCK_MS (minimum 10 seconds).
+  const STALE_LOCK_MS = Math.max(10000, Number(process.env.SQLITE_STALE_LOCK_MS) || 60000);
+  const isBusy = error => /database is locked|SQLITE_BUSY/i.test(String(error?.message));
+  function clearStaleLock(file) {
+    if (file === ':memory:') return false;
+    const lock = `${file}.lock`;
+    let age;
+    try { age = Date.now() - statSync(lock).mtimeMs; } catch { return false; }
+    if (age < STALE_LOCK_MS) return false;
+    try { rmdirSync(lock); } catch (error) { if (error.code !== 'ENOENT') return false; }
+    console.error(`sqlite.js: kunci pangkalan data basi dibuang (${lock}, umur ${Math.round(age / 1000)} saat).`);
+    return true;
+  }
+  // Run fn; if it fails only because of an abandoned lock, remove the lock and try once more.
+  function withStaleLockRetry(file, fn) {
+    try { return guard(fn); } catch (error) {
+      if (isBusy(error) && clearStaleLock(file)) return guard(fn);
+      throw error;
+    }
+  }
+
   // A WAL-mode file cannot be opened without shared memory, which the WASM build lacks.
   // SQLite can still read it in exclusive locking mode and convert it to rollback-journal mode.
   function isWalFile(file) {
@@ -60,7 +85,7 @@ if (native) {
   }
   function convertFromWal(file) {
     const db = new WasmDatabase(file);
-    try { db.exec('PRAGMA locking_mode=EXCLUSIVE'); db.get('PRAGMA journal_mode=DELETE'); } finally { db.close(); }
+    try { withStaleLockRetry(file, () => { db.exec('PRAGMA locking_mode=EXCLUSIVE'); db.get('PRAGMA journal_mode=DELETE'); }); } finally { db.close(); }
     if (!existsSync(file + '-wal')) rmSync(file + '-shm', { force: true });
   }
 
@@ -70,7 +95,7 @@ if (native) {
     #owner; #sql;
     constructor(owner, sql) { this.#owner = owner; this.#sql = sql; owner._validate(sql); }
     get sourceSQL() { return this.#sql; }
-    #exec(method, args) { return guard(() => this.#owner._raw()[method](this.#sql, bindValues(this.#sql, args))); }
+    #exec(method, args) { return this.#owner._run(() => this.#owner._raw()[method](this.#sql, bindValues(this.#sql, args))); }
     run(...args) { return this.#exec('run', args); }
     get(...args) { const row = this.#exec('get', args); return row === null ? undefined : row; }
     all(...args) { return this.#exec('all', args); }
@@ -78,10 +103,11 @@ if (native) {
   }
 
   DatabaseSync = class DatabaseSync {
-    #db; #validated = new Set(); #temporary = null;
+    #db; #file; #validated = new Set(); #temporary = null;
     constructor(location, options = {}) {
       let file = location === ':memory:' ? location : resolve(String(location));
       const readOnly = Boolean(options.readOnly);
+      clearStaleLock(file);
       if (isWalFile(file)) {
         if (readOnly) {
           // Never modify a file opened read-only: convert a private copy instead.
@@ -95,6 +121,7 @@ if (native) {
           convertFromWal(file);
         }
       }
+      this.#file = file;
       this.#db = guard(() => new WasmDatabase(file, { readOnly }));
       // Without WAL, a writer is blocked while another process (e.g. the nightly backup) reads.
       // Wait for the lock instead of failing at once with "database is locked".
@@ -108,7 +135,7 @@ if (native) {
     _validate(sql) {
       if (!this.#db.isOpen) throw Object.assign(Error('database is not open'), { code: 'ERR_INVALID_STATE' });
       if (this.#validated.has(sql)) return;
-      guard(() => this.#db.prepare(sql)).finalize();
+      this._run(() => this.#db.prepare(sql)).finalize();
       if (this.#validated.size >= VALIDATED_LIMIT) this.#validated.clear();
       this.#validated.add(sql);
     }
@@ -116,8 +143,9 @@ if (native) {
       if (!this.#db.isOpen) throw Object.assign(Error('database is not open'), { code: 'ERR_INVALID_STATE' });
       return this.#db;
     }
+    _run(fn) { return withStaleLockRetry(this.#file, fn); }
     prepare(sql) { return new Statement(this, sql); }
-    exec(sql) { guard(() => this._raw().exec(sql)); this.#validated.clear(); }
+    exec(sql) { this._run(() => this._raw().exec(sql)); this.#validated.clear(); }
     close() {
       if (!this.#db.isOpen) throw Object.assign(Error('database is not open'), { code: 'ERR_INVALID_STATE' });
       this.#validated.clear();
@@ -131,7 +159,7 @@ if (native) {
   backup = async (source, destination) => {
     const target = resolve(String(destination));
     if (existsSync(target)) unlinkSync(target);
-    guard(() => source._raw().run('VACUUM INTO ?', [target]));
+    source._run(() => source._raw().run('VACUUM INTO ?', [target]));
     return source.prepare('PRAGMA page_count').get().page_count;
   };
 }
